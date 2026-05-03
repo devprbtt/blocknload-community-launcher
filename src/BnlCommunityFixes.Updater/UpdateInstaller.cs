@@ -1,0 +1,139 @@
+using System.Diagnostics;
+using BnlCommunityFixes.Core.Services;
+
+namespace BnlCommunityFixes.Updater;
+
+public sealed class UpdateInstaller
+{
+    private readonly Logger logger;
+
+    public UpdateInstaller(Logger logger)
+    {
+        this.logger = logger;
+    }
+
+    public async Task<int> RunAsync(UpdaterArguments arguments, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await WaitForProcessExitAsync(arguments.ProcessId, cancellationToken);
+            InstallLauncher(arguments);
+            StageUpdater(arguments);
+
+            if (arguments.Restart)
+            {
+                RestartLauncher(arguments.TargetPath, arguments.RestartArguments);
+            }
+
+            logger.Info("Updater completed successfully.");
+            return 0;
+        }
+        catch (Exception exception)
+        {
+            logger.Exception(exception, "Updater failed");
+            TryRollback(arguments);
+            return 1;
+        }
+    }
+
+    private async Task WaitForProcessExitAsync(int processId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(processId);
+            logger.Info($"Waiting for process {processId} to exit.");
+            await process.WaitForExitAsync(cancellationToken);
+        }
+        catch (ArgumentException)
+        {
+            logger.Warning($"Process {processId} was already gone.");
+        }
+    }
+
+    private void InstallLauncher(UpdaterArguments arguments)
+    {
+        if (!File.Exists(arguments.SourcePath))
+        {
+            throw new FileNotFoundException("Downloaded launcher update was not found.", arguments.SourcePath);
+        }
+
+        var backupPath = GetBackupPath(arguments.TargetPath);
+        Directory.CreateDirectory(Path.GetDirectoryName(arguments.TargetPath)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
+
+        if (File.Exists(backupPath))
+        {
+            File.Delete(backupPath);
+        }
+
+        if (File.Exists(arguments.TargetPath))
+        {
+            File.Move(arguments.TargetPath, backupPath);
+        }
+
+        File.Move(arguments.SourcePath, arguments.TargetPath, true);
+        logger.Info($"Installed launcher update to {arguments.TargetPath}.");
+    }
+
+    private void StageUpdater(UpdaterArguments arguments)
+    {
+        if (string.IsNullOrWhiteSpace(arguments.UpdaterTargetPath) ||
+            string.IsNullOrWhiteSpace(arguments.UpdaterSourcePath) ||
+            !File.Exists(arguments.UpdaterSourcePath))
+        {
+            return;
+        }
+
+        var pendingPath = arguments.UpdaterTargetPath + ".pending";
+        File.Copy(arguments.UpdaterSourcePath, pendingPath, true);
+        logger.Info($"Staged updater replacement at {pendingPath}.");
+    }
+
+    private void RestartLauncher(string targetPath, IReadOnlyList<string> restartArguments)
+    {
+        logger.Info($"Restarting launcher at {targetPath}.");
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = targetPath,
+            UseShellExecute = true,
+            WorkingDirectory = Path.GetDirectoryName(targetPath)!
+        };
+
+        foreach (var argument in restartArguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        Process.Start(startInfo);
+    }
+
+    private void TryRollback(UpdaterArguments arguments)
+    {
+        try
+        {
+            var backupPath = GetBackupPath(arguments.TargetPath);
+            if (File.Exists(backupPath))
+            {
+                if (File.Exists(arguments.TargetPath))
+                {
+                    File.Delete(arguments.TargetPath);
+                }
+
+                File.Move(backupPath, arguments.TargetPath, true);
+                logger.Warning("Launcher rollback completed.");
+            }
+        }
+        catch (Exception rollbackException)
+        {
+            logger.Exception(rollbackException, "Rollback failed");
+        }
+    }
+
+    private static string GetBackupPath(string targetPath)
+    {
+        var directory = Path.Combine(Path.GetDirectoryName(targetPath)!, "backup");
+        var fileName = Path.GetFileNameWithoutExtension(targetPath);
+        var extension = Path.GetExtension(targetPath);
+        return Path.Combine(directory, $"{fileName}.previous{extension}");
+    }
+}

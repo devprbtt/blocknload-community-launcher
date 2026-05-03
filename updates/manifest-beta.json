@@ -1,0 +1,22 @@
+{
+  "product": "BnlCommunityFixes",
+  "channel": "beta",
+  "version": "0.0.0",
+  "minimum_supported_version": "0.0.0",
+  "published_at": "2026-05-03T00:00:00Z",
+  "notes": "Replace this placeholder with a generated beta release manifest.",
+  "assets": {
+    "launcher_exe": {
+      "file_name": "BnlCommunityFixes.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v0.0.0/BnlCommunityFixes.exe",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size": 0
+    },
+    "updater_exe": {
+      "file_name": "BnlUpdater.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v0.0.0/BnlUpdater.exe",
+      "sha256": "REPLACE_WITH_REAL_SHA256",
+      "size": 0
+    }
+  }
+}

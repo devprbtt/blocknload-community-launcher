@@ -1,0 +1,5 @@
+{
+  "product": "BnlCommunityFixes",
+  "channel": "stable",
+  "manifestUrl": "https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/v2/updates/manifest-stable.json"
+}

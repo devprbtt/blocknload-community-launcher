@@ -1,0 +1,36 @@
+# Build output
+bin/
+obj/
+publish/
+
+# Local release/test output
+release/
+test-output/
+
+# User-local config overrides
+*.user
+*.suo
+*.userprefs
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.pending
+
+# Dotnet
+artifacts/
+TestResults/

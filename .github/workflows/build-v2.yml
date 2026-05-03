@@ -1,0 +1,67 @@
+name: build-v2
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "v2/**"
+  pull_request:
+    paths:
+      - "v2/**"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore "$env:GITHUB_WORKSPACE\v2\BnlCommunityFixes.V2.sln"
+
+      - name: Build
+        run: dotnet build "$env:GITHUB_WORKSPACE\v2\BnlCommunityFixes.V2.sln" --configuration Release --no-restore
+
+      - name: Publish Launcher
+        run: >
+          dotnet publish
+          "$env:GITHUB_WORKSPACE\v2\src\BnlCommunityFixes.Launcher\BnlCommunityFixes.Launcher.csproj"
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o "$env:GITHUB_WORKSPACE\v2\artifacts\launcher"
+
+      - name: Publish Updater
+        run: >
+          dotnet publish
+          "$env:GITHUB_WORKSPACE\v2\src\BnlCommunityFixes.Updater\BnlCommunityFixes.Updater.csproj"
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o "$env:GITHUB_WORKSPACE\v2\artifacts\updater"
+
+      - name: Upload Launcher Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BnlCommunityFixes-win-x64
+          path: v2/artifacts/launcher/BnlCommunityFixes.exe
+
+      - name: Upload Updater Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BnlUpdater-win-x64
+          path: v2/artifacts/updater/BnlUpdater.exe

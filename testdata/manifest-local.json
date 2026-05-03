@@ -1,0 +1,22 @@
+﻿{
+    "product":  "BnlCommunityFixes",
+    "channel":  "stable",
+    "version":  "2.0.1",
+    "minimum_supported_version":  "2.0.0",
+    "published_at":  "2026-05-03T00:03:26.1634185+00:00",
+    "notes":  "Generated local update manifest.",
+    "assets":  {
+                   "launcher_exe":  {
+                                        "file_name":  "BnlCommunityFixes.Launcher.exe",
+                                        "url":  "file:///K:/BNL%20EXPORTED/v2/src/BnlCommunityFixes.Launcher/bin/Debug/net8.0-windows/BnlCommunityFixes.Launcher.exe",
+                                        "sha256":  "5FA6852133638887E1C37DF143C1BB7E513F9CD3AC8303EE9BFE196C54E8681B",
+                                        "size":  151552
+                                    },
+                   "updater_exe":  {
+                                       "file_name":  "BnlCommunityFixes.Updater.exe",
+                                       "url":  "file:///K:/BNL%20EXPORTED/v2/src/BnlCommunityFixes.Updater/bin/Debug/net8.0/BnlCommunityFixes.Updater.exe",
+                                       "sha256":  "FD2CC7AFE07D252720814AA032B5DB735D5204B92F5207608B17A0FEB5BFE1EE",
+                                       "size":  151552
+                                   }
+               }
+}
