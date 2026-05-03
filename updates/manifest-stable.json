@@ -1,22 +1,22 @@
-﻿{
+{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.0.5",
+    "version":  "2.1.2",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-03T00:59:26.2022800+00:00",
-    "notes":  "# BNL Community Fixes v2.0.5\n\nMaintenance release for the `v2` GitHub contents manifest flow.\n\nIncluded in this release:\n\n- strips UTF-8 BOM markers from decoded manifest payloads\n- keeps the GitHub contents API manifest source introduced in `v2.0.4`\n- no change to updater swap behavior or release asset hosting\n\nImportant:\n\n- some GitHub contents responses decode to JSON text beginning with a BOM\n- `v2.0.5` handles that cleanly and restores successful manifest parsing\n",
+    "published_at":  "2026-05-03T12:02:54.4213147+00:00",
+    "notes":  "# BNL Community Fixes v2.1.2\n\nNew feature: Local Build Preview.\n\nIncluded in this release:\n\n- New **Build Preview** tab in Feature Settings\n- Blocks and devices appear on your screen immediately when placed, without waiting for server confirmation\n- Reduces the visual delay felt when switching weapons and tools\n- The server remains authoritative — incorrect placements revert automatically\n- Configurable prediction timeout (default 2 s)\n- Recommended only for players with high ping\n- More options button on the main launcher page groups secondary tools into a separate dialog",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.0.5/BnlCommunityFixes.exe",
-                                        "sha256":  "ECDA2677F4E22DBDD92DE79B367CF9CFB0452A5C6FDA1A313BA88DCA58F8DB09",
-                                        "size":  161942727
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.2/BnlCommunityFixes.exe",
+                                        "sha256":  "4256EFE9674D516972B4F17F5094178942D410F669116882C0F7476EDFF90A1A",
+                                        "size":  166813895
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.0.5/BnlUpdater.exe",
-                                       "sha256":  "0E64EE4E3409EB9DCB746DC1050F3ABB78CABBC79EBCBB99D0150920E47D6839",
-                                       "size":  67561202
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.2/BnlUpdater.exe",
+                                       "sha256":  "1EF2D20A304A8D311382C3A21E4712212E3E68A07841925431C5BE4545438676",
+                                       "size":  67607282
                                    }
                }
 }
