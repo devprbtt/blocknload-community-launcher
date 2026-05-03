@@ -48,7 +48,7 @@ Target repo:
 
 The launcher defaults to:
 
-- `https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/updates/manifest-stable.json`
+- `https://api.github.com/repos/devprbtt/blocknload-community-launcher/contents/updates/manifest-stable.json?ref=main`
 
 This can be overridden by:
 

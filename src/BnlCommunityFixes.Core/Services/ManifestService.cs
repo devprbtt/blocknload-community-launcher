@@ -1,5 +1,6 @@
-using System.Text.Json;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using BnlCommunityFixes.Core.Models;
 
 namespace BnlCommunityFixes.Core.Services;
@@ -75,10 +76,15 @@ public sealed class ManifestService
             NoStore = true
         };
         request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+        request.Headers.UserAgent.ParseAdd("BnlCommunityFixes/2.x");
+        request.Headers.Accept.ParseAdd("application/vnd.github+json");
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync(cancellationToken);
+        var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+        return TryExtractEmbeddedManifestJson(responseText, out var embeddedManifestJson)
+            ? embeddedManifestJson
+            : responseText;
     }
 
     private static bool TryResolveLocalSource(string url, out string localPath)
@@ -113,5 +119,45 @@ public sealed class ManifestService
             : $"{builder.Query.TrimStart('?')}&{cacheBuster}";
 
         return builder.Uri.ToString();
+    }
+
+    private static bool TryExtractEmbeddedManifestJson(string responseText, out string manifestJson)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(responseText);
+            var root = document.RootElement;
+
+            if (root.ValueKind != JsonValueKind.Object ||
+                !root.TryGetProperty("content", out var contentElement) ||
+                !root.TryGetProperty("encoding", out var encodingElement) ||
+                !string.Equals(encodingElement.GetString(), "base64", StringComparison.OrdinalIgnoreCase))
+            {
+                manifestJson = string.Empty;
+                return false;
+            }
+
+            var base64 = contentElement.GetString();
+            if (string.IsNullOrWhiteSpace(base64))
+            {
+                manifestJson = string.Empty;
+                return false;
+            }
+
+            var normalizedBase64 = base64.Replace("\n", string.Empty).Replace("\r", string.Empty);
+            var bytes = Convert.FromBase64String(normalizedBase64);
+            manifestJson = Encoding.UTF8.GetString(bytes);
+            return true;
+        }
+        catch (JsonException)
+        {
+            manifestJson = string.Empty;
+            return false;
+        }
+        catch (FormatException)
+        {
+            manifestJson = string.Empty;
+            return false;
+        }
     }
 }
