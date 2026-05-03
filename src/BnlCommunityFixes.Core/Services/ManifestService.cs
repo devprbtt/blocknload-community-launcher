@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Net.Http.Headers;
 using BnlCommunityFixes.Core.Models;
 
 namespace BnlCommunityFixes.Core.Services;
@@ -67,7 +68,17 @@ public sealed class ManifestService
             return await File.ReadAllTextAsync(localPath, cancellationToken);
         }
 
-        return await httpClient.GetStringAsync(manifestUrl, cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, AppendCacheBustingQuery(manifestUrl));
+        request.Headers.CacheControl = new CacheControlHeaderValue
+        {
+            NoCache = true,
+            NoStore = true
+        };
+        request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
     private static bool TryResolveLocalSource(string url, out string localPath)
@@ -86,5 +97,21 @@ public sealed class ManifestService
 
         localPath = string.Empty;
         return false;
+    }
+
+    private static string AppendCacheBustingQuery(string manifestUrl)
+    {
+        if (!Uri.TryCreate(manifestUrl, UriKind.Absolute, out var uri))
+        {
+            return manifestUrl;
+        }
+
+        var builder = new UriBuilder(uri);
+        var cacheBuster = $"bnlcb={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+        builder.Query = string.IsNullOrWhiteSpace(builder.Query)
+            ? cacheBuster
+            : $"{builder.Query.TrimStart('?')}&{cacheBuster}";
+
+        return builder.Uri.ToString();
     }
 }
