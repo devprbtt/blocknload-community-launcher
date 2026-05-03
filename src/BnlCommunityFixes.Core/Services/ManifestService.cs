@@ -146,7 +146,7 @@ public sealed class ManifestService
 
             var normalizedBase64 = base64.Replace("\n", string.Empty).Replace("\r", string.Empty);
             var bytes = Convert.FromBase64String(normalizedBase64);
-            manifestJson = Encoding.UTF8.GetString(bytes);
+            manifestJson = Encoding.UTF8.GetString(bytes).TrimStart('\uFEFF');
             return true;
         }
         catch (JsonException)
