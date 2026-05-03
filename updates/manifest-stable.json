@@ -1,22 +1,22 @@
 {
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.1.3",
+    "version":  "2.1.4",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-03T13:18:34.2711164+00:00",
-    "notes":  "# BNL Community Fixes v2.1.3\n\nBug fix release.\n\n- Fixed: old config.json files with trailing commas in JSON arrays (from v1.9) caused a repeated parse error in the launcher log. The launcher already handled this gracefully (it continued working), but the error is now suppressed.",
+    "published_at":  "2026-05-03T14:01:37.0037342+00:00",
+    "notes":  "# BNL Community Fixes v2.1.4\n\nBug fix release.\n\n- When Feature Settings are enabled and .NET Framework 3.5 is not installed, the launcher now shows a clear message explaining what to install and how, instead of a generic build error.",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.3/BnlCommunityFixes.exe",
-                                        "sha256":  "E89142607EE0C98E9C616D6570935C0509AF43E268A0B8BDC34544F857646A03",
-                                        "size":  166813895
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.4/BnlCommunityFixes.exe",
+                                        "sha256":  "AF59DF298ABA14742EB16C758A4E3B1C2BD770CBC6A9345D3402178663D35CF4",
+                                        "size":  166814919
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.3/BnlUpdater.exe",
-                                       "sha256":  "01A2EF12B0FDFE9E6E547D8F4E1E893F15AB3085B61A225FC7AA4E741D41860C",
-                                       "size":  67607282
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.4/BnlUpdater.exe",
+                                       "sha256":  "D9E7F163EC71E9643F1327E13BDE43DCA1143A24AB296D1A42B45D2D268F74AE",
+                                       "size":  67608306
                                    }
                }
 }
