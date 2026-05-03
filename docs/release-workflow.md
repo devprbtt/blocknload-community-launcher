@@ -45,7 +45,7 @@ The generated manifest already points to:
 
 Recommended GitHub-hosted path:
 
-- `https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/v2/updates/manifest-stable.json`
+- `https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/updates/manifest-stable.json`
 
 The launcher should point to the stable manifest URL, not to the GitHub "latest release" page.
 
@@ -59,7 +59,7 @@ To promote a generated manifest into the repo-hosted path:
 
 Then commit and push:
 
-- `v2/updates/manifest-stable.json`
+- `updates/manifest-stable.json`
 
 ## Channels
 
@@ -86,6 +86,6 @@ Example launcher settings file:
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "manifestUrl": "https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/v2/updates/manifest-stable.json"
+  "manifestUrl": "https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/updates/manifest-stable.json"
 }
 ```

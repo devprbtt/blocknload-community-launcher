@@ -27,7 +27,7 @@ public sealed class SettingsService
 
         if (string.IsNullOrWhiteSpace(settings.ManifestUrl))
         {
-            settings.ManifestUrl = "https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/v2/updates/manifest-stable.json";
+            settings.ManifestUrl = "https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/updates/manifest-stable.json";
         }
 
         return settings;

@@ -7,20 +7,20 @@ Use this for the first real `v2.0.0` release on:
 ## Before Push
 
 1. Make sure the repo contains:
-   - `v2/src`
-   - `v2/tools`
-   - `v2/updates`
-   - `v2/docs`
-2. Make sure `v2/updates/manifest-stable.json` is still the placeholder template, not a sample manifest from a local test.
+   - `src`
+   - `tools`
+   - `updates`
+   - `docs`
+2. Make sure `updates/manifest-stable.json` is still the placeholder template, not a sample manifest from a local test.
 3. Make sure the default manifest URL is correct:
-   - `https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/v2/updates/manifest-stable.json`
+   - `https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/updates/manifest-stable.json`
 
 ## First Push
 
 1. Push the repository contents to GitHub.
 2. Confirm these URLs load publicly:
    - repo root
-   - `v2/updates/manifest-stable.json`
+   - `updates/manifest-stable.json`
 
 ## Build Release Artifacts
 
@@ -62,7 +62,7 @@ Run:
 
 Then commit and push:
 
-- `v2/updates/manifest-stable.json`
+- `updates/manifest-stable.json`
 
 ## Validate
 

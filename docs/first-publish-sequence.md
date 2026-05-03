@@ -54,7 +54,7 @@ Push to `main`.
 
 Open:
 
-- `https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/v2/updates/manifest-stable.json`
+- `https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/updates/manifest-stable.json`
 
 Confirm:
 
@@ -66,7 +66,7 @@ Confirm:
 
 The launcher default manifest URL is:
 
-- `https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/v2/updates/manifest-stable.json`
+- `https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/updates/manifest-stable.json`
 
 That means a fresh `v2` launcher install will check that path automatically unless overridden by:
 
