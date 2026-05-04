@@ -1,20 +1,20 @@
 ﻿{
     "version":  "2.1.12",
-    "published_at":  "2026-05-04T12:15:00.0000000-03:00",
+    "published_at":  "2026-05-04T12:43:42.4603808-03:00",
     "channel":  "stable",
     "product":  "BnlCommunityFixes",
     "assets":  {
                    "launcher_exe":  {
                                         "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlCommunityFixes.exe",
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "sha256":  "B21E040ACB96A0E0A7F70554E660E8DE3736C2D834BB8662D689F274763F86BE",
-                                        "size":  162649289
+                                        "sha256":  "2B59CDA86FF604569D8F328D013CE72D88903DD56562A184D33A864CEFF7E88C",
+                                        "size":  152576
                                     },
                    "updater_exe":  {
                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlUpdater.exe",
                                        "file_name":  "BnlUpdater.exe",
-                                       "sha256":  "38E781E5FEBFEF16368CD7DEF8629DF7B3DC21EF309B2FE07F25E840F801DC89",
-                                       "size":  67608313
+                                       "sha256":  "4F28D4F613369D899368FB7A19185A332AB767CC841544AF727F30379927B123",
+                                       "size":  151552
                                    }
                },
     "minimum_supported_version":  "1.9.0",
