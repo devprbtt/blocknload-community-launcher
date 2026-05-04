@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <None Include="launcher-icon.ico" />
+    <EmbeddedResource Include="game-icon.ico" />
   </ItemGroup>
 
 </Project>

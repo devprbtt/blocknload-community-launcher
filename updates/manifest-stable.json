@@ -1,21 +1,21 @@
 ﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.1.7",
+    "version":  "2.1.8",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-04T05:19:57.5821610+00:00",
-    "notes":  "Update prompt now shows release notes before installing.",
+    "published_at":  "2026-05-04T05:27:40.9703299+00:00",
+    "notes":  "Launch button now shows the Block N Load game icon.",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.7/BnlCommunityFixes.exe",
-                                        "sha256":  "09868C0163F98A4FF29BB1B709C464EA6F27EFB0036D00084A34DD7B207FDEE2",
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.8/BnlCommunityFixes.exe",
+                                        "sha256":  "18A5D8A88BE221ED9005144AD103DD83F1C879965660F2936650D9DACBE6A912",
                                         "size":  162047175
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.7/BnlUpdater.exe",
-                                       "sha256":  "C335B2771D6C8A25195C3332AE958BFAACEB7DC17AAECF19F71731B1C72F6C79",
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.8/BnlUpdater.exe",
+                                       "sha256":  "F4EF5A4046EC9A2D68DE876A6D9CB49C819DCB5DE1748B393502E1DFAC4D21D8",
                                        "size":  67608306
                                    }
                }
