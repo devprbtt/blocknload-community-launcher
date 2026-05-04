@@ -4,18 +4,18 @@
     "channel":  "stable",
     "product":  "BnlCommunityFixes",
     "assets":  {
-                   "launcher_exe":  {
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlCommunityFixes.exe",
-                                        "file_name":  "BnlCommunityFixes.exe",
-                                        "sha256":  "2B59CDA86FF604569D8F328D013CE72D88903DD56562A184D33A864CEFF7E88C",
-                                        "size":  152576
-                                    },
-                   "updater_exe":  {
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlUpdater.exe",
-                                       "file_name":  "BnlUpdater.exe",
-                                       "sha256":  "4F28D4F613369D899368FB7A19185A332AB767CC841544AF727F30379927B123",
-                                       "size":  151552
-                                   }
+                    "launcher_exe": {
+                      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlCommunityFixes.exe",
+                      "file_name": "BnlCommunityFixes.exe",
+                      "sha256": "b21e040acb96a0e0a7f70554e660e8de3736c2d834bb8662d689f274763f86be",
+                      "size": 162649289
+                    },
+                    "updater_exe": {
+                      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlUpdater.exe",
+                      "file_name": "BnlUpdater.exe",
+                      "sha256": "38e781e5febfef16368cd7def8629df7b3dc21ef309b2fe07f25e840f801dc89",
+                      "size": 67608313
+                    }
                },
     "minimum_supported_version":  "1.9.0",
     "notes":  "Partial fix for FPS lag: resolved reflection error spam (16K+ MissingMethodException). Remaining TypeLoadException in damage indicators under investigation. Added validation to prevent null method references in IL patching."
