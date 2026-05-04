@@ -3391,12 +3391,16 @@ if ($AimHealthbarConfig.enabled) {
         $AvailIl.InsertBefore($FirstInstr, $instr)
     }
 
-    # --- Patch AlphaUpdate(): at the top, if showNameByCrosshair jump to the existing "set alpha=1" block ---
-    # AlphaUpdate already calls set_alpha on every path — one extra branch costs nothing.
-    # We jump to the existing IL_006b block (ldc.r4 1 / callvirt set_alpha / br end) rather than
-    # calling set_alpha a second time, so no extra canvas dirty calls are introduced.
+    # --- Patch AlphaUpdate(): at the top, if showNameByCrosshair set showTime=1 so the existing
+    # showTime>0 fade-in path keeps alpha at 1 each frame while aiming.
+    # Branching directly to set_alpha(1) was insufficient — the next frame showTime=0 triggered
+    # the fade-out path and overwrote alpha back to 0.
     $ShowNameByCrosshairField = $GuiHealthbarType.Fields | Where-Object Name -eq "showNameByCrosshair" | Select-Object -First 1
     $ImportedShowNameField = $Module.ImportReference($ShowNameByCrosshairField)
+
+    $ShowTimeField = $GuiHealthbarType.Fields | Where-Object Name -eq "showTime" | Select-Object -First 1
+    if (-not $ShowTimeField) { throw "GuiHealthbar.showTime field not found." }
+    $ImportedShowTimeField = $Module.ImportReference($ShowTimeField)
 
     $AlphaUpdateMethod = $GuiHealthbarType.Methods | Where-Object Name -eq "AlphaUpdate" | Select-Object -First 1
     if (-not $AlphaUpdateMethod -or -not $AlphaUpdateMethod.HasBody) { throw "GuiHealthbar.AlphaUpdate not found." }
@@ -3404,31 +3408,22 @@ if ($AimHealthbarConfig.enabled) {
     $AlphaInstrs = @($AlphaUpdateMethod.Body.Instructions)
     $AlphaFirstInstr = $AlphaInstrs | Select-Object -First 1
 
-    # Find the "ldc.r4 1 / callvirt set_alpha" block that corresponds to IL_0071/IL_0076 in original.
-    # It's the first set_alpha call preceded by ldc.r4 1.
-    # Find the ldarg.0 that starts the "load Content / ldc.r4 1 / set_alpha" sequence.
-    # Pattern: [i] ldarg.0, [i+1] ldfld Content, [i+2] ldc.r4 1, [i+3] callvirt set_alpha
-    $SetAlphaOneInstr = $null
-    for ($ai = 0; $ai -lt ($AlphaInstrs.Count - 3); $ai++) {
-        $a0 = $AlphaInstrs[$ai]
-        $a1 = $AlphaInstrs[$ai + 1]
-        $a2 = $AlphaInstrs[$ai + 2]
-        $a3 = $AlphaInstrs[$ai + 3]
-        if ($a0.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Ldarg_0 -and
-            $a1.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Ldfld -and $a1.Operand.Name -eq "Content" -and
-            $a2.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Ldc_R4 -and [single]$a2.Operand -eq [single]1.0 -and
-            $a3.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Callvirt -and $a3.Operand.Name -eq "set_alpha") {
-            $SetAlphaOneInstr = $a0  # branch to ldarg.0 so the full sequence runs
-            break
-        }
-    }
-    if (-not $SetAlphaOneInstr) { throw "Could not find ldarg.0/ldfld Content/ldc.r4 1/set_alpha block in AlphaUpdate." }
-
-    $BranchToSetAlpha1 = $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Brtrue_S, $SetAlphaOneInstr)
+    # Inject at top:
+    #   ldarg.0
+    #   ldfld showNameByCrosshair
+    #   brfalse.s ORIGINAL          (skip if not aiming)
+    #   ldarg.0
+    #   ldc.r4 1.0
+    #   stfld showTime              (keep showTime positive so fade-in path runs)
+    # ORIGINAL: (existing method body)
+    $BranchToOriginal = $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $AlphaFirstInstr)
 
     $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
     $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Ldfld, $ImportedShowNameField))
-    $AlphaIl.InsertBefore($AlphaFirstInstr, $BranchToSetAlpha1)
+    $AlphaIl.InsertBefore($AlphaFirstInstr, $BranchToOriginal)
+    $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+    $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]1.0))
+    $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Stfld, $ImportedShowTimeField))
 }
 
 $Assembly.Write($OutputPath)
