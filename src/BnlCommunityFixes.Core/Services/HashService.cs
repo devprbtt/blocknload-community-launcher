@@ -17,4 +17,20 @@ public static class HashService
         var actual = await ComputeSha256Async(filePath, cancellationToken);
         return string.Equals(actual, expectedSha256, StringComparison.OrdinalIgnoreCase);
     }
+
+    public static string ComputeSha1(string filePath)
+    {
+        using var stream = File.OpenRead(filePath);
+        using var sha1 = SHA1.Create();
+        var hash = sha1.ComputeHash(stream);
+        return Convert.ToHexString(hash);
+    }
+
+    public static async Task<string> ComputeSha1Async(string filePath, CancellationToken cancellationToken = default)
+    {
+        await using var stream = File.OpenRead(filePath);
+        using var sha1 = SHA1.Create();
+        var hash = await sha1.ComputeHashAsync(stream, cancellationToken);
+        return Convert.ToHexString(hash);
+    }
 }

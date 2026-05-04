@@ -19,6 +19,8 @@ public sealed class AppPaths
     public string UpdaterPendingPath => Path.Combine(UpdatesDir, "BnlUpdater.pending.exe");
     public string LauncherLogPath => Path.Combine(LogsDir, "launcher.log");
     public string UpdaterLogPath => Path.Combine(LogsDir, "updater.log");
+    public string PatchingDir => Path.Combine(InstallRoot, "patching");
+    public string PresetsFilePath => Path.Combine(DataDir, "presets.json");
 
     public AppPaths()
     {
@@ -38,6 +40,7 @@ public sealed class AppPaths
         Directory.CreateDirectory(UpdatesDir);
         Directory.CreateDirectory(LogsDir);
         Directory.CreateDirectory(BackupDir);
+        Directory.CreateDirectory(PatchingDir);
     }
 
     private static string ResolveInstallRoot()
