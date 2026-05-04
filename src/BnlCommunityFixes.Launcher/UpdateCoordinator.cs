@@ -45,13 +45,9 @@ public sealed class UpdateCoordinator
                 return result;
             }
 
-            var promptText = result.ForcedUpdate
-                ? $"Version {manifest.Version} is required to continue. Install now?"
-                : $"Version {manifest.Version} is available. Install now?";
-
             var accepted = runtimeOptions.HeadlessSmokeTest
                 ? true
-                : ShowPrompt(promptText, result.ForcedUpdate);
+                : PatchNotesForm.Show(manifest, result.ForcedUpdate);
             if (!accepted)
             {
                 return result;
@@ -74,17 +70,6 @@ public sealed class UpdateCoordinator
                 MessageBoxIcon.Warning);
             return result;
         }
-    }
-
-    private static bool ShowPrompt(string promptText, bool forcedUpdate)
-    {
-        var promptResult = MessageBox.Show(
-            promptText,
-            "BNL Community Fixes Update",
-            forcedUpdate ? MessageBoxButtons.OKCancel : MessageBoxButtons.YesNo,
-            MessageBoxIcon.Information);
-
-        return forcedUpdate ? promptResult == DialogResult.OK : promptResult == DialogResult.Yes;
     }
 
     private async Task DownloadAssetsAsync(UpdateManifest manifest, CancellationToken cancellationToken)
