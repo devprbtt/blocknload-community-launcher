@@ -18,5 +18,5 @@
                                    }
                },
     "minimum_supported_version":  "1.9.0",
-    "notes":  "Fixed update progress bar not updating while downloading."
+    "notes":  "Fixed update progress bar not updating while downloading./n #Known bug: fps locked at 30 when playing on the testing custom map. Other maps seem to be normal."
 }
