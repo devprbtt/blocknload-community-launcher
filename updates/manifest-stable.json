@@ -1,22 +1,22 @@
 ﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.1.4",
+    "version":  "2.1.6",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-04T01:18:43.2731001+00:00",
-    "notes":  "",
+    "published_at":  "2026-05-04T05:13:46.1205393+00:00",
+    "notes":  "Added aim healthbar: enemy health bar now shows when your crosshair is aimed at them, even before they take damage.",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.4/BnlCommunityFixes.exe",
-                                        "sha256":  "A725B41EBA032F009A4883B7C3C367BD76AFAF3ED8113B0073BD477010B0B39A",
-                                        "size":  162046663
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.6/BnlCommunityFixes.exe",
+                                        "sha256":  "EF7B79E60057B4983C0D8364A282B88651E40ECA82E754BB59F7A10BC0E925D1",
+                                        "size":  162047175
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.4/BnlUpdater.exe",
-                                       "sha256":  "9CD962E8ACBCAC2FEF5E95C080FCA80488A2A4D193111FFBE7F69A56A80B2CB0",
-                                       "size":  67607794
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.6/BnlUpdater.exe",
+                                       "sha256":  "6FEA52202D5A0A02A7EDE797E0F2CE1BA281601801F92CF424035736B82F18F4",
+                                       "size":  67608306
                                    }
                }
 }

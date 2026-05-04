@@ -50,6 +50,9 @@ public sealed class FeatureSettingsService
     public LocalBuildPreviewSettings LoadLocalBuildPreviewSettings() => Load("experimental-local-build-preview-config.json", new LocalBuildPreviewSettings());
     public void SaveLocalBuildPreviewSettings(LocalBuildPreviewSettings settings) => Save("experimental-local-build-preview-config.json", settings);
 
+    public AimHealthbarSettings LoadAimHealthbarSettings() => Load("aim-healthbar-config.json", new AimHealthbarSettings());
+    public void SaveAimHealthbarSettings(AimHealthbarSettings settings) => Save("aim-healthbar-config.json", settings);
+
     private T Load<T>(string fileName, T fallback) where T : class
     {
         var path = Path.Combine(paths.PatchingDir, fileName);

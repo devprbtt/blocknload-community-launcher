@@ -14,7 +14,8 @@ public sealed class ExperimentalAssemblyBuildService
         "experimental-font-config.json",
         "heal-alert-indicator-config.json",
         "experimental-base-objective-beam-config.json",
-        "experimental-enemy-shield-buffbar-config.json"
+        "experimental-enemy-shield-buffbar-config.json",
+        "aim-healthbar-config.json"
     ];
 
     private readonly AppPaths paths;

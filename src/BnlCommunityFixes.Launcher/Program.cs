@@ -45,8 +45,14 @@ internal static class Program
                 return;
             }
 
-            // Launch the main UI
-            Application.Run(new LauncherMainForm());
+            // Prepare runtime services and launch the main UI
+            var installService = new BlockNLoadInstallService();
+            var installInfo = installService.Detect(settings);
+
+            var launcherConfigService = new LauncherConfigService();
+            var launcherConfig = launcherConfigService.LoadOrCreate(installInfo, logger);
+
+            Application.Run(new LauncherMainForm(paths, logger, settings, installInfo, launcherConfig));
         }
         catch (Exception exception)
         {
