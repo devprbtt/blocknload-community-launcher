@@ -45,11 +45,8 @@ internal static class Program
                 return;
             }
 
-            MessageBox.Show(
-                "Launcher skeleton is installed and the update path compiled successfully.",
-                "BNL Community Fixes V2",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            // Launch the main UI
+            Application.Run(new LauncherMainForm());
         }
         catch (Exception exception)
         {
