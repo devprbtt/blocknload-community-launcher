@@ -23,10 +23,7 @@ public partial class ProgressDialog : Form
             {
                 Invoke(new Action(() => SetProgress(percent, status)));
             }
-            catch (ObjectDisposedException)
-            {
-                // Silently ignore if disposed between check and invoke
-            }
+            catch (ObjectDisposedException) { }
             return;
         }
 

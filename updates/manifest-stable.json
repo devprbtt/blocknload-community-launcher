@@ -1,22 +1,22 @@
 ﻿{
-    "product":  "BnlCommunityFixes",
+    "version":  "2.1.10",
+    "published_at":  "2026-05-04T09:47:21.4463532-03:00",
     "channel":  "stable",
-    "version":  "2.1.9",
-    "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-04T05:48:06.3753030+00:00",
-    "notes":  "Fixed update progress bar freezing after clicking Install.",
+    "product":  "BnlCommunityFixes",
     "assets":  {
                    "launcher_exe":  {
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.10/BnlCommunityFixes.exe",
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.9/BnlCommunityFixes.exe",
-                                        "sha256":  "632AF1BC6564B3B12EA52AE2A73013F26E5520F6E579A532DFA0F3D39758C87C",
-                                        "size":  162047175
+                                        "sha256":  "0A0A9FCFEA937FC81CF34BDCA8F1DBC13EABF1FA930DDCFB2E5EA32774BE1D97",
+                                        "size":  162051273
                                     },
                    "updater_exe":  {
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.10/BnlUpdater.exe",
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.9/BnlUpdater.exe",
-                                       "sha256":  "710B43C70E96FE68075DB16EEE17F57B2C093ECDC29A119801901BE000C60EA8",
+                                       "sha256":  "C3DEE7B360D6A0788DF5F0746F2511AC3A4A2012CCF59566BA16629F84041541",
                                        "size":  67608306
                                    }
-               }
+               },
+    "minimum_supported_version":  "1.9.0",
+    "notes":  "Fixed update progress bar not updating while downloading."
 }

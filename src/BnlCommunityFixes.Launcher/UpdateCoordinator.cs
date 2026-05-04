@@ -53,23 +53,14 @@ public sealed class UpdateCoordinator
                 return result;
             }
 
-            // Create and show the progress dialog on the UI thread before any awaits.
-            ProgressDialog? progressDialog = null;
-            if (!runtimeOptions.HeadlessSmokeTest)
+            if (runtimeOptions.HeadlessSmokeTest)
             {
-                progressDialog = new ProgressDialog("BNL Community Fixes Update");
-                progressDialog.Show();
-            }
-
-            try
-            {
-                await DownloadAssetsAsync(manifest, progressDialog, cancellationToken);
+                await DownloadAssetsAsync(manifest, null, cancellationToken);
                 await VerifyAssetsAsync(manifest, cancellationToken);
             }
-            finally
+            else
             {
-                progressDialog?.Close();
-                progressDialog?.Dispose();
+                await RunWithProgressDialogAsync(manifest, cancellationToken);
             }
 
             LaunchUpdater(manifest);
@@ -87,6 +78,34 @@ public sealed class UpdateCoordinator
                 MessageBoxIcon.Warning);
             return result;
         }
+    }
+
+    private async Task RunWithProgressDialogAsync(UpdateManifest manifest, CancellationToken cancellationToken)
+    {
+        var progressDialog = new ProgressDialog("BNL Community Fixes Update");
+        Exception? downloadException = null;
+
+        progressDialog.Load += async (_, _) =>
+        {
+            try
+            {
+                await DownloadAssetsAsync(manifest, progressDialog, cancellationToken);
+                await VerifyAssetsAsync(manifest, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                downloadException = ex;
+            }
+            finally
+            {
+                progressDialog.Close();
+            }
+        };
+
+        Application.Run(progressDialog);
+
+        if (downloadException != null)
+            throw downloadException;
     }
 
     private async Task DownloadAssetsAsync(UpdateManifest manifest, ProgressDialog? progressDialog, CancellationToken cancellationToken)
