@@ -1,0 +1,939 @@
+using System.Drawing;
+using System.Drawing.Text;
+using System.Text.RegularExpressions;
+using System.Windows.Forms;
+using BnlCommunityFixes.Core.Models;
+using BnlCommunityFixes.Core.Services;
+
+namespace BnlCommunityFixes.Launcher;
+
+public sealed class FeatureSettingsForm : Form
+{
+    private readonly FeatureSettingsService featureSettingsService;
+    private readonly FeaturePresetsService presetsService;
+
+    private readonly CheckBox crosshairEnabledCheckBox;
+    private readonly TextBox crosshairIdleColorTextBox;
+    private readonly TextBox crosshairFullDamageColorTextBox;
+    private readonly TextBox crosshairBelowMaxColorTextBox;
+    private readonly NumericUpDown crosshairBrightnessNumeric;
+    private readonly NumericUpDown crosshairSizeNumeric;
+    private readonly NumericUpDown crosshairSpreadNumeric;
+    private readonly NumericUpDown crosshairAlphaNumeric;
+    private readonly ComboBox crosshairShapeComboBox;
+    private readonly CheckBox crosshairShowInAdsCheckBox;
+    private readonly CheckBox crosshairHideCheckBox;
+
+    private readonly CheckBox fovEnabledCheckBox;
+    private readonly NumericUpDown fovNumeric;
+    private readonly NumericUpDown adsSensitivityNumeric;
+    private readonly NumericUpDown weaponModelFovNumeric;
+
+    private readonly CheckBox teamColorsEnabledCheckBox;
+    private readonly TextBox friendlyColorTextBox;
+    private readonly TextBox enemyColorTextBox;
+
+    private readonly CheckBox fontEnabledCheckBox;
+    private readonly ComboBox fontNameComboBox;
+    private readonly ComboBox fontStyleComboBox;
+    private readonly NumericUpDown fontSizeNumeric;
+    private readonly NumericUpDown fontSpacingNumeric;
+
+    private readonly CheckBox damageHealingEnabledCheckBox;
+    private readonly TextBox damageColorTextBox;
+    private readonly TextBox critDamageColorTextBox;
+    private readonly TextBox healColorTextBox;
+    private readonly NumericUpDown damageSizeNumeric;
+    private readonly NumericUpDown healSizeNumeric;
+    private readonly NumericUpDown damageAlphaNumeric;
+    private readonly NumericUpDown minimumHealNumeric;
+    private readonly CheckBox showFriendlyHealingCheckBox;
+    private readonly CheckBox showSelfHealingCheckBox;
+    private readonly CheckBox combineDamageCheckBox;
+    private readonly CheckBox combineHealingCheckBox;
+
+    private readonly CheckBox healAlertEnabledCheckBox;
+    private readonly TextBox healAlertDamageColorTextBox;
+    private readonly TextBox healAlertHealColorTextBox;
+    private readonly NumericUpDown healAlertDamageSizeNumeric;
+    private readonly NumericUpDown healAlertHealSizeNumeric;
+    private readonly NumericUpDown healAlertAlphaNumeric;
+    private readonly NumericUpDown healAlertMinimumHealNumeric;
+    private readonly CheckBox healDirectionCheckBox;
+
+    private readonly CheckBox objectiveBeamEnabledCheckBox;
+
+    private readonly CheckBox shieldEnabledCheckBox;
+    private readonly TextBox shieldColorTextBox;
+    private readonly NumericUpDown shieldSizeNumeric;
+    private readonly NumericUpDown shieldOffsetXNumeric;
+    private readonly NumericUpDown shieldOffsetYNumeric;
+    private readonly ComboBox shieldDisplayModeComboBox;
+
+    private readonly CheckBox localBuildPreviewEnabledCheckBox;
+    private readonly NumericUpDown localBuildPreviewTimeoutNumeric;
+
+    private readonly CheckBox aimHealthbarEnabledCheckBox;
+
+    // Color field columns: each block is label+textbox(130)+gap(4)+button(44)+gap(4)+swatch(22) = 204px; 26px between columns
+    private const int ColA = 14;
+    private const int ColB = 244;
+    private const int ColC = 474;
+
+    // Numeric columns: step=180, width=150
+    private const int NumC1 = 14;
+    private const int NumC2 = 194;
+    private const int NumC3 = 374;
+    private const int NumC4 = 554;
+    private const int NumW = 150;
+
+    // Tab layout rows (shifted down 60px vs original to fit description + preset bar)
+    private const int DescY       = 8;    // description label
+    private const int PresetCtrlY = 41;   // preset bar controls
+    private const int EnabledY    = 72;   // enabled checkbox
+    private const int ColorRow1Y  = 106;  // first color-field label row
+    private const int NumLabelY   = 170;  // numeric labels
+    private const int NumCtrlY    = 188;  // numeric controls
+    private const int ExtraLabelY = 242;  // extra label row (shape, display mode)
+    private const int ExtraCtrlY  = 260;  // extra controls row
+    private const int CheckRow1Y  = 238;  // first checkbox row (damage/healing, heal alerts)
+    private const int CheckRow2Y  = 266;  // second checkbox row
+
+    public FeatureSettingsForm(AppPaths paths)
+    {
+        featureSettingsService = new FeatureSettingsService(paths);
+        presetsService = new FeaturePresetsService(paths);
+
+        Text = "Feature Settings";
+        StartPosition = FormStartPosition.CenterParent;
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox = false;
+        MinimizeBox = false;
+        ClientSize = new Size(760, 560);
+
+        using var iconStream = typeof(FeatureSettingsForm).Assembly.GetManifestResourceStream("BnlCommunityFixes.Launcher.launcher-icon.ico");
+        if (iconStream != null) Icon = new Icon(iconStream);
+
+        var infoLabel = new Label
+        {
+            Text = "Settings are written into the local patching config files and rebuilt/applied on next launch.",
+            AutoSize = false,
+            Size = new Size(720, 20),
+            Location = new Point(20, 14)
+        };
+
+        var tabs = new TabControl
+        {
+            Location = new Point(20, 38),
+            Size = new Size(720, 462)
+        };
+
+        // --- Crosshair ---
+        var crosshairTab = new TabPage("Crosshair");
+        AddDescription(crosshairTab,
+            "Custom weapon reticle. Colors change by damage state: idle / at full damage range / beyond max range. " +
+            "Size x scales the whole reticle, spread x controls tightness, brightness x boosts RGB, alpha controls opacity.");
+        crosshairEnabledCheckBox        = NewCheckBox("Enabled", 14, EnabledY);
+        crosshairIdleColorTextBox       = NewColorField(crosshairTab, "Idle color",         ColA, ColorRow1Y);
+        crosshairFullDamageColorTextBox = NewColorField(crosshairTab, "Full damage color",  ColB, ColorRow1Y);
+        crosshairBelowMaxColorTextBox   = NewColorField(crosshairTab, "Below max color",    ColC, ColorRow1Y);
+        crosshairBrightnessNumeric = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.25M,  3, 2, 0.05M);
+        crosshairSizeNumeric       = NewDecimalNumeric(NumC2, NumCtrlY, NumW, 0.1M,   5, 2, 0.05M);
+        crosshairSpreadNumeric     = NewDecimalNumeric(NumC3, NumCtrlY, NumW, 0.1M,   5, 2, 0.05M);
+        crosshairAlphaNumeric      = NewDecimalNumeric(NumC4, NumCtrlY, NumW, 0.1M,   1, 2, 0.05M);
+        crosshairShapeComboBox     = NewComboBox(14, ExtraCtrlY, 210, "__DEFAULT__", "Dot", "Crosshair", "BrokenCircle", "Hashed", "HashedCrosshair", "Melee");
+        crosshairShowInAdsCheckBox = NewCheckBox("Force show in ADS", 250, ExtraCtrlY + 2);
+        crosshairHideCheckBox      = NewCheckBox("Hide crosshair",    440, ExtraCtrlY + 2);
+        var crosshairHintLabel = new Label
+        {
+            Text = "Spread x: lower = tighter, higher = wider.  Alpha = opacity.  Brightness x boosts RGB intensity.  Size x scales the whole reticle.",
+            AutoSize = false,
+            Size = new Size(688, 32),
+            Location = new Point(14, 298),
+            ForeColor = SystemColors.GrayText
+        };
+        crosshairTab.Controls.AddRange([
+            crosshairEnabledCheckBox,
+            NewLabel("Brightness", NumC1, NumLabelY), crosshairBrightnessNumeric,
+            NewLabel("Size",       NumC2, NumLabelY), crosshairSizeNumeric,
+            NewLabel("Spread",     NumC3, NumLabelY), crosshairSpreadNumeric,
+            NewLabel("Alpha",      NumC4, NumLabelY), crosshairAlphaNumeric,
+            NewLabel("Forced shape", 14, ExtraLabelY), crosshairShapeComboBox,
+            crosshairShowInAdsCheckBox,
+            crosshairHideCheckBox,
+            crosshairHintLabel
+        ]);
+        AddPresetBar<CrosshairSettings>(crosshairTab, "crosshair",
+            readFields: () => new CrosshairSettings
+            {
+                Enabled = crosshairEnabledCheckBox.Checked,
+                IdleColor = crosshairIdleColorTextBox.Text.Trim(),
+                FullDamageColor = crosshairFullDamageColorTextBox.Text.Trim(),
+                BelowMaxColor = crosshairBelowMaxColorTextBox.Text.Trim(),
+                BrightnessMultiplier = (double)crosshairBrightnessNumeric.Value,
+                SizeMultiplier = (double)crosshairSizeNumeric.Value,
+                SpreadMultiplier = (double)crosshairSpreadNumeric.Value,
+                Alpha = (double)crosshairAlphaNumeric.Value,
+                ForceShape = crosshairShapeComboBox.Text.Trim(),
+                ForceShowInAds = crosshairShowInAdsCheckBox.Checked,
+                HideCrosshair = crosshairHideCheckBox.Checked
+            },
+            applyFields: s =>
+            {
+                crosshairEnabledCheckBox.Checked = s.Enabled;
+                crosshairIdleColorTextBox.Text = s.IdleColor;
+                crosshairFullDamageColorTextBox.Text = s.FullDamageColor;
+                crosshairBelowMaxColorTextBox.Text = s.BelowMaxColor;
+                crosshairBrightnessNumeric.Value = ToDecimal(s.BrightnessMultiplier, crosshairBrightnessNumeric);
+                crosshairSizeNumeric.Value = ToDecimal(s.SizeMultiplier, crosshairSizeNumeric);
+                crosshairSpreadNumeric.Value = ToDecimal(s.SpreadMultiplier, crosshairSpreadNumeric);
+                crosshairAlphaNumeric.Value = ToDecimal(s.Alpha, crosshairAlphaNumeric);
+                crosshairShapeComboBox.Text = s.ForceShape;
+                crosshairShowInAdsCheckBox.Checked = s.ForceShowInAds;
+                crosshairHideCheckBox.Checked = s.HideCrosshair;
+            });
+
+        // --- FOV ---
+        var fovTab = new TabPage("FOV");
+        AddDescription(fovTab,
+            "Overrides the camera field of view and ADS sensitivity. Higher FOV gives a wider view at the cost of less zoom. " +
+            "Weapon model FOV controls how large the gun appears in first-person.");
+        fovEnabledCheckBox    = NewCheckBox("Enabled", 14, EnabledY);
+        fovNumeric            = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 1,   180, 1, 1);
+        adsSensitivityNumeric = NewDecimalNumeric(NumC2, NumCtrlY, NumW, 0,    10, 2, 0.05M);
+        weaponModelFovNumeric = NewDecimalNumeric(NumC3, NumCtrlY, NumW, 0,   180, 1, 1);
+        fovTab.Controls.AddRange([
+            fovEnabledCheckBox,
+            NewLabel("FOV",              NumC1, NumLabelY), fovNumeric,
+            NewLabel("ADS sensitivity",  NumC2, NumLabelY), adsSensitivityNumeric,
+            NewLabel("Weapon model FOV", NumC3, NumLabelY), weaponModelFovNumeric
+        ]);
+        AddPresetBar<FovSettings>(fovTab, "fov",
+            readFields: () => new FovSettings
+            {
+                Enabled = fovEnabledCheckBox.Checked,
+                Fov = (double)fovNumeric.Value,
+                AdsSensitivityMultiplier = (double)adsSensitivityNumeric.Value,
+                WeaponModelFov = (double)weaponModelFovNumeric.Value
+            },
+            applyFields: s =>
+            {
+                fovEnabledCheckBox.Checked = s.Enabled;
+                fovNumeric.Value = ToDecimal(s.Fov, fovNumeric);
+                adsSensitivityNumeric.Value = ToDecimal(s.AdsSensitivityMultiplier, adsSensitivityNumeric);
+                weaponModelFovNumeric.Value = ToDecimal(s.WeaponModelFov, weaponModelFovNumeric);
+            });
+
+        // --- Team Colors ---
+        var teamColorsTab = new TabPage("Team Colors");
+        AddDescription(teamColorsTab,
+            "Changes the color of friendly and enemy indicators — nameplates, health bars, hit effects. " +
+            "Use the preset buttons for colors from past community seasons, or pick your own.");
+        teamColorsEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        friendlyColorTextBox = NewColorField(teamColorsTab, "Friendly color", ColA, ColorRow1Y);
+        enemyColorTextBox    = NewColorField(teamColorsTab, "Enemy color",    ColB, ColorRow1Y);
+        var btnPresetBeta    = new Button { Text = "Beta",    Location = new Point(14,  173), Size = new Size(72, 23) };
+        var btnPresetClassic = new Button { Text = "Classic", Location = new Point(90,  173), Size = new Size(72, 23) };
+        var btnPresetDefault = new Button { Text = "Default", Location = new Point(166, 173), Size = new Size(72, 23) };
+        btnPresetBeta.Click    += (_, _) => { teamColorsEnabledCheckBox.Checked = true; friendlyColorTextBox.Text = "#0BA187"; enemyColorTextBox.Text = "#9138A5"; };
+        btnPresetClassic.Click += (_, _) => { teamColorsEnabledCheckBox.Checked = true; friendlyColorTextBox.Text = "#B4D0FB"; enemyColorTextBox.Text = "#D7373F"; };
+        btnPresetDefault.Click += (_, _) => { teamColorsEnabledCheckBox.Checked = true; friendlyColorTextBox.Text = "#4AA3FF"; enemyColorTextBox.Text = "#FF5A5A"; };
+        teamColorsTab.Controls.AddRange([
+            teamColorsEnabledCheckBox,
+            NewLabel("Season presets:", 14, 155),
+            btnPresetBeta, btnPresetClassic, btnPresetDefault
+        ]);
+        AddPresetBar<TeamColorSettings>(teamColorsTab, "teamColors",
+            readFields: () => new TeamColorSettings
+            {
+                Enabled = teamColorsEnabledCheckBox.Checked,
+                FriendlyColor = friendlyColorTextBox.Text.Trim(),
+                EnemyColor = enemyColorTextBox.Text.Trim()
+            },
+            applyFields: s =>
+            {
+                teamColorsEnabledCheckBox.Checked = s.Enabled;
+                friendlyColorTextBox.Text = s.FriendlyColor;
+                enemyColorTextBox.Text = s.EnemyColor;
+            });
+
+        // --- Font ---
+        var fontTab = new TabPage("Font");
+        AddDescription(fontTab,
+            "Replaces the in-game UI font with any installed system font. Use size and line spacing multipliers to compensate " +
+            "for size differences between fonts. BoldAndItalic may not work for all fonts.");
+        fontEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        fontNameComboBox    = NewComboBox(14,  128, 240, "__DEFAULT__");
+        fontNameComboBox.DropDownStyle = ComboBoxStyle.DropDown;
+        fontStyleComboBox   = NewComboBox(274, 128, 160, "Keep", "Normal", "Bold", "Italic", "BoldAndItalic");
+        fontSizeNumeric     = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.25M, 10, 2, 0.05M);
+        fontSpacingNumeric  = NewDecimalNumeric(NumC2, NumCtrlY, NumW, 0.25M, 10, 2, 0.05M);
+        fontTab.Controls.AddRange([
+            fontEnabledCheckBox,
+            NewLabel("Font name",       14,  110), fontNameComboBox,
+            NewLabel("Style",          274,  110), fontStyleComboBox,
+            NewLabel("Size multiplier", NumC1, NumLabelY), fontSizeNumeric,
+            NewLabel("Line spacing",    NumC2, NumLabelY), fontSpacingNumeric
+        ]);
+        AddPresetBar<FontSettings>(fontTab, "font",
+            readFields: () => new FontSettings
+            {
+                Enabled = fontEnabledCheckBox.Checked,
+                SelectedFont = fontNameComboBox.Text.Trim(),
+                FontStyle = fontStyleComboBox.Text.Trim(),
+                SizeMultiplier = (double)fontSizeNumeric.Value,
+                LineSpacingMultiplier = (double)fontSpacingNumeric.Value
+            },
+            applyFields: s =>
+            {
+                fontEnabledCheckBox.Checked = s.Enabled;
+                fontNameComboBox.Text = s.SelectedFont;
+                fontStyleComboBox.Text = s.FontStyle;
+                fontSizeNumeric.Value = ToDecimal(s.SizeMultiplier, fontSizeNumeric);
+                fontSpacingNumeric.Value = ToDecimal(s.LineSpacingMultiplier, fontSpacingNumeric);
+            });
+
+        // --- Damage/Healing ---
+        var damageTab = new TabPage("Damage/Healing");
+        AddDescription(damageTab,
+            "Customizes floating damage and heal numbers in combat. Combine options merge rapid-fire hits into one number until " +
+            "it fades. Minimum heal filters out heals below the set threshold.");
+        damageHealingEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        damageColorTextBox     = NewColorField(damageTab, "Damage color",      ColA, ColorRow1Y);
+        critDamageColorTextBox = NewColorField(damageTab, "Crit damage color", ColB, ColorRow1Y);
+        healColorTextBox       = NewColorField(damageTab, "Heal color",        ColC, ColorRow1Y);
+        damageSizeNumeric  = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.25M, 10,   2, 0.05M);
+        healSizeNumeric    = NewDecimalNumeric(NumC2, NumCtrlY, NumW, 0.25M, 10,   2, 0.05M);
+        damageAlphaNumeric = NewDecimalNumeric(NumC3, NumCtrlY, NumW, 0,      1,   2, 0.05M);
+        minimumHealNumeric = NewDecimalNumeric(NumC4, NumCtrlY, NumW, 0,   1000,   0, 1M);
+        showFriendlyHealingCheckBox = NewCheckBox("Show friendly healing", 14,  CheckRow1Y);
+        showSelfHealingCheckBox     = NewCheckBox("Show self healing",    214,  CheckRow1Y);
+        combineDamageCheckBox       = NewCheckBox("Combine damage",        14,  CheckRow2Y);
+        combineHealingCheckBox      = NewCheckBox("Combine healing",      214,  CheckRow2Y);
+        damageTab.Controls.AddRange([
+            damageHealingEnabledCheckBox,
+            NewLabel("Damage size",  NumC1, NumLabelY), damageSizeNumeric,
+            NewLabel("Heal size",    NumC2, NumLabelY), healSizeNumeric,
+            NewLabel("Alpha",        NumC3, NumLabelY), damageAlphaNumeric,
+            NewLabel("Minimum heal", NumC4, NumLabelY), minimumHealNumeric,
+            showFriendlyHealingCheckBox,
+            showSelfHealingCheckBox,
+            combineDamageCheckBox,
+            combineHealingCheckBox
+        ]);
+        AddPresetBar<DamageHealingSettings>(damageTab, "damage",
+            readFields: () => new DamageHealingSettings
+            {
+                Enabled = damageHealingEnabledCheckBox.Checked,
+                DamageNumberColor = damageColorTextBox.Text.Trim(),
+                CritDamageNumberColor = critDamageColorTextBox.Text.Trim(),
+                HealNumberColor = healColorTextBox.Text.Trim(),
+                DamageNumberSizeMultiplier = (double)damageSizeNumeric.Value,
+                HealNumberSizeMultiplier = (double)healSizeNumeric.Value,
+                Alpha = (double)damageAlphaNumeric.Value,
+                MinimumHeal = (double)minimumHealNumeric.Value,
+                ShowFriendlyHealing = showFriendlyHealingCheckBox.Checked,
+                ShowSelfHealing = showSelfHealingCheckBox.Checked,
+                CombineDamageUntilHidden = combineDamageCheckBox.Checked,
+                CombineHealingUntilHidden = combineHealingCheckBox.Checked
+            },
+            applyFields: s =>
+            {
+                damageHealingEnabledCheckBox.Checked = s.Enabled;
+                damageColorTextBox.Text = s.DamageNumberColor;
+                critDamageColorTextBox.Text = s.CritDamageNumberColor;
+                healColorTextBox.Text = s.HealNumberColor;
+                damageSizeNumeric.Value = ToDecimal(s.DamageNumberSizeMultiplier, damageSizeNumeric);
+                healSizeNumeric.Value = ToDecimal(s.HealNumberSizeMultiplier, healSizeNumeric);
+                damageAlphaNumeric.Value = ToDecimal(s.Alpha, damageAlphaNumeric);
+                minimumHealNumeric.Value = ToDecimal(s.MinimumHeal, minimumHealNumeric);
+                showFriendlyHealingCheckBox.Checked = s.ShowFriendlyHealing;
+                showSelfHealingCheckBox.Checked = s.ShowSelfHealing;
+                combineDamageCheckBox.Checked = s.CombineDamageUntilHidden;
+                combineHealingCheckBox.Checked = s.CombineHealingUntilHidden;
+            });
+
+        // --- Heal Alerts ---
+        var healAlertTab = new TabPage("Heal Alerts");
+        AddDescription(healAlertTab,
+            "Shows a directional indicator when a heal lands — separate from the floating numbers and larger in scale. " +
+            "Damage indicator color supports __DEFAULT__ to keep the game's built-in color.");
+        healAlertEnabledCheckBox    = NewCheckBox("Enabled", 14, EnabledY);
+        healAlertDamageColorTextBox = NewColorField(healAlertTab, "Damage indicator color", ColA, ColorRow1Y, allowDefaultToken: true);
+        healAlertHealColorTextBox   = NewColorField(healAlertTab, "Heal indicator color",   ColB, ColorRow1Y);
+        healAlertDamageSizeNumeric  = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.25M, 10,   2, 0.05M);
+        healAlertHealSizeNumeric    = NewDecimalNumeric(NumC2, NumCtrlY, NumW, 0.25M, 10,   2, 0.05M);
+        healAlertAlphaNumeric       = NewDecimalNumeric(NumC3, NumCtrlY, NumW, 0,      1,   2, 0.05M);
+        healAlertMinimumHealNumeric = NewDecimalNumeric(NumC4, NumCtrlY, NumW, 0,   1000,   0, 1M);
+        healDirectionCheckBox       = NewCheckBox("Show direction on heal", 14, CheckRow1Y);
+        healAlertTab.Controls.AddRange([
+            healAlertEnabledCheckBox,
+            NewLabel("Damage size",  NumC1, NumLabelY), healAlertDamageSizeNumeric,
+            NewLabel("Heal size",    NumC2, NumLabelY), healAlertHealSizeNumeric,
+            NewLabel("Alpha",        NumC3, NumLabelY), healAlertAlphaNumeric,
+            NewLabel("Minimum heal", NumC4, NumLabelY), healAlertMinimumHealNumeric,
+            healDirectionCheckBox
+        ]);
+        AddPresetBar<HealAlertSettings>(healAlertTab, "healAlert",
+            readFields: () => new HealAlertSettings
+            {
+                Enabled = healAlertEnabledCheckBox.Checked,
+                DamageIndicatorColor = healAlertDamageColorTextBox.Text.Trim(),
+                HealIndicatorColor = healAlertHealColorTextBox.Text.Trim(),
+                DamageIndicatorSizeMultiplier = (double)healAlertDamageSizeNumeric.Value,
+                HealIndicatorSizeMultiplier = (double)healAlertHealSizeNumeric.Value,
+                Alpha = (double)healAlertAlphaNumeric.Value,
+                MinimumHeal = (double)healAlertMinimumHealNumeric.Value,
+                ShowDirectionOnHeal = healDirectionCheckBox.Checked
+            },
+            applyFields: s =>
+            {
+                healAlertEnabledCheckBox.Checked = s.Enabled;
+                healAlertDamageColorTextBox.Text = s.DamageIndicatorColor;
+                healAlertHealColorTextBox.Text = s.HealIndicatorColor;
+                healAlertDamageSizeNumeric.Value = ToDecimal(s.DamageIndicatorSizeMultiplier, healAlertDamageSizeNumeric);
+                healAlertHealSizeNumeric.Value = ToDecimal(s.HealIndicatorSizeMultiplier, healAlertHealSizeNumeric);
+                healAlertAlphaNumeric.Value = ToDecimal(s.Alpha, healAlertAlphaNumeric);
+                healAlertMinimumHealNumeric.Value = ToDecimal(s.MinimumHeal, healAlertMinimumHealNumeric);
+                healDirectionCheckBox.Checked = s.ShowDirectionOnHeal;
+            });
+
+        // --- Objective Beam ---
+        var beamTab = new TabPage("Objective Beam");
+        AddDescription(beamTab,
+            "Adds a tall vertical beam above the capture objective so it is visible from anywhere on the map. " +
+            "No additional options — this is a simple enable/disable toggle.");
+        objectiveBeamEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        beamTab.Controls.Add(objectiveBeamEnabledCheckBox);
+        AddPresetBar<BaseObjectiveBeamSettings>(beamTab, "objectiveBeam",
+            readFields: () => new BaseObjectiveBeamSettings { Enabled = objectiveBeamEnabledCheckBox.Checked },
+            applyFields: s => { objectiveBeamEnabledCheckBox.Checked = s.Enabled; });
+
+        // --- Shield Timer ---
+        var shieldTab = new TabPage("Shield Timer");
+        AddDescription(shieldTab,
+            "Countdown timer for the shield buff bar. Circle mode draws a clock-style ring, numeric shows a number, off hides it. " +
+            "Offsets move the element relative to its default screen position.");
+        shieldEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        shieldColorTextBox    = NewColorField(shieldTab, "Timer color", ColA, ColorRow1Y);
+        shieldSizeNumeric     = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.25M, 10,   2, 0.05M);
+        shieldOffsetXNumeric  = NewDecimalNumeric(NumC2, NumCtrlY, NumW, -100, 100,   1, 1M);
+        shieldOffsetYNumeric  = NewDecimalNumeric(NumC3, NumCtrlY, NumW, -100, 100,   1, 1M);
+        shieldDisplayModeComboBox = NewComboBox(14, ExtraCtrlY, 180, "circle", "numeric", "off");
+        shieldTab.Controls.AddRange([
+            shieldEnabledCheckBox,
+            NewLabel("Size multiplier", NumC1, NumLabelY), shieldSizeNumeric,
+            NewLabel("Offset X",        NumC2, NumLabelY), shieldOffsetXNumeric,
+            NewLabel("Offset Y",        NumC3, NumLabelY), shieldOffsetYNumeric,
+            NewLabel("Display mode",    14,    ExtraLabelY), shieldDisplayModeComboBox
+        ]);
+        AddPresetBar<ShieldBuffBarSettings>(shieldTab, "shield",
+            readFields: () => new ShieldBuffBarSettings
+            {
+                Enabled = shieldEnabledCheckBox.Checked,
+                ShieldBuffBarColor = shieldColorTextBox.Text.Trim(),
+                ShieldClockSizeMultiplier = (double)shieldSizeNumeric.Value,
+                ShieldClockOffsetX = (double)shieldOffsetXNumeric.Value,
+                ShieldClockOffsetY = (double)shieldOffsetYNumeric.Value,
+                ShieldTimerDisplayMode = shieldDisplayModeComboBox.Text.Trim()
+            },
+            applyFields: s =>
+            {
+                shieldEnabledCheckBox.Checked = s.Enabled;
+                shieldColorTextBox.Text = s.ShieldBuffBarColor;
+                shieldSizeNumeric.Value = ToDecimal(s.ShieldClockSizeMultiplier, shieldSizeNumeric);
+                shieldOffsetXNumeric.Value = ToDecimal(s.ShieldClockOffsetX, shieldOffsetXNumeric);
+                shieldOffsetYNumeric.Value = ToDecimal(s.ShieldClockOffsetY, shieldOffsetYNumeric);
+                shieldDisplayModeComboBox.Text = s.ShieldTimerDisplayMode;
+            });
+
+        // --- Local Build Preview ---
+        var localBuildPreviewTab = new TabPage("Build Preview");
+        AddDescription(localBuildPreviewTab,
+            "Only enable if you have high ping. Blocks and devices appear on your screen immediately when placed, " +
+            "without waiting for server confirmation — eliminating the visual delay caused by network latency. " +
+            "The server remains authoritative: if it rejects a placement the local preview reverts. " +
+            "Also reduces the delay felt when switching weapons and tools. " +
+            "Timeout controls how long a local preview persists before being cleaned up if the server hasn't responded.");
+        localBuildPreviewEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        localBuildPreviewTimeoutNumeric  = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.25M, 10, 2, 0.25M);
+        localBuildPreviewTab.Controls.AddRange([
+            localBuildPreviewEnabledCheckBox,
+            NewLabel("Prediction timeout (s)", NumC1, NumLabelY), localBuildPreviewTimeoutNumeric
+        ]);
+        AddPresetBar<LocalBuildPreviewSettings>(localBuildPreviewTab, "localBuildPreview",
+            readFields: () => new LocalBuildPreviewSettings
+            {
+                Enabled = localBuildPreviewEnabledCheckBox.Checked,
+                PredictionTimeoutSeconds = (double)localBuildPreviewTimeoutNumeric.Value
+            },
+            applyFields: s =>
+            {
+                localBuildPreviewEnabledCheckBox.Checked = s.Enabled;
+                localBuildPreviewTimeoutNumeric.Value = ToDecimal(s.PredictionTimeoutSeconds, localBuildPreviewTimeoutNumeric);
+            });
+
+        // --- Aim Healthbar ---
+        var aimHealthbarTab = new TabPage("Aim Healthbar");
+        AddDescription(aimHealthbarTab,
+            "Shows the enemy health bar whenever your crosshair is aimed at them, even if they haven't taken damage yet.");
+        aimHealthbarEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        aimHealthbarTab.Controls.Add(aimHealthbarEnabledCheckBox);
+        AddPresetBar<AimHealthbarSettings>(aimHealthbarTab, "aimHealthbar",
+            readFields: () => new AimHealthbarSettings { Enabled = aimHealthbarEnabledCheckBox.Checked },
+            applyFields: s => { aimHealthbarEnabledCheckBox.Checked = s.Enabled; });
+
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab]);
+
+        var saveButton = new Button
+        {
+            Text = "Save",
+            Location = new Point(520, 512),
+            Size = new Size(100, 32)
+        };
+        saveButton.Click += (_, _) => SaveAndClose();
+
+        var cancelButton = new Button
+        {
+            Text = "Cancel",
+            Location = new Point(640, 512),
+            Size = new Size(100, 32)
+        };
+        cancelButton.Click += (_, _) => DialogResult = DialogResult.Cancel;
+
+        Controls.AddRange([infoLabel, tabs, saveButton, cancelButton]);
+        PopulateInstalledFonts();
+        LoadValues();
+    }
+
+    private static void AddDescription(TabPage tab, string text)
+    {
+        tab.Controls.Add(new Label
+        {
+            Text = text,
+            AutoSize = false,
+            Size = new Size(690, 30),
+            Location = new Point(14, DescY),
+            ForeColor = SystemColors.GrayText
+        });
+    }
+
+    private void AddPresetBar<T>(TabPage tab, string featureKey, Func<T> readFields, Action<T> applyFields)
+        where T : class, new()
+    {
+        var combo = new ComboBox
+        {
+            Location = new Point(72, PresetCtrlY),
+            Size = new Size(200, 23),
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+
+        var applyBtn  = new Button { Text = "Apply",   Location = new Point(276, PresetCtrlY), Size = new Size(60, 23), Enabled = false };
+        var saveAsBtn = new Button { Text = "Save As", Location = new Point(340, PresetCtrlY), Size = new Size(65, 23) };
+        var deleteBtn = new Button { Text = "Delete",  Location = new Point(409, PresetCtrlY), Size = new Size(60, 23), Enabled = false };
+
+        void RefreshCombo()
+        {
+            var selected = combo.SelectedItem?.ToString();
+            combo.Items.Clear();
+            foreach (var name in presetsService.Load<T>(featureKey).Keys)
+                combo.Items.Add(name);
+            if (selected != null && combo.Items.Contains(selected))
+                combo.SelectedItem = selected;
+        }
+
+        combo.SelectedIndexChanged += (_, _) =>
+        {
+            applyBtn.Enabled  = combo.SelectedIndex >= 0;
+            deleteBtn.Enabled = combo.SelectedIndex >= 0;
+        };
+
+        applyBtn.Click += (_, _) =>
+        {
+            if (combo.SelectedItem is not string name) return;
+            var presets = presetsService.Load<T>(featureKey);
+            if (presets.TryGetValue(name, out var settings))
+                applyFields(settings);
+        };
+
+        saveAsBtn.Click += (_, _) =>
+        {
+            var name = PromptText("Save Preset", "Enter a name for this preset:", combo.SelectedItem?.ToString() ?? "");
+            if (string.IsNullOrWhiteSpace(name)) return;
+            presetsService.Save(featureKey, name, readFields());
+            RefreshCombo();
+            combo.SelectedItem = name;
+        };
+
+        deleteBtn.Click += (_, _) =>
+        {
+            if (combo.SelectedItem is not string name) return;
+            if (MessageBox.Show($"Delete preset \"{name}\"?", "Feature Settings",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            presetsService.Delete(featureKey, name);
+            RefreshCombo();
+        };
+
+        tab.Controls.AddRange([
+            new Label { Text = "Presets:", AutoSize = true, Location = new Point(14, PresetCtrlY + 4) },
+            combo, applyBtn, saveAsBtn, deleteBtn
+        ]);
+
+        RefreshCombo();
+    }
+
+    private string? PromptText(string title, string prompt, string defaultValue = "")
+    {
+        using var form = new Form
+        {
+            Text = title,
+            StartPosition = FormStartPosition.CenterParent,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            ClientSize = new Size(360, 118)
+        };
+        var label   = new Label   { Text = prompt,        AutoSize = true,              Location = new Point(12, 12) };
+        var textBox = new TextBox { Text = defaultValue,  Size = new Size(336, 23),     Location = new Point(12, 36) };
+        var ok      = new Button  { Text = "OK",          DialogResult = DialogResult.OK,     Location = new Point(196, 76), Size = new Size(75, 26) };
+        var cancel  = new Button  { Text = "Cancel",      DialogResult = DialogResult.Cancel, Location = new Point(276, 76), Size = new Size(75, 26) };
+        form.Controls.AddRange([label, textBox, ok, cancel]);
+        form.AcceptButton = ok;
+        form.CancelButton = cancel;
+        return form.ShowDialog(this) == DialogResult.OK ? textBox.Text.Trim() : null;
+    }
+
+    // Creates label + textbox + picker button + color swatch as a unit inside parent.
+    // textbox is at (x, y+18); button at (x+134, y+18); swatch at (x+182, y+18).
+    // Total block width = 204px.
+    private TextBox NewColorField(Control parent, string labelText, int x, int y, bool allowDefaultToken = false)
+    {
+        parent.Controls.Add(new Label { Text = labelText, AutoSize = true, Location = new Point(x, y) });
+
+        var textBox = new TextBox
+        {
+            Location = new Point(x, y + 18),
+            Size = new Size(130, 23)
+        };
+
+        var swatch = new Panel
+        {
+            Location = new Point(x + 182, y + 18),
+            Size = new Size(22, 23),
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = SystemColors.Control
+        };
+
+        var button = new Button
+        {
+            Text = "...",
+            Location = new Point(x + 134, y + 18),
+            Size = new Size(44, 23)
+        };
+
+        void UpdateSwatch()
+        {
+            swatch.BackColor = TryParseColor(textBox.Text, allowDefaultToken, out var c)
+                ? c
+                : SystemColors.Control;
+        }
+
+        textBox.TextChanged += (_, _) => UpdateSwatch();
+
+        button.Click += (_, _) =>
+        {
+            using var dialog = new ColorDialog { FullOpen = true };
+            if (TryParseColor(textBox.Text, allowDefaultToken, out var current))
+                dialog.Color = current;
+            if (dialog.ShowDialog(parent.FindForm()) == DialogResult.OK)
+                textBox.Text = $"#{dialog.Color.R:X2}{dialog.Color.G:X2}{dialog.Color.B:X2}";
+        };
+
+        parent.Controls.AddRange([textBox, button, swatch]);
+        return textBox;
+    }
+
+    private void LoadValues()
+    {
+        var crosshair = featureSettingsService.LoadCrosshairSettings();
+        crosshairEnabledCheckBox.Checked = crosshair.Enabled;
+        crosshairIdleColorTextBox.Text = crosshair.IdleColor;
+        crosshairFullDamageColorTextBox.Text = crosshair.FullDamageColor;
+        crosshairBelowMaxColorTextBox.Text = crosshair.BelowMaxColor;
+        crosshairBrightnessNumeric.Value = ToDecimal(crosshair.BrightnessMultiplier, crosshairBrightnessNumeric);
+        crosshairSizeNumeric.Value = ToDecimal(crosshair.SizeMultiplier, crosshairSizeNumeric);
+        crosshairSpreadNumeric.Value = ToDecimal(crosshair.SpreadMultiplier, crosshairSpreadNumeric);
+        crosshairAlphaNumeric.Value = ToDecimal(crosshair.Alpha, crosshairAlphaNumeric);
+        crosshairShapeComboBox.Text = crosshair.ForceShape;
+        crosshairShowInAdsCheckBox.Checked = crosshair.ForceShowInAds;
+        crosshairHideCheckBox.Checked = crosshair.HideCrosshair;
+
+        var fov = featureSettingsService.LoadFovSettings();
+        fovEnabledCheckBox.Checked = fov.Enabled;
+        fovNumeric.Value = ToDecimal(fov.Fov, fovNumeric);
+        adsSensitivityNumeric.Value = ToDecimal(fov.AdsSensitivityMultiplier, adsSensitivityNumeric);
+        weaponModelFovNumeric.Value = ToDecimal(fov.WeaponModelFov, weaponModelFovNumeric);
+
+        var team = featureSettingsService.LoadTeamColorSettings();
+        teamColorsEnabledCheckBox.Checked = team.Enabled;
+        friendlyColorTextBox.Text = team.FriendlyColor;
+        enemyColorTextBox.Text = team.EnemyColor;
+
+        var font = featureSettingsService.LoadFontSettings();
+        fontEnabledCheckBox.Checked = font.Enabled;
+        fontNameComboBox.Text = font.SelectedFont;
+        fontStyleComboBox.Text = font.FontStyle;
+        fontSizeNumeric.Value = ToDecimal(font.SizeMultiplier, fontSizeNumeric);
+        fontSpacingNumeric.Value = ToDecimal(font.LineSpacingMultiplier, fontSpacingNumeric);
+
+        var damage = featureSettingsService.LoadDamageHealingSettings();
+        damageHealingEnabledCheckBox.Checked = damage.Enabled;
+        damageColorTextBox.Text = damage.DamageNumberColor;
+        critDamageColorTextBox.Text = damage.CritDamageNumberColor;
+        healColorTextBox.Text = damage.HealNumberColor;
+        damageSizeNumeric.Value = ToDecimal(damage.DamageNumberSizeMultiplier, damageSizeNumeric);
+        healSizeNumeric.Value = ToDecimal(damage.HealNumberSizeMultiplier, healSizeNumeric);
+        damageAlphaNumeric.Value = ToDecimal(damage.Alpha, damageAlphaNumeric);
+        minimumHealNumeric.Value = ToDecimal(damage.MinimumHeal, minimumHealNumeric);
+        showFriendlyHealingCheckBox.Checked = damage.ShowFriendlyHealing;
+        showSelfHealingCheckBox.Checked = damage.ShowSelfHealing;
+        combineDamageCheckBox.Checked = damage.CombineDamageUntilHidden;
+        combineHealingCheckBox.Checked = damage.CombineHealingUntilHidden;
+
+        var healAlert = featureSettingsService.LoadHealAlertSettings();
+        healAlertEnabledCheckBox.Checked = healAlert.Enabled;
+        healAlertDamageColorTextBox.Text = healAlert.DamageIndicatorColor;
+        healAlertHealColorTextBox.Text = healAlert.HealIndicatorColor;
+        healAlertDamageSizeNumeric.Value = ToDecimal(healAlert.DamageIndicatorSizeMultiplier, healAlertDamageSizeNumeric);
+        healAlertHealSizeNumeric.Value = ToDecimal(healAlert.HealIndicatorSizeMultiplier, healAlertHealSizeNumeric);
+        healAlertAlphaNumeric.Value = ToDecimal(healAlert.Alpha, healAlertAlphaNumeric);
+        healAlertMinimumHealNumeric.Value = ToDecimal(healAlert.MinimumHeal, healAlertMinimumHealNumeric);
+        healDirectionCheckBox.Checked = healAlert.ShowDirectionOnHeal;
+
+        var beam = featureSettingsService.LoadBaseObjectiveBeamSettings();
+        objectiveBeamEnabledCheckBox.Checked = beam.Enabled;
+
+        var shield = featureSettingsService.LoadShieldBuffBarSettings();
+        shieldEnabledCheckBox.Checked = shield.Enabled;
+        shieldColorTextBox.Text = shield.ShieldBuffBarColor;
+        shieldSizeNumeric.Value = ToDecimal(shield.ShieldClockSizeMultiplier, shieldSizeNumeric);
+        shieldOffsetXNumeric.Value = ToDecimal(shield.ShieldClockOffsetX, shieldOffsetXNumeric);
+        shieldOffsetYNumeric.Value = ToDecimal(shield.ShieldClockOffsetY, shieldOffsetYNumeric);
+        shieldDisplayModeComboBox.Text = shield.ShieldTimerDisplayMode;
+
+        var localBuildPreview = featureSettingsService.LoadLocalBuildPreviewSettings();
+        localBuildPreviewEnabledCheckBox.Checked = localBuildPreview.Enabled;
+        localBuildPreviewTimeoutNumeric.Value = ToDecimal(localBuildPreview.PredictionTimeoutSeconds, localBuildPreviewTimeoutNumeric);
+
+        var aimHealthbar = featureSettingsService.LoadAimHealthbarSettings();
+        aimHealthbarEnabledCheckBox.Checked = aimHealthbar.Enabled;
+    }
+
+    private void SaveAndClose()
+    {
+        var validationErrors = new List<string>();
+        CollectColorValidation(validationErrors, crosshairIdleColorTextBox.Text);
+        CollectColorValidation(validationErrors, crosshairFullDamageColorTextBox.Text);
+        CollectColorValidation(validationErrors, crosshairBelowMaxColorTextBox.Text);
+        CollectColorValidation(validationErrors, friendlyColorTextBox.Text);
+        CollectColorValidation(validationErrors, enemyColorTextBox.Text);
+        CollectColorValidation(validationErrors, damageColorTextBox.Text);
+        CollectColorValidation(validationErrors, critDamageColorTextBox.Text);
+        CollectColorValidation(validationErrors, healColorTextBox.Text);
+        CollectColorValidation(validationErrors, healAlertDamageColorTextBox.Text, allowDefaultToken: true);
+        CollectColorValidation(validationErrors, healAlertHealColorTextBox.Text);
+        CollectColorValidation(validationErrors, shieldColorTextBox.Text);
+
+        if (validationErrors.Count > 0)
+        {
+            MessageBox.Show(
+                string.Join(Environment.NewLine, validationErrors),
+                "Feature Settings",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return;
+        }
+
+        featureSettingsService.SaveCrosshairSettings(new CrosshairSettings
+        {
+            Enabled = crosshairEnabledCheckBox.Checked,
+            IdleColor = crosshairIdleColorTextBox.Text.Trim(),
+            FullDamageColor = crosshairFullDamageColorTextBox.Text.Trim(),
+            BelowMaxColor = crosshairBelowMaxColorTextBox.Text.Trim(),
+            BrightnessMultiplier = (double)crosshairBrightnessNumeric.Value,
+            SizeMultiplier = (double)crosshairSizeNumeric.Value,
+            SpreadMultiplier = (double)crosshairSpreadNumeric.Value,
+            Alpha = (double)crosshairAlphaNumeric.Value,
+            ForceShape = crosshairShapeComboBox.Text.Trim(),
+            ForceShowInAds = crosshairShowInAdsCheckBox.Checked,
+            HideCrosshair = crosshairHideCheckBox.Checked
+        });
+
+        featureSettingsService.SaveFovSettings(new FovSettings
+        {
+            Enabled = fovEnabledCheckBox.Checked,
+            Fov = (double)fovNumeric.Value,
+            AdsSensitivityMultiplier = (double)adsSensitivityNumeric.Value,
+            WeaponModelFov = (double)weaponModelFovNumeric.Value
+        });
+
+        featureSettingsService.SaveTeamColorSettings(new TeamColorSettings
+        {
+            Enabled = teamColorsEnabledCheckBox.Checked,
+            FriendlyColor = friendlyColorTextBox.Text.Trim(),
+            EnemyColor = enemyColorTextBox.Text.Trim()
+        });
+
+        featureSettingsService.SaveFontSettings(new FontSettings
+        {
+            Enabled = fontEnabledCheckBox.Checked,
+            SelectedFont = fontNameComboBox.Text.Trim(),
+            FontStyle = fontStyleComboBox.Text.Trim(),
+            SizeMultiplier = (double)fontSizeNumeric.Value,
+            LineSpacingMultiplier = (double)fontSpacingNumeric.Value
+        });
+
+        featureSettingsService.SaveDamageHealingSettings(new DamageHealingSettings
+        {
+            Enabled = damageHealingEnabledCheckBox.Checked,
+            DamageNumberColor = damageColorTextBox.Text.Trim(),
+            CritDamageNumberColor = critDamageColorTextBox.Text.Trim(),
+            HealNumberColor = healColorTextBox.Text.Trim(),
+            DamageNumberSizeMultiplier = (double)damageSizeNumeric.Value,
+            HealNumberSizeMultiplier = (double)healSizeNumeric.Value,
+            Alpha = (double)damageAlphaNumeric.Value,
+            MinimumHeal = (double)minimumHealNumeric.Value,
+            ShowFriendlyHealing = showFriendlyHealingCheckBox.Checked,
+            ShowSelfHealing = showSelfHealingCheckBox.Checked,
+            CombineDamageUntilHidden = combineDamageCheckBox.Checked,
+            CombineHealingUntilHidden = combineHealingCheckBox.Checked
+        });
+
+        featureSettingsService.SaveHealAlertSettings(new HealAlertSettings
+        {
+            Enabled = healAlertEnabledCheckBox.Checked,
+            DamageIndicatorColor = healAlertDamageColorTextBox.Text.Trim(),
+            HealIndicatorColor = healAlertHealColorTextBox.Text.Trim(),
+            DamageIndicatorSizeMultiplier = (double)healAlertDamageSizeNumeric.Value,
+            HealIndicatorSizeMultiplier = (double)healAlertHealSizeNumeric.Value,
+            Alpha = (double)healAlertAlphaNumeric.Value,
+            MinimumHeal = (double)healAlertMinimumHealNumeric.Value,
+            ShowDirectionOnHeal = healDirectionCheckBox.Checked
+        });
+
+        featureSettingsService.SaveBaseObjectiveBeamSettings(new BaseObjectiveBeamSettings
+        {
+            Enabled = objectiveBeamEnabledCheckBox.Checked
+        });
+
+        featureSettingsService.SaveShieldBuffBarSettings(new ShieldBuffBarSettings
+        {
+            Enabled = shieldEnabledCheckBox.Checked,
+            ShieldBuffBarColor = shieldColorTextBox.Text.Trim(),
+            ShieldClockSizeMultiplier = (double)shieldSizeNumeric.Value,
+            ShieldClockOffsetX = (double)shieldOffsetXNumeric.Value,
+            ShieldClockOffsetY = (double)shieldOffsetYNumeric.Value,
+            ShieldTimerDisplayMode = shieldDisplayModeComboBox.Text.Trim()
+        });
+
+        featureSettingsService.SaveLocalBuildPreviewSettings(new LocalBuildPreviewSettings
+        {
+            Enabled = localBuildPreviewEnabledCheckBox.Checked,
+            PredictionTimeoutSeconds = (double)localBuildPreviewTimeoutNumeric.Value
+        });
+
+        featureSettingsService.SaveAimHealthbarSettings(new AimHealthbarSettings
+        {
+            Enabled = aimHealthbarEnabledCheckBox.Checked
+        });
+
+        DialogResult = DialogResult.OK;
+    }
+
+    private static Label NewLabel(string text, int x, int y) =>
+        new() { Text = text, AutoSize = true, Location = new Point(x, y) };
+
+    private static CheckBox NewCheckBox(string text, int x, int y) =>
+        new() { Text = text, AutoSize = true, Location = new Point(x, y) };
+
+    private static ComboBox NewComboBox(int x, int y, int width, params string[] items)
+    {
+        var combo = new ComboBox
+        {
+            Location = new Point(x, y),
+            Size = new Size(width, 23),
+            DropDownStyle = ComboBoxStyle.DropDown
+        };
+        combo.Items.AddRange(items);
+        return combo;
+    }
+
+    private static NumericUpDown NewDecimalNumeric(int x, int y, int width, decimal min, decimal max, int decimals, decimal increment) =>
+        new()
+        {
+            Location = new Point(x, y),
+            Size = new Size(width, 23),
+            Minimum = min,
+            Maximum = max,
+            DecimalPlaces = decimals,
+            Increment = increment
+        };
+
+    private static decimal ToDecimal(double value, NumericUpDown numeric)
+    {
+        var d = Convert.ToDecimal(value);
+        if (d < numeric.Minimum) return numeric.Minimum;
+        if (d > numeric.Maximum) return numeric.Maximum;
+        return d;
+    }
+
+    private void PopulateInstalledFonts()
+    {
+        var fonts = new InstalledFontCollection().Families
+            .Select(static f => f.Name)
+            .OrderBy(static n => n, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var name in fonts)
+        {
+            if (!fontNameComboBox.Items.Contains(name))
+                fontNameComboBox.Items.Add(name);
+        }
+    }
+
+    private static bool ValidateColor(string value, out string error, bool allowDefaultToken = false)
+    {
+        var trimmed = value.Trim();
+        if (allowDefaultToken && string.Equals(trimmed, "__DEFAULT__", StringComparison.OrdinalIgnoreCase))
+        {
+            error = string.Empty;
+            return true;
+        }
+
+        if (Regex.IsMatch(trimmed, "^#[0-9A-Fa-f]{6}$"))
+        {
+            error = string.Empty;
+            return true;
+        }
+
+        error = $"Invalid color value: {value}";
+        return false;
+    }
+
+    private static void CollectColorValidation(List<string> errors, string value, bool allowDefaultToken = false)
+    {
+        if (!ValidateColor(value, out var error, allowDefaultToken) && !string.IsNullOrWhiteSpace(error))
+            errors.Add(error);
+    }
+
+    private static bool TryParseColor(string value, bool allowDefaultToken, out Color color)
+    {
+        color = Color.White;
+        var trimmed = value.Trim();
+        if (allowDefaultToken && string.Equals(trimmed, "__DEFAULT__", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (!Regex.IsMatch(trimmed, "^#[0-9A-Fa-f]{6}$"))
+            return false;
+        color = ColorTranslator.FromHtml(trimmed);
+        return true;
+    }
+}
