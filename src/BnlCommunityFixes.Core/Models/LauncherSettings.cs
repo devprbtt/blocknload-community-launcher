@@ -12,4 +12,7 @@ public sealed class LauncherSettings
 
     [JsonPropertyName("manifestUrl")]
     public string ManifestUrl { get; set; } = "";
+
+    [JsonPropertyName("gamePath")]
+    public string? GamePath { get; set; }
 }
