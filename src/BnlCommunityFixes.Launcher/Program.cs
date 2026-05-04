@@ -25,6 +25,9 @@ internal static class Program
                 return;
             }
 
+            var bundledAssetService = new BundledPatchingAssetService(paths, logger);
+            bundledAssetService.EnsureAssetsExtracted();
+
             var settingsService = new SettingsService(paths);
             settingsService.EnsureDefaultFile();
             var settings = settingsService.Load();

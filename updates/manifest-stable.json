@@ -1,22 +1,22 @@
 ﻿{
-    "version":  "2.1.10",
-    "published_at":  "2026-05-04T09:47:21.4463532-03:00",
+    "version":  "2.1.11",
+    "published_at":  "2026-05-04T11:33:24.0977923-03:00",
     "channel":  "stable",
     "product":  "BnlCommunityFixes",
     "assets":  {
                    "launcher_exe":  {
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.10/BnlCommunityFixes.exe",
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.11/BnlCommunityFixes.exe",
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "sha256":  "0A0A9FCFEA937FC81CF34BDCA8F1DBC13EABF1FA930DDCFB2E5EA32774BE1D97",
-                                        "size":  162051273
+                                        "sha256":  "4BFED4BC27C946BBA944EBBBD6F0C59C308B07968ED185E392B88476F4F511D5",
+                                        "size":  162649294
                                     },
                    "updater_exe":  {
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.10/BnlUpdater.exe",
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.11/BnlUpdater.exe",
                                        "file_name":  "BnlUpdater.exe",
-                                       "sha256":  "C3DEE7B360D6A0788DF5F0746F2511AC3A4A2012CCF59566BA16629F84041541",
-                                       "size":  67608306
+                                       "sha256":  "38E781E5FEBFEF16368CD7DEF8629DF7B3DC21EF309B2FE07F25E840F801DC89",
+                                       "size":  67608313
                                    }
                },
     "minimum_supported_version":  "1.9.0",
-    "notes":  "Fixed update progress bar not updating while downloading. #Known bug: fps locked at 30 when playing on the testing custom map. Other maps seem to be normal."
+    "notes":  "Fixed aim healthbar feature: now properly shows enemy health bar on crosshair aim. Patching script is now bundled inside the launcher and deployed automatically."
 }
