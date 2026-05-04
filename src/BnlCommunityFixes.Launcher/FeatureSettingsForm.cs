@@ -75,6 +75,8 @@ public sealed class FeatureSettingsForm : Form
 
     private readonly CheckBox aimHealthbarEnabledCheckBox;
 
+    private readonly CheckBox deathCamHealthbarEnabledCheckBox;
+
     // Color field columns: each block is label+textbox(130)+gap(4)+button(44)+gap(4)+swatch(22) = 204px; 26px between columns
     private const int ColA = 14;
     private const int ColB = 244;
@@ -483,7 +485,17 @@ public sealed class FeatureSettingsForm : Form
             readFields: () => new AimHealthbarSettings { Enabled = aimHealthbarEnabledCheckBox.Checked },
             applyFields: s => { aimHealthbarEnabledCheckBox.Checked = s.Enabled; });
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab]);
+        // --- Death Cam Healthbar ---
+        var deathCamTab = new TabPage("Death Cam HP");
+        AddDescription(deathCamTab,
+            "Shows friendly health bars when spectating teammates during the death cam.");
+        deathCamHealthbarEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        deathCamTab.Controls.Add(deathCamHealthbarEnabledCheckBox);
+        AddPresetBar<DeathCamHealthbarSettings>(deathCamTab, "deathCamHealthbar",
+            readFields: () => new DeathCamHealthbarSettings { Enabled = deathCamHealthbarEnabledCheckBox.Checked },
+            applyFields: s => { deathCamHealthbarEnabledCheckBox.Checked = s.Enabled; });
+
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab]);
 
         var saveButton = new Button
         {
@@ -727,6 +739,9 @@ public sealed class FeatureSettingsForm : Form
 
         var aimHealthbar = featureSettingsService.LoadAimHealthbarSettings();
         aimHealthbarEnabledCheckBox.Checked = aimHealthbar.Enabled;
+
+        var deathCamHealthbar = featureSettingsService.LoadDeathCamHealthbarSettings();
+        deathCamHealthbarEnabledCheckBox.Checked = deathCamHealthbar.Enabled;
     }
 
     private void SaveAndClose()
@@ -845,6 +860,11 @@ public sealed class FeatureSettingsForm : Form
         featureSettingsService.SaveAimHealthbarSettings(new AimHealthbarSettings
         {
             Enabled = aimHealthbarEnabledCheckBox.Checked
+        });
+
+        featureSettingsService.SaveDeathCamHealthbarSettings(new DeathCamHealthbarSettings
+        {
+            Enabled = deathCamHealthbarEnabledCheckBox.Checked
         });
 
         DialogResult = DialogResult.OK;

@@ -1,21 +1,21 @@
 ﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.1.13",
+    "version":  "2.1.14",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-04T18:21:52.9803508+00:00",
-    "notes":  "Aim Healthbar feature. Fixed TypeLoadException/MissingMethodException in heal alert and damage number features.",
+    "published_at":  "2026-05-04T20:57:19.3048896+00:00",
+    "notes":  "## v2.1.14\r\n\r\n### New Features\r\n- **Death Cam HP**: When spectating a teammate during the death cam, their health bar and current HP are now displayed. A visual health bar (using Unicode block characters) and HP numbers (e.g., `Prbtt â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‘â–‘ 150/200`) appear on the death cam UI.\r\n\r\n### Bug Fixes\r\n- Fixed team healthbars showing for non-player units (devices, land mines, etc.) during death cam â€” now only actual player units with a `PlayerId` are shown\r\n- Fixed player nickname display â€” uses `PlayerData.FindFriend()` to look up the real player nickname instead of showing the Unity GameObject name\r\n\r\n### Technical Details\r\n- Added `DeathCamRuntime` helper class in `BnlCommunityFixes.dll` with `IsDeathCamFriendly()` and `UpdateDeathCamHpText()` methods\r\n- Patches `GuiHealthbar.IsUnitAvailableForShow()` and `AlphaUpdate()` to make friendy healthbars visible during death cam\r\n- Patches `GuiDeathCameraTargets.Update()` to append HP info with visual bar to the death cam nickname text\r\n- `IsDeathCamFriendly()` now filters by `Unit.PlayerId.HasValue` to exclude non-player entities\r\n",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.13/BnlCommunityFixes.exe",
-                                        "sha256":  "B2507E9154F83956E556A26719B64BC4888375DD865A3DC1AAE77B1128123F0A",
-                                        "size":  162649294
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.14/BnlCommunityFixes.exe",
+                                        "sha256":  "0DC7C3983C694C8FD952B7F9ED3D32891048D4AE5B0CA12646B02066DAE891AE",
+                                        "size":  162661582
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.13/BnlUpdater.exe",
-                                       "sha256":  "A042BED53E434D6ED3D47A63E55639E3CE0A3F5011230C5B9B430C6798D975D4",
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.14/BnlUpdater.exe",
+                                       "sha256":  "CEA11E731381B9D48CDDBC5A69162AA424AAB8F2E91AC1060491FEA76000639D",
                                        "size":  67608313
                                    }
                }

@@ -19,6 +19,7 @@ $BaseObjectiveBeamConfigPath = Join-Path $PSScriptRoot "experimental-base-object
 $EnemyShieldBuffBarConfigPath = Join-Path $PSScriptRoot "experimental-enemy-shield-buffbar-config.json"
 $LocalBuildPreviewConfigPath = Join-Path $PSScriptRoot "experimental-local-build-preview-config.json"
 $AimHealthbarConfigPath = Join-Path $PSScriptRoot "aim-healthbar-config.json"
+$DeathCamHealthbarConfigPath = Join-Path $PSScriptRoot "deathcam-healthbar-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
 $SavedCopyPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.font-configured.dll"
 $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
@@ -158,6 +159,9 @@ $LocalBuildPreviewConfig = Get-JsonConfig -Path $LocalBuildPreviewConfigPath -De
 $AimHealthbarConfig = Get-JsonConfig -Path $AimHealthbarConfigPath -Default @{
     enabled = $true
 }
+$DeathCamHealthbarConfig = Get-JsonConfig -Path $DeathCamHealthbarConfigPath -Default @{
+    enabled = $true
+}
 
 $AnyEnabled = @(
     [bool]$Config.enabled,
@@ -174,7 +178,8 @@ $AnyEnabled = @(
     [bool]$BaseObjectiveBeamConfig.enabled,
     [bool]$EnemyShieldBuffBarConfig.enabled,
     [bool]$LocalBuildPreviewConfig.enabled,
-    [bool]$AimHealthbarConfig.enabled
+    [bool]$AimHealthbarConfig.enabled,
+    [bool]$DeathCamHealthbarConfig.enabled
 ) -contains $true
 
 if (-not $AnyEnabled) {
@@ -1719,6 +1724,58 @@ namespace BnlCommunityFixes
             }
 
             return currentScale;
+        }
+    }
+}
+
+namespace BnlCommunityFixes
+{
+    public static class DeathCamRuntime
+    {
+        public static bool IsDeathCamFriendly(Unit healthbarUnit)
+        {
+            if (healthbarUnit == null) return false;
+            if (healthbarUnit.IsMyPlayer) return false;
+            // Only show for actual player units (has PlayerId), not devices/minions
+            if (!healthbarUnit.PlayerId.HasValue) return false;
+            UnitsRegistry registry = Singleton<UnitsRegistry>.Instance;
+            if (registry == null) return false;
+            Unit player = registry.GetPlayer();
+            if (player == null || !player.IsDeath) return false;
+            return healthbarUnit.Team == player.Team;
+        }
+
+        public static void UpdateDeathCamHpText(UnityEngine.UI.Text nicknameText)
+        {
+            if (nicknameText == null) return;
+            try
+            {
+                CameraDeath deathCam = Singleton<CameraDeath>.Instance;
+                if (deathCam == null) return;
+                Transform targetTransform = deathCam.Target;
+                if (targetTransform == null) return;
+                Unit targetUnit = targetTransform.GetComponent<Unit>();
+                if (targetUnit == null) return;
+                float health = targetUnit.Health;
+                float maxHealth = targetUnit.MaxHealth;
+                float pct = (maxHealth > 0f) ? Mathf.Clamp01(health / maxHealth) : 0f;
+                int filled = Mathf.RoundToInt(pct * 10f);
+                string bar = "";
+                for (int i = 0; i < 10; i++)
+                    bar += (i < filled) ? "█" : "░";
+                string playerName = targetUnit.name;
+                if (targetUnit.PlayerId.HasValue)
+                {
+                    FriendInfo fi = PlayerData.Instance.FindFriend(targetUnit.PlayerId.Value);
+                    if (fi != null && !string.IsNullOrEmpty(fi.Nickname))
+                    {
+                        playerName = fi.Nickname;
+                    }
+                }
+                string hpInfo = string.Format(" {0} {1:F0}/{2:F0}", bar, health, maxHealth);
+                nicknameText.text = playerName + hpInfo;
+            }
+            catch { }
         }
     }
 }
@@ -3445,6 +3502,76 @@ if ($AimHealthbarConfig.enabled) {
     $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Stfld, $ImportedShowTimeField))
 }
 
+if ($DeathCamHealthbarConfig.enabled) {
+    $DeathCamRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.DeathCamRuntime" | Select-Object -First 1
+    if (-not $DeathCamRuntimeType) { throw "DeathCamRuntime type not found in helper assembly." }
+
+    $IsDeathCamFriendly = $DeathCamRuntimeType.Methods | Where-Object Name -eq "IsDeathCamFriendly" | Select-Object -First 1
+    if (-not $IsDeathCamFriendly) { throw "DeathCamRuntime.IsDeathCamFriendly method not found." }
+    $ImportedIsDeathCamFriendly = $Module.ImportReference($IsDeathCamFriendly)
+
+    $UpdateDeathCamHpTextMethod = $DeathCamRuntimeType.Methods | Where-Object Name -eq "UpdateDeathCamHpText" | Select-Object -First 1
+    if (-not $UpdateDeathCamHpTextMethod) { throw "DeathCamRuntime.UpdateDeathCamHpText method not found." }
+    $ImportedUpdateDeathCamHpText = $Module.ImportReference($UpdateDeathCamHpTextMethod)
+
+    # Patch GuiDeathCameraTargets.Update(): at the end (before final ret), inject call
+    # to DeathCamRuntime.UpdateDeathCamHpText(Nickname) to display spectated player HP
+    $DeathCamTargetsType = $Module.Types | Where-Object Name -eq "GuiDeathCameraTargets" | Select-Object -First 1
+    if (-not $DeathCamTargetsType) { throw "GuiDeathCameraTargets type not found." }
+
+    $GuiDeathCamUpdateMethod = $DeathCamTargetsType.Methods | Where-Object Name -eq "Update" | Select-Object -First 1
+    if (-not $GuiDeathCamUpdateMethod -or -not $GuiDeathCamUpdateMethod.HasBody) { throw "GuiDeathCameraTargets.Update not found." }
+
+    $DeathCamUpdateIl = $GuiDeathCamUpdateMethod.Body.GetILProcessor()
+    $DeathCamUpdateRet = @($GuiDeathCamUpdateMethod.Body.Instructions) | Where-Object { $_.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Ret } | Select-Object -Last 1
+    if (-not $DeathCamUpdateRet) { throw "GuiDeathCameraTargets.Update Ret not found." }
+
+    $NicknameField = $DeathCamTargetsType.Fields | Where-Object Name -eq "Nickname" | Select-Object -First 1
+    if (-not $NicknameField) { throw "GuiDeathCameraTargets.Nickname field not found." }
+    $ImportedNicknameField = $Module.ImportReference($NicknameField)
+
+    # Inject before the last ret:
+    #   ldarg.0
+    #   ldfld Nickname
+    #   call void DeathCamRuntime::UpdateDeathCamHpText(Text)
+    $DeathCamUpdateIl.InsertBefore($DeathCamUpdateRet, $DeathCamUpdateIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+    $DeathCamUpdateIl.InsertBefore($DeathCamUpdateRet, $DeathCamUpdateIl.Create([Mono.Cecil.Cil.OpCodes]::Ldfld, $ImportedNicknameField))
+    $DeathCamUpdateIl.InsertBefore($DeathCamUpdateRet, $DeathCamUpdateIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedUpdateDeathCamHpText))
+
+    # --- Also patch IsUnitAvailableForShow() and AlphaUpdate() for death cam ---
+    # Try to patch IsUnitAvailableForShow if GuiHealthbar was already resolved by aim healthbar
+    $GuiHealthbarType = $Module.Types | Where-Object Name -eq "GuiHealthbar" | Select-Object -First 1
+    if ($GuiHealthbarType) {
+        $AvailMethodDeathCam = $GuiHealthbarType.Methods | Where-Object Name -eq "IsUnitAvailableForShow" | Select-Object -First 1
+        if ($AvailMethodDeathCam -and $AvailMethodDeathCam.HasBody) {
+            $AvailIlDeathCam = $AvailMethodDeathCam.Body.GetILProcessor()
+            $FirstInstrDeathCam = $AvailMethodDeathCam.Body.Instructions | Select-Object -First 1
+            $BranchToOriginalDeathCam = $AvailIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $FirstInstrDeathCam)
+            $AvailIlDeathCam.InsertBefore($FirstInstrDeathCam, $AvailIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+            $AvailIlDeathCam.InsertBefore($FirstInstrDeathCam, $AvailIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldfld, ($GuiHealthbarType.Fields | Where-Object Name -eq "unit" | Select-Object -First 1)))
+            $AvailIlDeathCam.InsertBefore($FirstInstrDeathCam, $AvailIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedIsDeathCamFriendly))
+            $AvailIlDeathCam.InsertBefore($FirstInstrDeathCam, $BranchToOriginalDeathCam)
+            $AvailIlDeathCam.InsertBefore($FirstInstrDeathCam, $AvailIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_1))
+            $AvailIlDeathCam.InsertBefore($FirstInstrDeathCam, $AvailIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ret))
+
+            # Also patch AlphaUpdate: keep showTime=1 during death cam
+            $AlphaMethodDeathCam = $GuiHealthbarType.Methods | Where-Object Name -eq "AlphaUpdate" | Select-Object -First 1
+            if ($AlphaMethodDeathCam -and $AlphaMethodDeathCam.HasBody) {
+                $AlphaIlDeathCam = $AlphaMethodDeathCam.Body.GetILProcessor()
+                $AlphaFirstInstrDeathCam = $AlphaMethodDeathCam.Body.Instructions | Select-Object -First 1
+                $BranchAlphaOrig = $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $AlphaFirstInstrDeathCam)
+                $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+                $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldfld, ($GuiHealthbarType.Fields | Where-Object Name -eq "unit" | Select-Object -First 1)))
+                $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedIsDeathCamFriendly))
+                $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $BranchAlphaOrig)
+                $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+                $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]1.0))
+                $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Stfld, ($GuiHealthbarType.Fields | Where-Object Name -eq "showTime" | Select-Object -First 1)))
+            }
+        }
+    }
+}
+
 $Assembly.Write($OutputPath)
 $Assembly.Dispose()
 $HelperAssembly.Dispose()
@@ -3466,5 +3593,6 @@ if ($Config.enabled) { $Features.Add("font") | Out-Null }
 if ($BaseObjectiveBeamConfig.enabled) { $Features.Add("base-objective-beam") | Out-Null }
 if ($LocalBuildPreviewConfig.enabled) { $Features.Add("local-build-preview") | Out-Null }
 if ($AimHealthbarConfig.enabled) { $Features.Add("aim-healthbar") | Out-Null }
+if ($DeathCamHealthbarConfig.enabled) { $Features.Add("deathcam-healthbar") | Out-Null }
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash
 Write-Output "Experimental all-in-one DLL built. SHA1=$Hash features=$([string]::Join(',', $Features))"

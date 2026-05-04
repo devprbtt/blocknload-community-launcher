@@ -53,6 +53,9 @@ public sealed class FeatureSettingsService
     public AimHealthbarSettings LoadAimHealthbarSettings() => Load("aim-healthbar-config.json", new AimHealthbarSettings());
     public void SaveAimHealthbarSettings(AimHealthbarSettings settings) => Save("aim-healthbar-config.json", settings);
 
+    public DeathCamHealthbarSettings LoadDeathCamHealthbarSettings() => Load("deathcam-healthbar-config.json", new DeathCamHealthbarSettings());
+    public void SaveDeathCamHealthbarSettings(DeathCamHealthbarSettings settings) => Save("deathcam-healthbar-config.json", settings);
+
     private T Load<T>(string fileName, T fallback) where T : class
     {
         var path = Path.Combine(paths.PatchingDir, fileName);
