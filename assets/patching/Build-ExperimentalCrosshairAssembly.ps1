@@ -383,7 +383,7 @@ namespace BnlCommunityFixes
                 return;
             }
 
-            Unit unit = UnitField == null ? null : UnitField.GetValue(healthbar) as Unit;
+            Unit unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(healthbar) as Unit;
             ZoneData zoneData = Singleton<ZoneData>.Instance;
             if (unit == null || zoneData == null)
             {

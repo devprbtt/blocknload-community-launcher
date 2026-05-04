@@ -1,0 +1,52 @@
+@everyone
+
+**BLOCK N LOAD COMMUNITY FIXES V2 — NOW AVAILABLE**
+
+The community launcher has been fully rebuilt from the ground up. Download the exe, run it, pick your server, and you're in. It patches the game automatically, keeps itself up to date, and lets you configure every feature from a clean settings menu.
+
+─────────────────────────────────────
+
+**FEATURES**
+
+**Crosshair** — Custom reticle colors that change based on damage state (idle / at full damage range / beyond max range). Control size, spread, brightness, opacity, and shape. Force it to show in ADS or hide it entirely.
+
+**FOV** — Override the camera field of view, ADS sensitivity multiplier, and weapon model FOV independently.
+
+**Team Colors** — Change the color of friendly and enemy indicators (nameplates, health bars, hit effects). Includes one-click presets for Beta, Classic, and Default season colors.
+
+**Damage & Healing Numbers** — Custom colors and sizes for floating combat numbers. Combine rapid hits into one number, filter out small heals, toggle friendly and self-healing visibility.
+
+**Heal Alerts** — A separate directional indicator that appears when a heal lands, independent from the floating numbers.
+
+**Font** — Replace the in-game UI font with any font installed on your system. Adjust size and line spacing to match.
+
+**Objective Beam** — Adds a tall vertical beam above the capture objective so it is visible from anywhere on the map.
+
+**Shield Timer** — Countdown display on the enemy shield buff bar. Supports circle (clock-style) and numeric modes.
+
+**Build Preview** — Blocks and devices appear on your screen the moment you place them, without waiting for server confirmation. Also reduces the delay felt when switching weapons. ⚠️ Recommended only for players with high ping — it changes how placement and tool switching feel.
+
+─────────────────────────────────────
+
+**REQUIREMENTS**
+
+To use any feature in Feature Settings, your PC must have **.NET Framework 3.5** installed. Most machines already have it. If the launcher shows an error after enabling a feature, install it from:
+**Windows Settings → Apps → Optional features → More Windows features → .NET Framework 3.5**
+
+The base launcher (server selection and launch) works without it.
+
+─────────────────────────────────────
+
+**SETTINGS & UPDATES**
+
+All features are configured through the Feature Settings button inside the launcher. The launcher checks for updates every time it opens and walks you through installing them — no manual downloads needed after the first one.
+
+─────────────────────────────────────
+
+**DOWNLOAD**
+
+Latest release (v2.1.2):
+https://github.com/devprbtt/blocknload-community-launcher/releases/latest/download/BnlCommunityFixes.exe
+
+Full release page:
+https://github.com/devprbtt/blocknload-community-launcher/releases/tag/v2.1.2

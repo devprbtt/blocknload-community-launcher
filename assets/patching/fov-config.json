@@ -1,0 +1,6 @@
+﻿{
+    "enabled":  true,
+    "fov":  140,
+    "ads_sensitivity_multiplier":  1,
+    "weapon_model_fov":  30
+}

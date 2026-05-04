@@ -1,0 +1,13 @@
+﻿{
+    "enabled":  true,
+    "idle_color":  "#00FFFF",
+    "full_damage_color":  "#FF0000",
+    "below_max_color":  "#FFFF00",
+    "brightness_multiplier":  1,
+    "size_multiplier":  5,
+    "spread_multiplier":  0.1,
+    "alpha":  1,
+    "force_shape":  "Dot",
+    "force_show_in_ads":  true,
+    "hide_crosshair":  false
+}

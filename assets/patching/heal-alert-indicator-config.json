@@ -1,0 +1,10 @@
+﻿{
+    "enabled":  true,
+    "damage_indicator_color":  "__DEFAULT__",
+    "heal_indicator_color":  "#00FF88",
+    "damage_indicator_size_multiplier":  1,
+    "heal_indicator_size_multiplier":  1,
+    "alpha":  1,
+    "minimum_heal":  0.5,
+    "show_direction_on_heal":  true
+}

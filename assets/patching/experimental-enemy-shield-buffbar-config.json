@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "shield_buff_bar_color": "#FFF04A",
+  "shield_clock_size_multiplier": 1.0,
+  "shield_clock_offset_x": 0.0,
+  "shield_clock_offset_y": 0.0,
+  "shield_timer_display_mode": "circle"
+}
