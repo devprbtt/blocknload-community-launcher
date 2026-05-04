@@ -10,6 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <Version>2.1.3</Version>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Launcher</RootNamespace>
