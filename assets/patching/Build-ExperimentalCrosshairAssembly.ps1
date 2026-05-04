@@ -2216,15 +2216,38 @@ if ($AdsRuntimeType) {
     }
 }
 $CombatNumberRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.CombatNumberRuntime" | Select-Object -First 1
-$ApplyDamageNumber = $Module.ImportReference(($CombatNumberRuntimeType.Methods | Where-Object Name -eq "ApplyDamageNumber" | Select-Object -First 1))
-$GetDamageCollectTime = $Module.ImportReference(($CombatNumberRuntimeType.Methods | Where-Object Name -eq "GetDamageCollectTime" | Select-Object -First 1))
-$RefreshDamageNumber = $Module.ImportReference(($CombatNumberRuntimeType.Methods | Where-Object Name -eq "RefreshDamageNumber" | Select-Object -First 1))
-$AttachHealingIndicator = $Module.ImportReference(($CombatNumberRuntimeType.Methods | Where-Object Name -eq "AttachHealing" | Select-Object -First 1))
-$ShouldShowDamageNumber = $Module.ImportReference(($CombatNumberRuntimeType.Methods | Where-Object Name -eq "ShouldShowDamageNumber" | Select-Object -First 1))
+if (-not $CombatNumberRuntimeType) { throw "CombatNumberRuntime type not found in helper assembly." }
+
+$ApplyDamageNumberMethod = $CombatNumberRuntimeType.Methods | Where-Object Name -eq "ApplyDamageNumber" | Select-Object -First 1
+if (-not $ApplyDamageNumberMethod) { throw "CombatNumberRuntime.ApplyDamageNumber method not found." }
+$ApplyDamageNumber = $Module.ImportReference($ApplyDamageNumberMethod)
+
+$GetDamageCollectTimeMethod = $CombatNumberRuntimeType.Methods | Where-Object Name -eq "GetDamageCollectTime" | Select-Object -First 1
+if (-not $GetDamageCollectTimeMethod) { throw "CombatNumberRuntime.GetDamageCollectTime method not found." }
+$GetDamageCollectTime = $Module.ImportReference($GetDamageCollectTimeMethod)
+
+$RefreshDamageNumberMethod = $CombatNumberRuntimeType.Methods | Where-Object Name -eq "RefreshDamageNumber" | Select-Object -First 1
+if (-not $RefreshDamageNumberMethod) { throw "CombatNumberRuntime.RefreshDamageNumber method not found." }
+$RefreshDamageNumber = $Module.ImportReference($RefreshDamageNumberMethod)
+
+$AttachHealingMethod = $CombatNumberRuntimeType.Methods | Where-Object Name -eq "AttachHealing" | Select-Object -First 1
+if (-not $AttachHealingMethod) { throw "CombatNumberRuntime.AttachHealing method not found." }
+$AttachHealingIndicator = $Module.ImportReference($AttachHealingMethod)
+
+$ShouldShowDamageNumberMethod = $CombatNumberRuntimeType.Methods | Where-Object Name -eq "ShouldShowDamageNumber" | Select-Object -First 1
+if (-not $ShouldShowDamageNumberMethod) { throw "CombatNumberRuntime.ShouldShowDamageNumber method not found." }
+$ShouldShowDamageNumber = $Module.ImportReference($ShouldShowDamageNumberMethod)
 
 $HealAlertRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.HealAlertRuntime" | Select-Object -First 1
-$ImportedHealAlertApplyDamageIndicator = $Module.ImportReference(($HealAlertRuntimeType.Methods | Where-Object Name -eq "ApplyDamageIndicator" | Select-Object -First 1))
-$ImportedHealAlertAttachBridge = $Module.ImportReference(($HealAlertRuntimeType.Methods | Where-Object Name -eq "AttachHealBridge" | Select-Object -First 1))
+if (-not $HealAlertRuntimeType) { throw "HealAlertRuntime type not found in helper assembly." }
+
+$ImportedHealAlertApplyDamageIndicatorMethod = $HealAlertRuntimeType.Methods | Where-Object Name -eq "ApplyDamageIndicator" | Select-Object -First 1
+if (-not $ImportedHealAlertApplyDamageIndicatorMethod) { throw "HealAlertRuntime.ApplyDamageIndicator method not found." }
+$ImportedHealAlertApplyDamageIndicator = $Module.ImportReference($ImportedHealAlertApplyDamageIndicatorMethod)
+
+$ImportedHealAlertAttachBridgeMethod = $HealAlertRuntimeType.Methods | Where-Object Name -eq "AttachHealBridge" | Select-Object -First 1
+if (-not $ImportedHealAlertAttachBridgeMethod) { throw "HealAlertRuntime.AttachHealBridge method not found." }
+$ImportedHealAlertAttachBridge = $Module.ImportReference($ImportedHealAlertAttachBridgeMethod)
 $ShieldBuffBarRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.ShieldBuffBarRuntime" | Select-Object -First 1
 $ImportedShieldBuffBarAttach = $null
 if ($ShieldBuffBarRuntimeType) {
