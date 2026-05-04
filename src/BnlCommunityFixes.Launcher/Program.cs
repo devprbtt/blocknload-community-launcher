@@ -36,6 +36,7 @@ internal static class Program
             if (updateResult.ShouldExitForUpdate)
             {
                 logger.Info("Exiting for update.");
+                Environment.Exit(0);
                 return;
             }
 

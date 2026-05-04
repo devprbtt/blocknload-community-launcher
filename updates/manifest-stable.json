@@ -3,19 +3,19 @@
     "channel":  "stable",
     "version":  "2.1.9",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-04T05:30:45.1055014+00:00",
+    "published_at":  "2026-05-04T05:48:06.3753030+00:00",
     "notes":  "Fixed update progress bar freezing after clicking Install.",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
                                         "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.9/BnlCommunityFixes.exe",
-                                        "sha256":  "C37D430F967EE7B187F0B034ED4FA9124317632A160C8F6B236FE56643722030",
+                                        "sha256":  "632AF1BC6564B3B12EA52AE2A73013F26E5520F6E579A532DFA0F3D39758C87C",
                                         "size":  162047175
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.9/BnlUpdater.exe",
-                                       "sha256":  "3C3D39E19EB57A5CDBF7C009C134A9DC3D626527B60D1D2F992FC35EEE76B80D",
+                                       "sha256":  "710B43C70E96FE68075DB16EEE17F57B2C093ECDC29A119801901BE000C60EA8",
                                        "size":  67608306
                                    }
                }

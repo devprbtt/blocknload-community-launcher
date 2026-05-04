@@ -139,7 +139,7 @@ public sealed class UpdateCoordinator
         var startInfo = new ProcessStartInfo
         {
             FileName = updaterPath,
-            UseShellExecute = true,
+            UseShellExecute = false,
             WorkingDirectory = Path.GetDirectoryName(updaterPath)!
         };
 
