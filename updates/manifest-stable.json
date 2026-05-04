@@ -1,22 +1,22 @@
-{
+﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.1.5",
+    "version":  "2.1.4",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-03T14:09:59.9322359+00:00",
-    "notes":  "# BNL Community Fixes v2.1.5\n\nImprovement: download progress indicator during updates.\n\n- After clicking Install Now, a progress window shows the download percentage and file size for each asset, followed by a verification step, instead of the launcher silently closing.",
+    "published_at":  "2026-05-04T01:18:43.2731001+00:00",
+    "notes":  "",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.5/BnlCommunityFixes.exe",
-                                        "sha256":  "91D96B9231B0374998666ADDD17FC484511AA4319E9B124CAC01CF2175240FC2",
-                                        "size":  166816455
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.4/BnlCommunityFixes.exe",
+                                        "sha256":  "A725B41EBA032F009A4883B7C3C367BD76AFAF3ED8113B0073BD477010B0B39A",
+                                        "size":  162046663
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.5/BnlUpdater.exe",
-                                       "sha256":  "5F8F7E646D2020A46170E705DED233548E4E3A52A9CA2B5880FAF6BFF09E92D3",
-                                       "size":  67609842
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.4/BnlUpdater.exe",
+                                       "sha256":  "9CD962E8ACBCAC2FEF5E95C080FCA80488A2A4D193111FFBE7F69A56A80B2CB0",
+                                       "size":  67607794
                                    }
                }
 }
