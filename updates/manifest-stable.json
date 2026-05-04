@@ -1,22 +1,22 @@
-﻿{
-    "version":  "2.1.12",
-    "published_at":  "2026-05-04T12:43:42.4603808-03:00",
-    "channel":  "stable",
-    "product":  "BnlCommunityFixes",
-    "assets":  {
-                    "launcher_exe": {
-                      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlCommunityFixes.exe",
-                      "file_name": "BnlCommunityFixes.exe",
-                      "sha256": "b21e040acb96a0e0a7f70554e660e8de3736c2d834bb8662d689f274763f86be",
-                      "size": 162649289
-                    },
-                    "updater_exe": {
-                      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlUpdater.exe",
-                      "file_name": "BnlUpdater.exe",
-                      "sha256": "38e781e5febfef16368cd7def8629df7b3dc21ef309b2fe07f25e840f801dc89",
-                      "size": 67608313
-                    }
-               },
-    "minimum_supported_version":  "1.9.0",
-    "notes":  "Partial fix for FPS lag: resolved reflection error spam (16K+ MissingMethodException). Remaining TypeLoadException in damage indicators under investigation. Added validation to prevent null method references in IL patching."
+{
+  "version": "2.1.12",
+  "published_at": "2026-05-04T12:43:42.4603808-03:00",
+  "channel": "stable",
+  "product": "BnlCommunityFixes",
+  "assets": {
+    "launcher_exe": {
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlCommunityFixes.exe",
+      "file_name": "BnlCommunityFixes.exe",
+      "sha256": "b1f8cfeb7f9f95072c2b9d909037082cd6fa8bec0161f8f71f38557671eabda0",
+      "size": 154260967
+    },
+    "updater_exe": {
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlUpdater.exe",
+      "file_name": "BnlUpdater.exe",
+      "sha256": "c732d050fa717faa89fd2d7c3225cce619c1629aba4952547d444b5f6d475e48",
+      "size": 67608825
+    }
+  },
+  "minimum_supported_version": "1.9.0",
+  "notes": "Partial fix for FPS lag: resolved reflection error spam (16K+ MissingMethodException). Remaining TypeLoadException in damage indicators under investigation. Added validation to prevent null method references in IL patching."
 }
