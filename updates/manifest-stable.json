@@ -1,22 +1,22 @@
 ﻿{
-    "version":  "2.1.11",
-    "published_at":  "2026-05-04T11:33:24.0977923-03:00",
+    "version":  "2.1.12",
+    "published_at":  "2026-05-04T12:15:00.0000000-03:00",
     "channel":  "stable",
     "product":  "BnlCommunityFixes",
     "assets":  {
                    "launcher_exe":  {
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.11/BnlCommunityFixes.exe",
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlCommunityFixes.exe",
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "sha256":  "4BFED4BC27C946BBA944EBBBD6F0C59C308B07968ED185E392B88476F4F511D5",
-                                        "size":  162649294
+                                        "sha256":  "B21E040ACB96A0E0A7F70554E660E8DE3736C2D834BB8662D689F274763F86BE",
+                                        "size":  162649289
                                     },
                    "updater_exe":  {
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.11/BnlUpdater.exe",
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlUpdater.exe",
                                        "file_name":  "BnlUpdater.exe",
                                        "sha256":  "38E781E5FEBFEF16368CD7DEF8629DF7B3DC21EF309B2FE07F25E840F801DC89",
                                        "size":  67608313
                                    }
                },
     "minimum_supported_version":  "1.9.0",
-    "notes":  "Fixed aim healthbar feature: now properly shows enemy health bar on crosshair aim. Patching script is now bundled inside the launcher and deployed automatically."
+    "notes":  "Partial fix for FPS lag: resolved reflection error spam (16K+ MissingMethodException). Remaining TypeLoadException in damage indicators under investigation. Added validation to prevent null method references in IL patching."
 }
