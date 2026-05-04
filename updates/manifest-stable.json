@@ -1,22 +1,22 @@
-{
-  "version": "2.1.12",
-  "published_at": "2026-05-04T12:43:42.4603808-03:00",
-  "channel": "stable",
-  "product": "BnlCommunityFixes",
-  "assets": {
-    "launcher_exe": {
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlCommunityFixes.exe",
-      "file_name": "BnlCommunityFixes.exe",
-      "sha256": "b1f8cfeb7f9f95072c2b9d909037082cd6fa8bec0161f8f71f38557671eabda0",
-      "size": 154260967
-    },
-    "updater_exe": {
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.12/BnlUpdater.exe",
-      "file_name": "BnlUpdater.exe",
-      "sha256": "c732d050fa717faa89fd2d7c3225cce619c1629aba4952547d444b5f6d475e48",
-      "size": 67608825
-    }
-  },
-  "minimum_supported_version": "1.9.0",
-  "notes": "Partial fix for FPS lag: resolved reflection error spam (16K+ MissingMethodException). Remaining TypeLoadException in damage indicators under investigation. Added validation to prevent null method references in IL patching."
+﻿{
+    "product":  "BnlCommunityFixes",
+    "channel":  "stable",
+    "version":  "2.1.13",
+    "minimum_supported_version":  "1.9.0",
+    "published_at":  "2026-05-04T18:21:52.9803508+00:00",
+    "notes":  "Aim Healthbar feature. Fixed TypeLoadException/MissingMethodException in heal alert and damage number features.",
+    "assets":  {
+                   "launcher_exe":  {
+                                        "file_name":  "BnlCommunityFixes.exe",
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.13/BnlCommunityFixes.exe",
+                                        "sha256":  "B2507E9154F83956E556A26719B64BC4888375DD865A3DC1AAE77B1128123F0A",
+                                        "size":  162649294
+                                    },
+                   "updater_exe":  {
+                                       "file_name":  "BnlUpdater.exe",
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.13/BnlUpdater.exe",
+                                       "sha256":  "A042BED53E434D6ED3D47A63E55639E3CE0A3F5011230C5B9B430C6798D975D4",
+                                       "size":  67608313
+                                   }
+               }
 }

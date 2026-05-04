@@ -1271,31 +1271,6 @@ namespace BnlCommunityFixes
 $HelperSource += @"
 namespace BnlCommunityFixes
 {
-    public sealed class HealingNumberBridge : MonoBehaviour
-    {
-        public GuiDamageNumberDetector Detector;
-        private Action unsubscribe;
-
-        private void Start()
-        {
-            ZoneMessenger messenger = Singleton<ZoneMessenger>.Instance;
-            if (messenger != null)
-            {
-                messenger.OnGlobalUnitHealthChange.Subscribe(new Action<GlobalUnitHealthChangeArgs>(OnHealthChanged), ref unsubscribe);
-            }
-        }
-
-        private void OnDestroy()
-        {
-            if (unsubscribe != null) unsubscribe();
-        }
-
-        private void OnHealthChanged(GlobalUnitHealthChangeArgs args)
-        {
-            CombatNumberRuntime.OnHealthChanged(Detector, args);
-        }
-    }
-
     public sealed class HealingNumberHoldController : MonoBehaviour
     {
         public float HoldUntil;
@@ -1418,13 +1393,33 @@ namespace BnlCommunityFixes
         public static void AttachHealing(GuiDamageNumberDetector detector)
         {
             if (detector == null) return;
-            HealingNumberBridge bridge = detector.gameObject.GetComponent<HealingNumberBridge>();
-            if (bridge == null)
+            currentDetector = detector;
+            try
             {
-                bridge = detector.gameObject.AddComponent<HealingNumberBridge>();
+                ZoneMessenger messenger = Singleton<ZoneMessenger>.Instance;
+                if (messenger == null) return;
+                var field = typeof(ZoneMessenger).GetField("OnGlobalUnitHealthChange", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+                if (object.ReferenceEquals(field, null)) return;
+                var eventSource = field.GetValue(messenger);
+                if (object.ReferenceEquals(eventSource, null)) return;
+                var subscribeMethod = eventSource.GetType().GetMethod("Subscribe");
+                if (object.ReferenceEquals(subscribeMethod, null)) return;
+                var handler = System.Delegate.CreateDelegate(
+                    typeof(System.Action<>).MakeGenericType(typeof(GlobalUnitHealthChangeArgs)),
+                    typeof(CombatNumberRuntime).GetMethod("OnHealthChangedReflected", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic));
+                if (object.ReferenceEquals(handler, null)) return;
+                var parameters = new object[] { handler, null };
+                subscribeMethod.Invoke(eventSource, parameters);
             }
-            bridge.Detector = detector;
+            catch { }
         }
+
+        private static void OnHealthChangedReflected(GlobalUnitHealthChangeArgs args)
+        {
+            try { OnHealthChanged(currentDetector, args); } catch { }
+        }
+
+        private static GuiDamageNumberDetector currentDetector;
 
         public static bool ShouldShowDamageNumber(DamageInfo args)
         {
@@ -1733,29 +1728,6 @@ $HelperSource += @"
 
 namespace BnlCommunityFixes
 {
-    public sealed class HealAlertBridge : MonoBehaviour
-    {
-        public GuiHitAlertMaker Maker;
-        private Action unsubscribe;
-
-        private void Start()
-        {
-            ZoneMessenger messenger = Singleton<ZoneMessenger>.Instance;
-            if (messenger != null)
-                messenger.OnGlobalUnitHealthChange.Subscribe(new Action<GlobalUnitHealthChangeArgs>(OnHealthChanged), ref unsubscribe);
-        }
-
-        private void OnDestroy()
-        {
-            if (unsubscribe != null) unsubscribe();
-        }
-
-        private void OnHealthChanged(GlobalUnitHealthChangeArgs args)
-        {
-            HealAlertRuntime.OnHealthChanged(Maker, args);
-        }
-    }
-
     public static class HealAlertRuntime
     {
         private static readonly Color DamageIndicatorColor = new Color($(Format-FloatLiteral $HealAlertDamageColor.R), $(Format-FloatLiteral $HealAlertDamageColor.G), $(Format-FloatLiteral $HealAlertDamageColor.B), $(Format-FloatLiteral $HealAlertDamageColor.A));
@@ -1770,10 +1742,34 @@ namespace BnlCommunityFixes
         public static void AttachHealBridge(GuiHitAlertMaker maker)
         {
             if (maker == null) return;
-            HealAlertBridge bridge = maker.gameObject.GetComponent<HealAlertBridge>();
-            if (bridge == null) bridge = maker.gameObject.AddComponent<HealAlertBridge>();
-            bridge.Maker = maker;
+            currentBridgeMaker = maker;
+            try
+            {
+                ZoneMessenger messenger = Singleton<ZoneMessenger>.Instance;
+                if (messenger == null) return;
+                var field = typeof(ZoneMessenger).GetField("OnGlobalUnitHealthChange", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+                if (object.ReferenceEquals(field, null)) return;
+                var eventSource = field.GetValue(messenger);
+                if (object.ReferenceEquals(eventSource, null)) return;
+                var subscribeMethod = eventSource.GetType().GetMethod("Subscribe");
+                if (object.ReferenceEquals(subscribeMethod, null)) return;
+                var handler = System.Delegate.CreateDelegate(
+                    typeof(System.Action<>).MakeGenericType(typeof(GlobalUnitHealthChangeArgs)),
+                    maker,
+                    typeof(HealAlertRuntime).GetMethod("OnHealthChangedReflected", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic));
+                if (object.ReferenceEquals(handler, null)) return;
+                var parameters = new object[] { handler, null };
+                subscribeMethod.Invoke(eventSource, parameters);
+            }
+            catch { }
         }
+
+        private static void OnHealthChangedReflected(GlobalUnitHealthChangeArgs args)
+        {
+            try { OnHealthChanged(currentBridgeMaker, args); } catch { }
+        }
+
+        private static GuiHitAlertMaker currentBridgeMaker;
 
         public static void ApplyDamageIndicator(Component component)
         {
@@ -1788,7 +1784,7 @@ namespace BnlCommunityFixes
         {
             if (maker == null || args == null || args.unit == null) return;
             if (!args.unit.IsMyPlayer) return;
-            if (!maker.Content.activeSelf) return;
+            if (maker.Content == null || !maker.Content.activeSelf) return;
 
             float healAmount = args.newHealth - args.oldHealth;
             if (healAmount < MinimumHeal) return;
