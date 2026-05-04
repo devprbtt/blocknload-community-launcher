@@ -53,8 +53,25 @@ public sealed class UpdateCoordinator
                 return result;
             }
 
-            await DownloadAssetsAsync(manifest, cancellationToken);
-            await VerifyAssetsAsync(manifest, cancellationToken);
+            // Create and show the progress dialog on the UI thread before any awaits.
+            ProgressDialog? progressDialog = null;
+            if (!runtimeOptions.HeadlessSmokeTest)
+            {
+                progressDialog = new ProgressDialog("BNL Community Fixes Update");
+                progressDialog.Show();
+            }
+
+            try
+            {
+                await DownloadAssetsAsync(manifest, progressDialog, cancellationToken);
+                await VerifyAssetsAsync(manifest, cancellationToken);
+            }
+            finally
+            {
+                progressDialog?.Close();
+                progressDialog?.Dispose();
+            }
+
             LaunchUpdater(manifest);
 
             result.ShouldExitForUpdate = true;
@@ -72,7 +89,7 @@ public sealed class UpdateCoordinator
         }
     }
 
-    private async Task DownloadAssetsAsync(UpdateManifest manifest, CancellationToken cancellationToken)
+    private async Task DownloadAssetsAsync(UpdateManifest manifest, ProgressDialog? progressDialog, CancellationToken cancellationToken)
     {
         var launcherAsset = manifest.Assets["launcher_exe"];
         var updaterAsset = manifest.Assets["updater_exe"];
@@ -80,36 +97,21 @@ public sealed class UpdateCoordinator
         var totalBytes = (launcherAsset.Size ?? 0) + (updaterAsset.Size ?? 0);
         long downloadedBytes = 0;
 
-        ProgressDialog? progressDialog = null;
-        if (!runtimeOptions.HeadlessSmokeTest)
+        var progress = new Progress<long>(bytes =>
         {
-            progressDialog = new ProgressDialog("BNL Community Fixes Update");
-            progressDialog.Show();
-        }
-
-        try
-        {
-            var progress = new Progress<long>(bytes =>
+            downloadedBytes += bytes;
+            if (totalBytes > 0 && progressDialog != null)
             {
-                downloadedBytes += bytes;
-                if (totalBytes > 0 && progressDialog != null)
-                {
-                    var percent = (int)((double)downloadedBytes / totalBytes * 100);
-                    progressDialog.SetProgress(percent, $"Downloading update: {percent}%");
-                }
-            });
+                var percent = (int)((double)downloadedBytes / totalBytes * 100);
+                progressDialog.SetProgress(percent, $"Downloading update: {percent}%");
+            }
+        });
 
-            logger.Info($"Downloading launcher update from {launcherAsset.Url}.");
-            await downloadService.DownloadFileAsync(launcherAsset.Url, paths.LauncherTempPath, progress, cancellationToken);
+        logger.Info($"Downloading launcher update from {launcherAsset.Url}.");
+        await downloadService.DownloadFileAsync(launcherAsset.Url, paths.LauncherTempPath, progress, cancellationToken);
 
-            logger.Info($"Downloading updater update from {updaterAsset.Url}.");
-            await downloadService.DownloadFileAsync(updaterAsset.Url, paths.UpdaterTempPath, progress, cancellationToken);
-        }
-        finally
-        {
-            progressDialog?.Close();
-            progressDialog?.Dispose();
-        }
+        logger.Info($"Downloading updater update from {updaterAsset.Url}.");
+        await downloadService.DownloadFileAsync(updaterAsset.Url, paths.UpdaterTempPath, progress, cancellationToken);
     }
 
     private async Task VerifyAssetsAsync(UpdateManifest manifest, CancellationToken cancellationToken)
