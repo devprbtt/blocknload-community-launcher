@@ -3,13 +3,13 @@
     "channel":  "stable",
     "version":  "2.1.16",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-05T18:29:17.8627411+00:00",
+    "published_at":  "2026-05-05T18:44:31.1361399+00:00",
     "notes":  "## v2.1.16\n\n### Fixes\n- Removed the runtime menu dependency on external framework assemblies that were crashing the injected helper at runtime\n- Replaced runtime menu persistence with a plain-text config format\n- Disabled the FOV feature path in the experimental assembly builder for now to stop the `CameraFov.Update()` runtime regression\n\n### Runtime Menu\n- `F8` toggles the menu\n- `Up` / `Down` selects a setting\n- `Left` / `Right` changes the selected value\n- `F5` saves\n- `F6` resets defaults\n\n### Notes\n- FOV settings are temporarily ignored by this build while that feature path is quarantined\r\n",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
                                         "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.16/BnlCommunityFixes.exe",
-                                        "sha256":  "333CA9B053BFEAD7A1A2C6FB1C2F9EF06F6A15B47A64219F80F5E3E12ED00532",
+                                        "sha256":  "39B20F76A8CAB0802B1DEE82F0AA11E43F6B7176A38DEC36D7406B2F692473AA",
                                         "size":  162740430
                                     },
                    "updater_exe":  {

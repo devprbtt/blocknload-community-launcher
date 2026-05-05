@@ -28,6 +28,26 @@ public sealed class AppBootstrapper
 
         logger.Info($"Bootstrapping launcher from '{normalizedCurrent}' to '{normalizedTarget}'.");
 
+        // Don't overwrite if the installed version is newer than the source
+        if (File.Exists(normalizedTarget))
+        {
+            var installedVersion = System.Diagnostics.FileVersionInfo.GetVersionInfo(normalizedTarget).FileVersion;
+            var sourceVersion = System.Diagnostics.FileVersionInfo.GetVersionInfo(normalizedCurrent).FileVersion;
+            if (VersionService.IsRemoteNewer(sourceVersion ?? "0.0.0", installedVersion ?? "0.0.0"))
+            {
+                logger.Info($"Skipping bootstrapper copy: installed version '{installedVersion}' is newer than source '{sourceVersion}'.");
+                var restartInfo = new ProcessStartInfo
+                {
+                    FileName = normalizedTarget,
+                    UseShellExecute = true,
+                    WorkingDirectory = Path.GetDirectoryName(normalizedTarget)!
+                };
+                foreach (var arg in args) restartInfo.ArgumentList.Add(arg);
+                Process.Start(restartInfo);
+                return Task.FromResult(true);
+            }
+        }
+
         paths.EnsureDirectories();
         File.Copy(normalizedCurrent, normalizedTarget, true);
 
