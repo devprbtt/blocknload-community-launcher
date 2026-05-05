@@ -62,6 +62,7 @@ public sealed class FeatureSettingsForm : Form
     private readonly CheckBox healDirectionCheckBox;
 
     private readonly CheckBox objectiveBeamEnabledCheckBox;
+    private readonly CheckBox objectiveBeamHideCheckBox;
 
     private readonly CheckBox shieldEnabledCheckBox;
     private readonly TextBox shieldColorTextBox;
@@ -406,10 +407,12 @@ public sealed class FeatureSettingsForm : Form
             "Adds a tall vertical beam above the capture objective so it is visible from anywhere on the map. " +
             "No additional options — this is a simple enable/disable toggle.");
         objectiveBeamEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        objectiveBeamHideCheckBox = NewCheckBox("Hide Beam By Default", 14, CheckRow1Y);
         beamTab.Controls.Add(objectiveBeamEnabledCheckBox);
+        beamTab.Controls.Add(objectiveBeamHideCheckBox);
         AddPresetBar<BaseObjectiveBeamSettings>(beamTab, "objectiveBeam",
-            readFields: () => new BaseObjectiveBeamSettings { Enabled = objectiveBeamEnabledCheckBox.Checked },
-            applyFields: s => { objectiveBeamEnabledCheckBox.Checked = s.Enabled; });
+            readFields: () => new BaseObjectiveBeamSettings { Enabled = objectiveBeamEnabledCheckBox.Checked, HideBeam = objectiveBeamHideCheckBox.Checked },
+            applyFields: s => { objectiveBeamEnabledCheckBox.Checked = s.Enabled; objectiveBeamHideCheckBox.Checked = s.HideBeam; });
 
         // --- Shield Timer ---
         var shieldTab = new TabPage("Shield Timer");
@@ -724,6 +727,7 @@ public sealed class FeatureSettingsForm : Form
 
         var beam = featureSettingsService.LoadBaseObjectiveBeamSettings();
         objectiveBeamEnabledCheckBox.Checked = beam.Enabled;
+        objectiveBeamHideCheckBox.Checked = beam.HideBeam;
 
         var shield = featureSettingsService.LoadShieldBuffBarSettings();
         shieldEnabledCheckBox.Checked = shield.Enabled;
@@ -838,7 +842,8 @@ public sealed class FeatureSettingsForm : Form
 
         featureSettingsService.SaveBaseObjectiveBeamSettings(new BaseObjectiveBeamSettings
         {
-            Enabled = objectiveBeamEnabledCheckBox.Checked
+            Enabled = objectiveBeamEnabledCheckBox.Checked,
+            HideBeam = objectiveBeamHideCheckBox.Checked
         });
 
         featureSettingsService.SaveShieldBuffBarSettings(new ShieldBuffBarSettings

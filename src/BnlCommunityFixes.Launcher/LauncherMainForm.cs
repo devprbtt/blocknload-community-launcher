@@ -79,9 +79,9 @@ public sealed class LauncherMainForm : Form
         patchStatusLabel = new Label
         {
             AutoSize = false,
-            Size = new System.Drawing.Size(716, 20),
-            Location = new System.Drawing.Point(24, 118),
-            Text = "Base patching and feature rebuild/deploy are available."
+            Size = new System.Drawing.Size(716, 36),
+            Location = new System.Drawing.Point(24, 110),
+            Text = "Base patching and feature rebuild/deploy are available. Press F8 in-game for the settings menu."
         };
 
         var serverLabel = new Label

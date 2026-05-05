@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>2.1.15</Version>
+    <Version>2.1.16</Version>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Launcher</RootNamespace>
@@ -25,6 +25,7 @@
     <EmbeddedResource Include="game-icon.ico" />
     <EmbeddedResource Include="..\..\assets\patching\Build-ExperimentalCrosshairAssembly.ps1" LogicalName="Patching.Build-ExperimentalCrosshairAssembly.ps1" />
     <EmbeddedResource Include="..\..\assets\patching\CrosshairBundleRuntime.cs" LogicalName="Patching.CrosshairBundleRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\RuntimeMenu.cs" LogicalName="Patching.RuntimeMenu.cs" />
     <EmbeddedResource Include="..\..\assets\patching\Mono.Cecil.dll" LogicalName="Patching.Mono.Cecil.dll" />
   </ItemGroup>
 

@@ -1,21 +1,21 @@
 ﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.1.15",
+    "version":  "2.1.16",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-05T01:39:29.8820778+00:00",
-    "notes":  "## v2.1.15\r\n\r\n### Bug Fixes\r\n- **Damage and healing numbers no longer float** â€” numbers are now attached to each player\u0027s healthbar UI via `AttachToHealthbarUi()`. When you turn the camera, numbers stay locked to the correct player instead of appearing at wrong screen positions.\r\n- **Healing number size no longer grows each heal** â€” `ApplyHealTextAndColor` now has an `applySize` parameter that prevents the font size multiplier from being applied on every refresh call.\r\n- **Fixed `MissingMethodException: FieldInfo.op_Equality`** â€” all `FieldInfo` comparisons now use `object.ReferenceEquals()` instead of `==` for Unity 5 Mono compatibility.\r\n- **`GuiFollow` disabled immediately** â€” changed from `Destroy()` to `enabled = false` + `Destroy()` to prevent GuiFollow from repositioning numbers on the same frame after reparenting.\r\n\r\n### Changes\r\n- Default damage number size changed from **1.0 to 2.0**\r\n- Default heal number size changed from **1.0 to 2.0**\r\n- Healthbar-attached number Y offset increased from 30 to 65\r\n\r\n### Technical Details\r\n- Added `HashSet\u003cint\u003e` guard in `AttachToHealthbarUi()` to ensure attachment runs only once per number instance\r\n- Uses reflection to access `GuiHealthbar.maker` field for matching healthbar UI to unit\r\n- Numbers are reparented to `GuiHealthbar.Content.transform` and inherit correct canvas positioning\r\n",
+    "published_at":  "2026-05-05T18:21:35.5454219+00:00",
+    "notes":  "## v2.1.16\n\n### Fixes\n- Removed the runtime menu dependency on external framework assemblies that were crashing the injected helper at runtime\n- Replaced runtime menu persistence with a plain-text config format\n- Disabled the FOV feature path in the experimental assembly builder for now to stop the `CameraFov.Update()` runtime regression\n\n### Runtime Menu\n- `F8` toggles the menu\n- `Up` / `Down` selects a setting\n- `Left` / `Right` changes the selected value\n- `F5` saves\n- `F6` resets defaults\n\n### Notes\n- FOV settings are temporarily ignored by this build while that feature path is quarantined\r\n",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.15/BnlCommunityFixes.exe",
-                                        "sha256":  "7419479ABA16ACC26499239AEE979C8B341963A2E681E49872567C0AD00604C4",
-                                        "size":  162662606
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.16/BnlCommunityFixes.exe",
+                                        "sha256":  "8617684CB508265620872A1040A54A1406FF4AE40B693C9FA046DD20AF759907",
+                                        "size":  162740430
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.15/BnlUpdater.exe",
-                                       "sha256":  "04C930D049CD80B643FC44C9DEE45211CBDFE5E81B4B6E8C73B87F8463676E2A",
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.16/BnlUpdater.exe",
+                                       "sha256":  "385074E8991E5A70D8D03E8DFBEC961913194AA9B3D420725BF88EBB7E1130E1",
                                        "size":  67609337
                                    }
                }

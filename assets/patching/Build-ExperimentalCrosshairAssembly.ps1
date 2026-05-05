@@ -26,6 +26,7 @@ $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
 $HelperOutputPath = Join-Path $PSScriptRoot "BnlCommunityFixes.dll"
 $LockOnHelperSourcePath = Join-Path $PSScriptRoot "LockOnRuntime.cs"
 $TrackingHelperSourcePath = Join-Path $PSScriptRoot "TrackingProjectileRuntime.cs"
+$RuntimeMenuSourcePath = Join-Path $PSScriptRoot "RuntimeMenu.cs"
 $ManagedDir = Join-Path $GameRoot "Win64\BlockNLoad_Data\Managed"
 $BackupPath = Join-Path $ManagedDir "Assembly-CSharp-backup.dll"
 $CecilPath = Join-Path $PSScriptRoot "Mono.Cecil.dll"
@@ -117,6 +118,7 @@ $FovConfig = Get-JsonConfig -Path $FovConfigPath -Default @{
     fov = 120.0
     ads_sensitivity_multiplier = 1.0
 }
+[bool]$EnableFovFeature = $false
 $DamageHealingConfig = Get-JsonConfig -Path $DamageHealingConfigPath -Default @{
     enabled = $false
     damage_number_color = "#FFFFFF"
@@ -143,6 +145,7 @@ $HealAlertConfig = Get-JsonConfig -Path $HealAlertConfigPath -Default @{
 }
 $BaseObjectiveBeamConfig = Get-JsonConfig -Path $BaseObjectiveBeamConfigPath -Default @{
     enabled = $false
+    hide_beam = $false
 }
 $EnemyShieldBuffBarConfig = Get-JsonConfig -Path $EnemyShieldBuffBarConfigPath -Default @{
     enabled = $false
@@ -172,7 +175,7 @@ $AnyEnabled = @(
     [bool]$TeamColorConfig.enabled,
     [bool]$LockOnConfig.enabled,
     [bool]$TrackingConfig.enabled,
-    [bool]$FovConfig.enabled,
+    $EnableFovFeature -and [bool]$FovConfig.enabled,
     [bool]$DamageHealingConfig.enabled,
     [bool]$HealAlertConfig.enabled,
     [bool]$BaseObjectiveBeamConfig.enabled,
@@ -213,6 +216,10 @@ $SizeMultiplierLiteral = ([string]::Format([System.Globalization.CultureInfo]::I
 $LineSpacingMultiplierLiteral = ([string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:R}", [single]$LineSpacingMultiplier)) + "f"
 [double]$AdsSensitivityMultiplier = if ($null -ne $FovConfig.ads_sensitivity_multiplier) { [double]$FovConfig.ads_sensitivity_multiplier } else { 1.0 }
 $AdsSensitivityMultiplierLiteral = ([string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:R}", [single]$AdsSensitivityMultiplier)) + "f"
+[double]$DefaultWeaponModelFov = if ($null -ne $FovConfig.weapon_model_fov) { [double]$FovConfig.weapon_model_fov } else { 30.0 }
+$DefaultWeaponModelFovLiteral = ([string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:R}", [single]$DefaultWeaponModelFov)) + "f"
+[double]$DefaultForcedFov = if ($null -ne $FovConfig.fov) { [double]$FovConfig.fov } else { 120.0 }
+$DefaultForcedFovLiteral = ([string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:R}", [single]$DefaultForcedFov)) + "f"
 
 function Convert-HexToColorData {
     param(
@@ -261,6 +268,9 @@ function Test-DefaultColor {
     param([string]$Hex)
     return [string]::IsNullOrWhiteSpace($Hex) -or $Hex.Trim().ToUpperInvariant() -eq "__DEFAULT__"
 }
+
+$RuntimeFriendlyTeamColor = Convert-HexToColorData -Hex ([string]$TeamColorConfig.friendly_color) -Alpha 1.0
+$RuntimeEnemyTeamColor = Convert-HexToColorData -Hex ([string]$TeamColorConfig.enemy_color) -Alpha 1.0
 
 [double]$CrosshairAlpha = if ($null -ne $CrosshairConfig.alpha) { [double]$CrosshairConfig.alpha } else { 1.0 }
 [double]$CrosshairBrightnessMultiplier = if ($null -ne $CrosshairConfig.brightness_multiplier) { [double]$CrosshairConfig.brightness_multiplier } else { 1.0 }
@@ -1068,21 +1078,28 @@ namespace BnlCommunityFixes
 {
     public static class CrosshairRuntime
     {
-        private static readonly Color IdleColor = new Color($CrosshairIdleR, $CrosshairIdleG, $CrosshairIdleB, $CrosshairIdleA);
-        private static readonly Color FullDamageColor = new Color($CrosshairFullR, $CrosshairFullG, $CrosshairFullB, $CrosshairFullA);
-        private static readonly Color BelowMaxColor = new Color($CrosshairBelowR, $CrosshairBelowG, $CrosshairBelowB, $CrosshairBelowA);
-        private static readonly float SizeMultiplier = $CrosshairSizeMultiplierLiteral;
-        private static readonly float SpreadMultiplier = $CrosshairSpreadMultiplierLiteral;
-        private static readonly bool ForceShowInAds = $CrosshairForceShowInAdsLiteral;
-        private static readonly bool HideCrosshairEntirely = $(Format-BoolLiteral $CrosshairHideEntirely);
-        private static readonly string ForceShape = "$CrosshairForceShapeLiteral";
         private static readonly Dictionary<int, Vector3> OriginalCrosshairPartScales = new Dictionary<int, Vector3>();
         private static readonly Dictionary<int, Vector2> OriginalCrosshairPartSizes = new Dictionary<int, Vector2>();
         private static readonly Dictionary<int, Vector3> OriginalCrosshairPartPositions = new Dictionary<int, Vector3>();
 
+        static CrosshairRuntime()
+        {
+            RuntimeFeatureState.ConfigureCrosshair(
+                $(Format-BoolLiteral $CrosshairConfig.enabled),
+                new Color($CrosshairIdleR, $CrosshairIdleG, $CrosshairIdleB, 1f),
+                new Color($CrosshairFullR, $CrosshairFullG, $CrosshairFullB, 1f),
+                new Color($CrosshairBelowR, $CrosshairBelowG, $CrosshairBelowB, 1f),
+                $CrosshairSizeMultiplierLiteral,
+                $CrosshairSpreadMultiplierLiteral,
+                $CrosshairForceShowInAdsLiteral,
+                $(Format-BoolLiteral $CrosshairHideEntirely),
+                "$CrosshairForceShapeLiteral");
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
+
         public static bool ApplyHardHide(GuiCrosshairController controller)
         {
-            if (!HideCrosshairEntirely || controller == null)
+            if (!RuntimeFeatureState.CrosshairHideEntirely || controller == null)
             {
                 return false;
             }
@@ -1102,7 +1119,7 @@ namespace BnlCommunityFixes
 
         public static void ApplyVisibility(GuiCrosshairController controller)
         {
-            if (!ForceShowInAds || controller == null || controller.Content == null || controller.Content.activeSelf)
+            if (!RuntimeFeatureState.CrosshairForceShowInAds || controller == null || controller.Content == null || controller.Content.activeSelf)
             {
                 return;
             }
@@ -1132,9 +1149,9 @@ namespace BnlCommunityFixes
                 return;
             }
 
-            controller.NoTarget = IdleColor;
-            controller.FullDamage = FullDamageColor;
-            controller.BelowMaxDamage = BelowMaxColor;
+            controller.NoTarget = RuntimeFeatureState.GetCrosshairIdleColor();
+            controller.FullDamage = RuntimeFeatureState.GetCrosshairFullDamageColor();
+            controller.BelowMaxDamage = RuntimeFeatureState.GetCrosshairBelowMaxColor();
         }
 
         public static void ApplyBlank(GuiCrosshairBlank blank)
@@ -1164,7 +1181,7 @@ namespace BnlCommunityFixes
                         baseScale = rect.localScale;
                         OriginalCrosshairPartScales[id] = baseScale;
                     }
-                    rect.localScale = baseScale * SizeMultiplier;
+                    rect.localScale = baseScale * RuntimeFeatureState.CrosshairSizeMultiplier;
 
                     Vector2 baseSize;
                     if (!OriginalCrosshairPartSizes.TryGetValue(id, out baseSize))
@@ -1172,7 +1189,7 @@ namespace BnlCommunityFixes
                         baseSize = rect.sizeDelta;
                         OriginalCrosshairPartSizes[id] = baseSize;
                     }
-                    rect.sizeDelta = baseSize * SizeMultiplier;
+                    rect.sizeDelta = baseSize * RuntimeFeatureState.CrosshairSizeMultiplier;
 
                     Vector3 basePosition;
                     if (!OriginalCrosshairPartPositions.TryGetValue(id, out basePosition) || IsRuntimeCrosshairPart(blank, rect))
@@ -1180,22 +1197,22 @@ namespace BnlCommunityFixes
                         basePosition = rect.localPosition;
                         OriginalCrosshairPartPositions[id] = basePosition;
                     }
-                    rect.localPosition = basePosition * SizeMultiplier;
+                    rect.localPosition = basePosition * RuntimeFeatureState.CrosshairSizeMultiplier;
                 }
                 return;
             }
 
-            blank.transform.localScale = Vector3.one * SizeMultiplier;
+            blank.transform.localScale = Vector3.one * RuntimeFeatureState.CrosshairSizeMultiplier;
         }
 
         public static float ScaleAngle(float angle)
         {
-            return angle * SpreadMultiplier;
+            return angle * RuntimeFeatureState.CrosshairSpreadMultiplier;
         }
 
         public static Vector3 ScaleSizeVector(Vector3 value)
         {
-            return value * SizeMultiplier;
+            return value * RuntimeFeatureState.CrosshairSizeMultiplier;
         }
 
         private static bool IsRuntimeCrosshairPart(GuiCrosshairBlank blank, RectTransform rect)
@@ -1251,7 +1268,7 @@ namespace BnlCommunityFixes
 
         private static ReticleType? GetForcedType()
         {
-            switch (ForceShape)
+            switch (RuntimeFeatureState.CrosshairForceShape)
             {
                 case "Dot":
                     return ReticleType.Dot;
@@ -1377,23 +1394,35 @@ namespace BnlCommunityFixes
 
     public static class CombatNumberRuntime
     {
-        private static readonly Color DamageNumberColor = new Color($(Format-FloatLiteral $DamageColor.R), $(Format-FloatLiteral $DamageColor.G), $(Format-FloatLiteral $DamageColor.B), $(Format-FloatLiteral $DamageColor.A));
-        private static readonly Color CritDamageNumberColor = new Color($(Format-FloatLiteral $CritDamageColor.R), $(Format-FloatLiteral $CritDamageColor.G), $(Format-FloatLiteral $CritDamageColor.B), $(Format-FloatLiteral $CritDamageColor.A));
-        private static readonly Color ConfigHealColor = new Color($(Format-FloatLiteral $HealColor.R), $(Format-FloatLiteral $HealColor.G), $(Format-FloatLiteral $HealColor.B), $(Format-FloatLiteral $HealColor.A));
-        private static readonly bool UseDamageNumberColor = $(Format-BoolLiteral $UseDamageColor);
-        private static readonly bool UseCritDamageNumberColor = $(Format-BoolLiteral $UseCritDamageColor);
-        private static readonly bool UseConfigHealColor = $(Format-BoolLiteral $UseHealColor);
-        private static readonly bool ShowFriendlyHealing = $(Format-BoolLiteral $ShowFriendlyHealing);
-        private static readonly bool ShowSelfHealing = $(Format-BoolLiteral $ShowSelfHealing);
-        private static readonly bool CombineDamageUntilHidden = $(Format-BoolLiteral $CombineDamageUntilHidden);
-        private static readonly bool CombineHealingUntilHidden = $(Format-BoolLiteral $CombineHealingUntilHidden);
-        private static readonly float DamageNumberSizeMultiplier = $(Format-FloatLiteral $DamageSize);
-        private static readonly float HealNumberSizeMultiplier = $(Format-FloatLiteral $HealSize);
-        private static readonly float MinimumHeal = $(Format-FloatLiteral $MinimumHeal);
         private const float CollectTime = 0.15f;
         private const float HealContinueGrace = 2.5f;
+        private const float StandardDisplayHold = 1.0f;
         private static readonly Dictionary<uint, ActiveDamageNumber> ActiveDamageNumbers = new Dictionary<uint, ActiveDamageNumber>();
         private static readonly Dictionary<uint, ActiveHealNumber> ActiveHealNumbers = new Dictionary<uint, ActiveHealNumber>();
+
+        static CombatNumberRuntime()
+        {
+            RuntimeFeatureState.ConfigureCombat(
+                $(Format-BoolLiteral $DamageHealingConfig.enabled),
+                new Color($(Format-FloatLiteral $DamageColor.R), $(Format-FloatLiteral $DamageColor.G), $(Format-FloatLiteral $DamageColor.B), 1f),
+                new Color($(Format-FloatLiteral $CritDamageColor.R), $(Format-FloatLiteral $CritDamageColor.G), $(Format-FloatLiteral $CritDamageColor.B), 1f),
+                new Color($(Format-FloatLiteral $HealColor.R), $(Format-FloatLiteral $HealColor.G), $(Format-FloatLiteral $HealColor.B), 1f),
+                $(Format-BoolLiteral $UseDamageColor),
+                $(Format-BoolLiteral $UseCritDamageColor),
+                $(Format-BoolLiteral $UseHealColor),
+                $(Format-FloatLiteral $DamageSize),
+                $(Format-FloatLiteral $HealSize),
+                $(Format-FloatLiteral $HealSize),
+                $(Format-FloatLiteral $DamageHealingAlpha),
+                $(Format-FloatLiteral $MinimumHeal),
+                $(Format-BoolLiteral $ShowFriendlyHealing),
+                $(Format-BoolLiteral $ShowSelfHealing),
+                $(Format-BoolLiteral $CombineDamageUntilHidden),
+                $(Format-BoolLiteral $CombineHealingUntilHidden),
+                65f,
+                65f);
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
 
         public static void AttachHealing(GuiDamageNumberDetector detector)
         {
@@ -1452,15 +1481,28 @@ namespace BnlCommunityFixes
         private static readonly System.Collections.Generic.HashSet<int> attachedNumbers = new System.Collections.Generic.HashSet<int>();
         private static readonly System.Reflection.FieldInfo healthbarMakerField = typeof(GuiHealthbar).GetField("maker", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 
-        private static void AttachToHealthbarUi(GuiDamageNumber number, Unit unit)
+        private static void AttachToHealthbarUi(GuiDamageNumber number, Unit unit, float offsetY)
         {
             if (object.ReferenceEquals(number, null) || object.ReferenceEquals(unit, null)) return;
-            if (!attachedNumbers.Add(number.GetInstanceID())) return;
+            int id = number.GetInstanceID();
+            // Already processed - just update position if parented to healthbar
+            if (attachedNumbers.Contains(id))
+            {
+                if (number.transform.parent != null)
+                    number.transform.localPosition = new Vector3(0f, offsetY, 0f);
+                return;
+            }
             GuiHealthBarMaker maker = unit.GetComponentInChildren<GuiHealthBarMaker>();
-            if (object.ReferenceEquals(maker, null)) return;
+            if (object.ReferenceEquals(maker, null))
+            {
+                number.GetOrAddComponent<GuiFollow>().WorldTarget = unit.transform;
+                attachedNumbers.Add(id);
+                return;
+            }
             if (object.ReferenceEquals(healthbarMakerField, null))
             {
                 number.GetOrAddComponent<GuiFollow>().WorldTarget = maker.transform;
+                attachedNumbers.Add(id);
                 return;
             }
             GuiHealthbar[] allBars = UnityEngine.Object.FindObjectsOfType<GuiHealthbar>();
@@ -1471,43 +1513,47 @@ namespace BnlCommunityFixes
                 if (object.ReferenceEquals(hbMaker, maker))
                 {
                     number.transform.SetParent(allBars[i].Content.transform, false);
-                    number.transform.localPosition = new Vector3(0f, 65f, 0f);
+                    number.transform.localPosition = new Vector3(0f, offsetY, 0f);
                     GuiFollow existing = number.GetComponent<GuiFollow>();
                     if (!object.ReferenceEquals(existing, null))
                     {
                         existing.enabled = false;
                         UnityEngine.Object.Destroy(existing);
                     }
+                    attachedNumbers.Add(id);
                     return;
                 }
             }
+            // No matching healthbar found - track via maker transform
+            number.GetOrAddComponent<GuiFollow>().WorldTarget = maker.transform;
+            attachedNumbers.Add(id);
         }
 
         public static void ApplyDamageNumber(GuiDamageNumber number, bool crit)
         {
             if (object.ReferenceEquals(number, null)) return;
-            AttachToHealthbarUi(number, number.Unit);
-            if (DamageNumberSizeMultiplier != 1f) number.transform.localScale = number.transform.localScale * DamageNumberSizeMultiplier;
-            bool useColor = crit ? UseCritDamageNumberColor : UseDamageNumberColor;
-            Color color = crit ? CritDamageNumberColor : DamageNumberColor;
-            if (number.Damage != null && (useColor || DamageNumberSizeMultiplier != 1f))
+            AttachToHealthbarUi(number, number.Unit, RuntimeFeatureState.DamageNumberOffsetY);
+            if (RuntimeFeatureState.DamageNumberSizeMultiplier != 1f) number.transform.localScale = number.transform.localScale * RuntimeFeatureState.DamageNumberSizeMultiplier;
+            bool useColor = crit ? RuntimeFeatureState.UseCritDamageNumberColor : RuntimeFeatureState.UseDamageNumberColor;
+            Color color = crit ? RuntimeFeatureState.GetCritDamageNumberColor() : RuntimeFeatureState.GetDamageNumberColor();
+            if (number.Damage != null && (useColor || RuntimeFeatureState.DamageNumberSizeMultiplier != 1f))
             {
                 if (useColor) number.Damage.color = color;
-                if (DamageNumberSizeMultiplier != 1f) number.Damage.fontSize = Mathf.Max(1, Mathf.RoundToInt(number.Damage.fontSize * DamageNumberSizeMultiplier));
+                if (RuntimeFeatureState.DamageNumberSizeMultiplier != 1f) number.Damage.fontSize = Mathf.Max(1, Mathf.RoundToInt(number.Damage.fontSize * RuntimeFeatureState.DamageNumberSizeMultiplier));
             }
             if (useColor) ApplyGraphics(number.gameObject, color);
         }
 
         public static float GetDamageCollectTime(float original)
         {
-            return CombineDamageUntilHidden ? 99999f : original;
+            return RuntimeFeatureState.CombineDamageUntilHidden ? 99999f : original;
         }
 
         public static GuiDamageNumber RefreshDamageNumber(GuiDamageNumberDetector detector, GuiDamageNumber oldNumber, Unit unit, float value, bool crit)
         {
-            if (!CombineDamageUntilHidden || detector == null || unit == null || oldNumber == null)
+            if (!RuntimeFeatureState.CombineDamageUntilHidden || detector == null || unit == null || oldNumber == null)
             {
-                RestartLifetime(oldNumber == null ? null : oldNumber.gameObject);
+                RefreshDamageHold(oldNumber);
                 ApplyDamageNumber(oldNumber, crit);
                 return oldNumber;
             }
@@ -1558,13 +1604,13 @@ namespace BnlCommunityFixes
             if (!Singleton<Settings>.Instance.ShowCombatNumbers) return;
 
             float amount = args.newHealth - args.oldHealth;
-            if (amount < MinimumHeal) return;
+            if (amount < RuntimeFeatureState.MinimumHeal) return;
             if (args.unit.PlayerId == null) return;
             if (args.unit.IsMyPlayer)
             {
-                if (!ShowSelfHealing) return;
+                if (!RuntimeFeatureState.ShowSelfHealing) return;
             }
-            else if (!ShowFriendlyHealing || !args.unit.Team.IsMy())
+            else if (!RuntimeFeatureState.ShowFriendlyHealing || !args.unit.Team.IsMy())
             {
                 return;
             }
@@ -1607,8 +1653,24 @@ namespace BnlCommunityFixes
             number.Unit = unit;
             number.DamageValue = amount;
 
-            AttachToHealthbarUi(number, unit);
-            if (HealNumberSizeMultiplier != 1f) number.transform.localScale = number.transform.localScale * HealNumberSizeMultiplier;
+            if (unit.IsMyPlayer)
+            {
+                // Self-heal: stay on HUD canvas at a fixed screen position near health bar
+                GuiFollow g = number.GetComponent<GuiFollow>();
+                if (!object.ReferenceEquals(g, null))
+                {
+                    g.enabled = false;
+                    UnityEngine.Object.Destroy(g);
+                }
+                number.transform.localPosition = new Vector3(RuntimeFeatureState.SelfHealX, RuntimeFeatureState.SelfHealY, 0f);
+                float selfSize = RuntimeFeatureState.SelfHealNumberSizeMultiplier;
+                if (selfSize != 1f) number.transform.localScale = number.transform.localScale * selfSize;
+            }
+            else
+            {
+                AttachToHealthbarUi(number, unit, RuntimeFeatureState.HealNumberOffsetY);
+            }
+            if (RuntimeFeatureState.HealNumberSizeMultiplier != 1f) number.transform.localScale = number.transform.localScale * RuntimeFeatureState.HealNumberSizeMultiplier;
             ApplyHealTextAndColor(number, amount, detector.HealColor, true);
             RefreshHealHold(number);
             return number;
@@ -1617,19 +1679,13 @@ namespace BnlCommunityFixes
         private static bool ShouldCombineHeal(ActiveHealNumber active)
         {
             if (active == null) return false;
-            if (!CombineHealingUntilHidden) return Time.time - active.LastTime <= CollectTime;
+            if (!RuntimeFeatureState.CombineHealingUntilHidden) return Time.time - active.LastTime <= CollectTime;
             return Time.time - active.LastTime <= HealContinueGrace;
         }
 
         private static void RefreshHealHold(GuiDamageNumber number)
         {
             if (number == null) return;
-            if (!CombineHealingUntilHidden)
-            {
-                RestartLifetime(number.gameObject);
-                return;
-            }
-
             HealingNumberHoldController hold = number.gameObject.GetComponent<HealingNumberHoldController>();
             if (hold == null)
             {
@@ -1640,7 +1696,7 @@ namespace BnlCommunityFixes
                 }
                 hold = number.gameObject.AddComponent<HealingNumberHoldController>();
             }
-            hold.Extend(Time.time + HealContinueGrace);
+            hold.Extend(Time.time + (RuntimeFeatureState.CombineHealingUntilHidden ? HealContinueGrace : StandardDisplayHold));
         }
 
         private static void RefreshDamageHold(GuiDamageNumber number)
@@ -1660,17 +1716,17 @@ namespace BnlCommunityFixes
                     animators[i].enabled = false;
                 hold = number.gameObject.AddComponent<DamageNumberHoldController>();
             }
-            hold.Extend(Time.time + HealContinueGrace);
+            hold.Extend(Time.time + (RuntimeFeatureState.CombineDamageUntilHidden ? HealContinueGrace : StandardDisplayHold));
         }
 
         private static void ApplyHealTextAndColor(GuiDamageNumber number, float amount, Color defaultHealColor, bool applySize)
         {
             if (number == null || number.Damage == null) return;
             number.Damage.text = "+" + Mathf.RoundToInt(amount).ToString();
-            number.Damage.color = UseConfigHealColor ? ConfigHealColor : defaultHealColor;
-            if (applySize && HealNumberSizeMultiplier != 1f)
+            number.Damage.color = RuntimeFeatureState.UseHealNumberColor ? RuntimeFeatureState.GetHealNumberColor() : defaultHealColor;
+            if (applySize && RuntimeFeatureState.HealNumberSizeMultiplier != 1f)
             {
-                number.Damage.fontSize = Mathf.Max(1, Mathf.RoundToInt(number.Damage.fontSize * HealNumberSizeMultiplier));
+                number.Damage.fontSize = Mathf.Max(1, Mathf.RoundToInt(number.Damage.fontSize * RuntimeFeatureState.HealNumberSizeMultiplier));
             }
             ApplyGraphics(number.gameObject, number.Damage.color);
         }
@@ -1741,6 +1797,11 @@ if (Test-Path $TrackingHelperSourcePath) {
     $TrackingHelperSource = [regex]::Replace($TrackingHelperSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     $HelperSource += "`r`n" + $TrackingHelperSource
 }
+if (Test-Path $RuntimeMenuSourcePath) {
+    $RuntimeMenuSource = Get-Content -Raw -LiteralPath $RuntimeMenuSourcePath
+    $RuntimeMenuSource = [regex]::Replace($RuntimeMenuSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $HelperSource += "`r`n" + $RuntimeMenuSource
+}
 
 $HelperSource += @"
 
@@ -1748,26 +1809,214 @@ namespace BnlCommunityFixes
 {
     public static class AdsSensitivityRuntime
     {
-        private const float AdsSensitivityMultiplier = $AdsSensitivityMultiplierLiteral;
+        static AdsSensitivityRuntime()
+        {
+            RuntimeFeatureState.ConfigureFov($(Format-BoolLiteral ($EnableFovFeature -and [bool]$FovConfig.enabled)), $DefaultForcedFovLiteral, $AdsSensitivityMultiplierLiteral, $DefaultWeaponModelFovLiteral);
+        }
 
         public static float ApplyAdsScale(float currentScale, Unit unit)
         {
             if (unit != null && unit.GetAimingState() != null)
             {
-                return currentScale * AdsSensitivityMultiplier;
+                return currentScale * RuntimeFeatureState.AdsSensitivityMultiplier;
             }
 
             return currentScale;
+        }
+
+        public static void ApplyCameraFov(CameraFov cameraFov)
+        {
+            if (!RuntimeFeatureState.FovSupported || cameraFov == null)
+            {
+                return;
+            }
+
+            try
+            {
+                Camera camera = FindPrimaryCamera(cameraFov);
+                if (camera != null)
+                {
+                    camera.fieldOfView = RuntimeFeatureState.ForcedFov;
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        public static void ApplyWeaponModelFov(CameraArms cameraArms)
+        {
+            if (!RuntimeFeatureState.FovSupported || cameraArms == null)
+            {
+                return;
+            }
+
+            try
+            {
+                Camera[] cameras = cameraArms.GetComponentsInChildren<Camera>(true);
+                if (cameras == null || cameras.Length == 0)
+                {
+                    Camera primary = FindPrimaryCamera(cameraArms);
+                    if (primary != null)
+                    {
+                        primary.fieldOfView = RuntimeFeatureState.WeaponModelFov;
+                    }
+                    return;
+                }
+
+                for (int i = 0; i < cameras.Length; i++)
+                {
+                    Camera camera = cameras[i];
+                    if (camera == null)
+                    {
+                        continue;
+                    }
+
+                    if (camera != Camera.main || cameras.Length == 1)
+                    {
+                        camera.fieldOfView = RuntimeFeatureState.WeaponModelFov;
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static Camera FindPrimaryCamera(Component component)
+        {
+            if (component == null)
+            {
+                return Camera.main;
+            }
+
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            FieldInfo[] fields = component.GetType().GetFields(flags);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                if (!typeof(Camera).IsAssignableFrom(fields[i].FieldType))
+                {
+                    continue;
+                }
+
+                Camera fieldCamera = fields[i].GetValue(component) as Camera;
+                if (fieldCamera != null)
+                {
+                    return fieldCamera;
+                }
+            }
+
+            PropertyInfo[] properties = component.GetType().GetProperties(flags);
+            for (int i = 0; i < properties.Length; i++)
+            {
+                if (!properties[i].CanRead || !typeof(Camera).IsAssignableFrom(properties[i].PropertyType) || properties[i].GetIndexParameters().Length != 0)
+                {
+                    continue;
+                }
+
+                Camera propertyCamera = null;
+                try
+                {
+                    propertyCamera = properties[i].GetValue(component, null) as Camera;
+                }
+                catch
+                {
+                }
+
+                if (propertyCamera != null)
+                {
+                    return propertyCamera;
+                }
+            }
+
+            Camera[] children = component.GetComponentsInChildren<Camera>(true);
+            if (children != null && children.Length > 0)
+            {
+                return children[0];
+            }
+
+            return Camera.main;
         }
     }
 }
 
 namespace BnlCommunityFixes
 {
+    public static class TeamColorRuntime
+    {
+        static TeamColorRuntime()
+        {
+            RuntimeFeatureState.ConfigureTeamColors(
+                $(Format-BoolLiteral $TeamColorConfig.enabled),
+                new Color($(Format-FloatLiteral $RuntimeFriendlyTeamColor.R), $(Format-FloatLiteral $RuntimeFriendlyTeamColor.G), $(Format-FloatLiteral $RuntimeFriendlyTeamColor.B), 1f),
+                new Color($(Format-FloatLiteral $RuntimeEnemyTeamColor.R), $(Format-FloatLiteral $RuntimeEnemyTeamColor.G), $(Format-FloatLiteral $RuntimeEnemyTeamColor.B), 1f));
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
+
+        public static Color GetGuiFriendlyColor() { return RuntimeFeatureState.GetGuiFriendlyColor(); }
+        public static Color GetGuiEnemyColor() { return RuntimeFeatureState.GetGuiEnemyColor(); }
+        public static Color GetGuiBackgroundFriendlyColor() { return RuntimeFeatureState.GetGuiBackgroundFriendlyColor(); }
+        public static Color GetGuiBackgroundEnemyColor() { return RuntimeFeatureState.GetGuiBackgroundEnemyColor(); }
+        public static Color GetObjectCommonFriendlyColor() { return RuntimeFeatureState.GetGuiFriendlyColor(); }
+        public static Color GetObjectCommonEnemyColor() { return RuntimeFeatureState.GetGuiEnemyColor(); }
+        public static Color GetForceFieldFriendlyColor() { return RuntimeFeatureState.GetGuiFriendlyColor(); }
+        public static Color GetForceFieldEnemyColor() { return RuntimeFeatureState.GetGuiEnemyColor(); }
+        public static Color GetIceFriendlyColor() { return RuntimeFeatureState.GetGuiFriendlyColor(); }
+        public static Color GetIceEnemyColor() { return RuntimeFeatureState.GetGuiEnemyColor(); }
+    }
+
+    public static class BaseObjectiveBeamRuntime
+    {
+        static BaseObjectiveBeamRuntime()
+        {
+            RuntimeFeatureState.ConfigureBaseObjectiveBeam(
+                $(Format-BoolLiteral $BaseObjectiveBeamConfig.enabled),
+                $(Format-BoolLiteral ([bool]$BaseObjectiveBeamConfig.hide_beam)));
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
+
+        public static bool ShouldHide()
+        {
+            return RuntimeFeatureState.HideBaseObjectiveBeam;
+        }
+    }
+
+    public static class AimHealthbarRuntime
+    {
+        static AimHealthbarRuntime()
+        {
+            RuntimeFeatureState.ConfigureAimHealthbar($(Format-BoolLiteral $AimHealthbarConfig.enabled), $(Format-BoolLiteral $AimHealthbarConfig.enabled));
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
+
+        public static bool ShouldShow(Unit healthbarUnit)
+        {
+            if (!RuntimeFeatureState.AimHealthbarEnabled || healthbarUnit == null)
+            {
+                return false;
+            }
+
+            Crosshair crosshair = Singleton<Crosshair>.Instance;
+            if (crosshair == null)
+            {
+                return false;
+            }
+
+            return crosshair.RaycastUnitInfo.Unit == healthbarUnit;
+        }
+    }
+
     public static class DeathCamRuntime
     {
+        static DeathCamRuntime()
+        {
+            RuntimeFeatureState.ConfigureDeathCamHealthbar($(Format-BoolLiteral $DeathCamHealthbarConfig.enabled), $(Format-BoolLiteral $DeathCamHealthbarConfig.enabled));
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
+
         public static bool IsDeathCamFriendly(Unit healthbarUnit)
         {
+            if (!RuntimeFeatureState.DeathCamHealthbarEnabled) return false;
             if (healthbarUnit == null) return false;
             if (healthbarUnit.IsMyPlayer) return false;
             // Only show for actual player units (has PlayerId), not devices/minions
@@ -1781,6 +2030,7 @@ namespace BnlCommunityFixes
 
         public static void UpdateDeathCamHpText(UnityEngine.UI.Text nicknameText)
         {
+            if (!RuntimeFeatureState.DeathCamHealthbarEnabled) return;
             if (nicknameText == null) return;
             try
             {
@@ -1821,14 +2071,21 @@ namespace BnlCommunityFixes
 {
     public static class HealAlertRuntime
     {
-        private static readonly Color DamageIndicatorColor = new Color($(Format-FloatLiteral $HealAlertDamageColor.R), $(Format-FloatLiteral $HealAlertDamageColor.G), $(Format-FloatLiteral $HealAlertDamageColor.B), $(Format-FloatLiteral $HealAlertDamageColor.A));
-        private static readonly Color HealIndicatorColor   = new Color($(Format-FloatLiteral $HealAlertHealColor.R),   $(Format-FloatLiteral $HealAlertHealColor.G),   $(Format-FloatLiteral $HealAlertHealColor.B),   $(Format-FloatLiteral $HealAlertHealColor.A));
         private static readonly bool UseDamageIndicatorColor = $(Format-BoolLiteral $HealAlertUseDamageColor);
         private static readonly bool UseHealIndicatorColor   = $(Format-BoolLiteral $HealAlertUseHealColor);
-        private static readonly float DamageIndicatorSizeMultiplier = $(Format-FloatLiteral $HealAlertDamageSize);
-        private static readonly float HealIndicatorSizeMultiplier   = $(Format-FloatLiteral $HealAlertHealSize);
-        private static readonly float MinimumHeal      = $(Format-FloatLiteral $HealAlertMinimumHeal);
-        private static readonly bool ShowDirectionOnHeal = $(Format-BoolLiteral $HealAlertShowDir);
+        private static readonly Color DamageIndicatorBaseColor = new Color($(Format-FloatLiteral $HealAlertDamageColor.R), $(Format-FloatLiteral $HealAlertDamageColor.G), $(Format-FloatLiteral $HealAlertDamageColor.B), $(Format-FloatLiteral $HealAlertDamageColor.A));
+        private static readonly Color HealIndicatorBaseColor   = new Color($(Format-FloatLiteral $HealAlertHealColor.R),   $(Format-FloatLiteral $HealAlertHealColor.G),   $(Format-FloatLiteral $HealAlertHealColor.B),   $(Format-FloatLiteral $HealAlertHealColor.A));
+
+        static HealAlertRuntime()
+        {
+            RuntimeFeatureState.ConfigureHealAlert(
+                $(Format-BoolLiteral $HealAlertConfig.enabled),
+                $(Format-FloatLiteral $HealAlertDamageSize),
+                $(Format-FloatLiteral $HealAlertHealSize),
+                $(Format-FloatLiteral $HealAlertMinimumHeal),
+                $(Format-BoolLiteral $HealAlertShowDir));
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
 
         public static void AttachHealBridge(GuiHitAlertMaker maker)
         {
@@ -1866,9 +2123,9 @@ namespace BnlCommunityFixes
         {
             GameObject go = component == null ? null : component.gameObject;
             if (go == null) return;
-            if (DamageIndicatorSizeMultiplier != 1f)
-                go.transform.localScale = go.transform.localScale * DamageIndicatorSizeMultiplier;
-            if (UseDamageIndicatorColor) ApplyGraphics(go, DamageIndicatorColor);
+            if (RuntimeFeatureState.HealAlertDamageSizeMultiplier != 1f)
+                go.transform.localScale = go.transform.localScale * RuntimeFeatureState.HealAlertDamageSizeMultiplier;
+            if (UseDamageIndicatorColor) ApplyGraphics(go, DamageIndicatorBaseColor);
         }
 
         public static void OnHealthChanged(GuiHitAlertMaker maker, GlobalUnitHealthChangeArgs args)
@@ -1878,9 +2135,9 @@ namespace BnlCommunityFixes
             if (maker.Content == null || !maker.Content.activeSelf) return;
 
             float healAmount = args.newHealth - args.oldHealth;
-            if (healAmount < MinimumHeal) return;
+            if (healAmount < RuntimeFeatureState.HealAlertMinimumHeal) return;
 
-            if (ShowDirectionOnHeal)
+            if (RuntimeFeatureState.HealAlertShowDirectionOnHeal)
             {
                 GuiHitAlert dir = GameObjectMaker.AddChild<GuiHitAlert>(maker.transform, maker.DirectionHitPrefab.gameObject, false);
                 dir.DestroySelf = true;
@@ -1898,9 +2155,9 @@ namespace BnlCommunityFixes
         {
             GameObject go = component == null ? null : component.gameObject;
             if (go == null) return;
-            if (HealIndicatorSizeMultiplier > 1f)
-                go.transform.localScale = go.transform.localScale * HealIndicatorSizeMultiplier;
-            if (UseHealIndicatorColor) ApplyGraphics(go, HealIndicatorColor);
+            if (RuntimeFeatureState.HealAlertHealSizeMultiplier != 1f)
+                go.transform.localScale = go.transform.localScale * RuntimeFeatureState.HealAlertHealSizeMultiplier;
+            if (UseHealIndicatorColor) ApplyGraphics(go, HealIndicatorBaseColor);
             ApplyImmediateFade(go);
         }
 
@@ -1931,11 +2188,25 @@ namespace BnlCommunityFixes
 {
     public static class LocalBuildPredictionRuntime
     {
-        private static readonly bool Enabled = true;
-        private static readonly float PredictionTimeoutSeconds = $LocalBuildPreviewTimeoutLiteral;
         private static readonly float InstantCrateChainWindowSeconds = 5.0f;
         private static PredictionManager manager;
         private static float instantCrateChainUntil;
+
+        static LocalBuildPredictionRuntime()
+        {
+            RuntimeFeatureState.ConfigureLocalBuildPreview($(Format-BoolLiteral $LocalBuildPreviewConfig.enabled), true, $LocalBuildPreviewTimeoutLiteral);
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
+
+        private static bool Enabled
+        {
+            get { return RuntimeFeatureState.LocalBuildPreviewEnabled; }
+        }
+
+        private static float PredictionTimeoutSeconds
+        {
+            get { return RuntimeFeatureState.LocalBuildPreviewTimeoutSeconds; }
+        }
 
         private static PredictionManager Manager
         {
@@ -2441,11 +2712,14 @@ function Replace-MethodCalls {
 }
 
 function Insert-CallAtStart {
-    param([Mono.Cecil.MethodDefinition]$Method)
-    if (-not $Method -or -not $Method.HasBody) { return }
+    param(
+        [Mono.Cecil.MethodDefinition]$Method,
+        [Mono.Cecil.MethodReference]$Call
+    )
+    if (-not $Method -or -not $Method.HasBody -or -not $Call) { return }
     $Il = $Method.Body.GetILProcessor()
     $First = $Method.Body.Instructions[0]
-    $Il.InsertBefore($First, $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedApplyAllCanvases))
+    $Il.InsertBefore($First, $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $Call))
 }
 
 if ($DamageHealingConfig.enabled) {
@@ -2623,8 +2897,8 @@ $CameraFov = $Module.Types | Where-Object Name -eq "CameraFov" | Select-Object -
 $UiStyleFontComponent = $Module.Types | Where-Object Name -eq "UiStyleFontComponent" | Select-Object -First 1
 
 if ($Config.enabled) {
-    Insert-CallAtStart -Method ($MainMenu.Methods | Where-Object Name -eq "Start" | Select-Object -First 1)
-    Insert-CallAtStart -Method ($CameraFov.Methods | Where-Object Name -eq "Start" | Select-Object -First 1)
+    Insert-CallAtStart -Method ($MainMenu.Methods | Where-Object Name -eq "Start" | Select-Object -First 1) -Call $ImportedApplyAllCanvases
+    Insert-CallAtStart -Method ($CameraFov.Methods | Where-Object Name -eq "Start" | Select-Object -First 1) -Call $ImportedApplyAllCanvases
 
     $SetStyle = $UiStyleFontComponent.Methods | Where-Object Name -eq "SetStyle" | Select-Object -First 1
     if ($SetStyle -and $SetStyle.HasBody) {
@@ -2640,7 +2914,7 @@ if ($Config.enabled) {
     }
 }
 
-if ($FovConfig.enabled) {
+if ($EnableFovFeature -and $FovConfig.enabled) {
     $UpdateMethod = $CameraFov.Methods | Where-Object Name -eq "Update" | Select-Object -First 1
     $Instructions = @($UpdateMethod.Body.Instructions)
     $ForcedFov = [single]$FovConfig.fov
@@ -2985,45 +3259,20 @@ if ($TeamColorConfig.enabled) {
     $FriendlyBg = Convert-HexToColorData -Hex $TeamColorConfig.friendly_color -Alpha 0.45
     $EnemyBg = Convert-HexToColorData -Hex $TeamColorConfig.enemy_color -Alpha 0.45
 
-    $UnityEngineRef = $Module.AssemblyReferences | Where-Object Name -eq "UnityEngine" | Select-Object -First 1
-    $UnityEngineAsm = $Resolver.Resolve($UnityEngineRef)
-    $ColorType = $UnityEngineAsm.MainModule.Types | Where-Object FullName -eq "UnityEngine.Color" | Select-Object -First 1
-    $ColorCtor = $ColorType.Methods | Where-Object { $_.IsConstructor -and $_.Parameters.Count -eq 4 } | Select-Object -First 1
-    $ImportedColorCtor = $Module.ImportReference($ColorCtor)
-
-    $RuntimeType = New-Object Mono.Cecil.TypeDefinition("", "ExperimentalTeamColorRuntime", ([Mono.Cecil.TypeAttributes]::Class -bor [Mono.Cecil.TypeAttributes]::Abstract -bor [Mono.Cecil.TypeAttributes]::Sealed -bor [Mono.Cecil.TypeAttributes]::Public), $Module.TypeSystem.Object)
-    $Module.Types.Add($RuntimeType)
-
-    function Add-ColorMethod {
-        param([string]$Name,$ColorData)
-        $Attrs = [Mono.Cecil.MethodAttributes](([int][Mono.Cecil.MethodAttributes]::Public) -bor ([int][Mono.Cecil.MethodAttributes]::Static) -bor ([int][Mono.Cecil.MethodAttributes]::HideBySig))
-        $Method = New-Object Mono.Cecil.MethodDefinition($Name, $Attrs, $Module.ImportReference($ColorType))
-        $RuntimeType.Methods.Add($Method)
-        $Il = $Method.Body.GetILProcessor()
-        $Il.Append($Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]$ColorData.R))
-        $Il.Append($Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]$ColorData.G))
-        $Il.Append($Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]$ColorData.B))
-        $Il.Append($Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]$ColorData.A))
-        $Il.Append($Il.Create([Mono.Cecil.Cil.OpCodes]::Newobj, $ImportedColorCtor))
-        $Il.Append($Il.Create([Mono.Cecil.Cil.OpCodes]::Ret))
-        return $Method
+    $TeamColorRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.TeamColorRuntime" | Select-Object -First 1
+    if (-not $TeamColorRuntimeType) { throw "TeamColorRuntime type not found in helper assembly." }
+    $ImportedReplacementMethods = @{
+        "TeamFriendly" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetGuiFriendlyColor" | Select-Object -First 1))
+        "TeamEnemy" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetGuiEnemyColor" | Select-Object -First 1))
+        "BackgroundTeamFriendly" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetGuiBackgroundFriendlyColor" | Select-Object -First 1))
+        "BackgroundTeamEnemy" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetGuiBackgroundEnemyColor" | Select-Object -First 1))
+        "CommonTeamFriendly" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetObjectCommonFriendlyColor" | Select-Object -First 1))
+        "CommonTeamEnemy" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetObjectCommonEnemyColor" | Select-Object -First 1))
+        "ForceFieldTeamFriendly" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetForceFieldFriendlyColor" | Select-Object -First 1))
+        "ForceFieldTeamEnemy" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetForceFieldEnemyColor" | Select-Object -First 1))
+        "IceTeamFriendly" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetIceFriendlyColor" | Select-Object -First 1))
+        "IceTeamEnemy" = $Module.ImportReference(($TeamColorRuntimeType.Methods | Where-Object Name -eq "GetIceEnemyColor" | Select-Object -First 1))
     }
-
-    $ReplacementMethods = @{
-        "TeamFriendly" = Add-ColorMethod -Name "GetGuiFriendlyColor" -ColorData $Friendly
-        "TeamEnemy" = Add-ColorMethod -Name "GetGuiEnemyColor" -ColorData $Enemy
-        "BackgroundTeamFriendly" = Add-ColorMethod -Name "GetGuiBackgroundFriendlyColor" -ColorData $FriendlyBg
-        "BackgroundTeamEnemy" = Add-ColorMethod -Name "GetGuiBackgroundEnemyColor" -ColorData $EnemyBg
-        "CommonTeamFriendly" = Add-ColorMethod -Name "GetObjectCommonFriendlyColor" -ColorData $Friendly
-        "CommonTeamEnemy" = Add-ColorMethod -Name "GetObjectCommonEnemyColor" -ColorData $Enemy
-        "ForceFieldTeamFriendly" = Add-ColorMethod -Name "GetForceFieldFriendlyColor" -ColorData $Friendly
-        "ForceFieldTeamEnemy" = Add-ColorMethod -Name "GetForceFieldEnemyColor" -ColorData $Enemy
-        "IceTeamFriendly" = Add-ColorMethod -Name "GetIceFriendlyColor" -ColorData $Friendly
-        "IceTeamEnemy" = Add-ColorMethod -Name "GetIceEnemyColor" -ColorData $Enemy
-    }
-
-    $ImportedReplacementMethods = @{}
-    foreach ($Key in $ReplacementMethods.Keys) { $ImportedReplacementMethods[$Key] = $Module.ImportReference($ReplacementMethods[$Key]) }
     $TeamColorContainerType = $Module.Types | Where-Object Name -eq "TeamColorContainer" | Select-Object -First 1
     $GuiField = $TeamColorContainerType.Fields | Where-Object Name -eq "Gui" | Select-Object -First 1
     $ObjectsField = $TeamColorContainerType.Fields | Where-Object Name -eq "Objects" | Select-Object -First 1
@@ -3259,7 +3508,13 @@ if ($BaseObjectiveBeamConfig.enabled) {
     }
 
     $ImportedActiveField = $Module.ImportReference($ActiveField)
+    $BaseObjectiveBeamRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.BaseObjectiveBeamRuntime" | Select-Object -First 1
+    if (-not $BaseObjectiveBeamRuntimeType) { throw "BaseObjectiveBeamRuntime type not found in helper assembly." }
+    $ImportedShouldHideBaseObjectiveBeam = $Module.ImportReference(($BaseObjectiveBeamRuntimeType.Methods | Where-Object Name -eq "ShouldHide" | Select-Object -First 1))
     $Il = $UpdateMethod.Body.GetILProcessor()
+    $SkipHideInstruction = $Il.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $TargetInstruction)
+    $Il.InsertBefore($TargetInstruction, $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldHideBaseObjectiveBeam))
+    $Il.InsertBefore($TargetInstruction, $SkipHideInstruction)
     $Il.InsertBefore($TargetInstruction, $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
     $Il.InsertBefore($TargetInstruction, $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0))
     $Il.InsertBefore($TargetInstruction, $Il.Create([Mono.Cecil.Cil.OpCodes]::Stfld, $ImportedActiveField))
@@ -3429,35 +3684,12 @@ if ($AimHealthbarConfig.enabled) {
     $SetAlphaMethod = $CanvasGroupType.Methods | Where-Object Name -eq "set_alpha" | Select-Object -First 1
     if (-not $SetAlphaMethod) { throw "CanvasGroup.set_alpha not found." }
 
-    # Crosshair singleton — reuse the exact closed get_Instance<Crosshair> call from ShowNameAndTitle
-    $ShowNameAndTitleMethod = $GuiHealthbarType.Methods | Where-Object Name -eq "ShowNameAndTitle" | Select-Object -First 1
-    $ExistingGetInstanceCall = @($ShowNameAndTitleMethod.Body.Instructions) | Where-Object {
-        $_.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Call -and
-        $_.Operand -is [Mono.Cecil.MethodReference] -and
-        $_.Operand.Name -eq "get_Instance"
-    } | Select-Object -First 1
-    if (-not $ExistingGetInstanceCall) { throw "Could not find existing get_Instance call in ShowNameAndTitle." }
-
-    $CrosshairType = $Module.Types | Where-Object Name -eq "Crosshair" | Select-Object -First 1
-    if (-not $CrosshairType) { throw "Crosshair type not found." }
-
-    $RaycastUnitInfoField = $CrosshairType.Fields | Where-Object Name -eq "RaycastUnitInfo" | Select-Object -First 1
-    if (-not $RaycastUnitInfoField) { throw "Crosshair.RaycastUnitInfo field not found." }
-
-    $RaycastInfoType = $RaycastUnitInfoField.FieldType.Resolve()
-    $RiUnitField = $RaycastInfoType.Fields | Where-Object Name -eq "Unit" | Select-Object -First 1
-    if (-not $RiUnitField) { throw "RaycastInfo.Unit field not found." }
-
-    $ImportedGetInstance      = $Module.ImportReference($ExistingGetInstanceCall.Operand)
     $ImportedUnitField        = $Module.ImportReference($UnitField)
     $ImportedContentField     = $Module.ImportReference($ContentField)
     $ImportedSetAlpha         = $Module.ImportReference($SetAlphaMethod)
-    $ImportedRaycastInfoField = $Module.ImportReference($RaycastUnitInfoField)
-    $ImportedRiUnitField      = $Module.ImportReference($RiUnitField)
-
-    # --- Patch IsUnitAvailableForShow() ---
-    # Insert at the top: if (object.ReferenceEquals(Crosshair.Instance.RaycastUnitInfo.Unit, this.unit)) return true;
-    # Uses ldflda (no struct copy) + ceq (raw managed ref compare, no Unity native interop).
+    $AimHealthbarRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.AimHealthbarRuntime" | Select-Object -First 1
+    if (-not $AimHealthbarRuntimeType) { throw "AimHealthbarRuntime type not found in helper assembly." }
+    $ImportedShouldShowAimHealthbar = $Module.ImportReference(($AimHealthbarRuntimeType.Methods | Where-Object Name -eq "ShouldShow" | Select-Object -First 1))
 
     $AvailMethod = $GuiHealthbarType.Methods | Where-Object Name -eq "IsUnitAvailableForShow" | Select-Object -First 1
     if (-not $AvailMethod -or -not $AvailMethod.HasBody) { throw "GuiHealthbar.IsUnitAvailableForShow not found." }
@@ -3467,32 +3699,11 @@ if ($AimHealthbarConfig.enabled) {
 
     $BranchNotThisUnit = $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $FirstInstr)
 
-    # Null-check idiom that never corrupts the stack:
-    #   call get_Instance   → stack: [x]
-    #   dup                 → stack: [x, x]
-    #   brtrue.s NOT_NULL   → stack: [x]   (jumps forward if not null, x still on stack)
-    #   pop                 → stack: []    (null path: discard, fall to original)
-    #   br.s ORIGINAL       → stack: []
-    # NOT_NULL:             → stack: [x]   (not-null path: x ready for ldflda)
-    $PopInstr       = $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Pop)
-    $BrNotNull      = $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Brtrue_S,  $PopInstr)   # target fixed below
-    $BrToOriginal   = $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Br_S,      $FirstInstr)
-    $Ldflda         = $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Ldflda,    $ImportedRaycastInfoField)
-    # Fix brtrue target to the ldflda (the not-null continuation), not the pop
-    $BrNotNull.Operand = $Ldflda
-
     $Instrs = @(
-        $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedGetInstance),  # [x]
-        $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Dup),                          # [x, x]
-        $BrNotNull,                                                               # [x]  → Ldflda if not null
-        $PopInstr,                                                                # []   (null path)
-        $BrToOriginal,                                                            # []   → FirstInstr
-        $Ldflda,                                                                  # [&RaycastUnitInfo]
-        $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Ldfld,  $ImportedRiUnitField), # [Unit]
         $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0),
-        $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Ldfld,  $ImportedUnitField),   # [Unit, this.unit]
-        $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Ceq),                          # [bool]
-        $BranchNotThisUnit,                                                       # false → FirstInstr
+        $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Ldfld,  $ImportedUnitField),
+        $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Call,   $ImportedShouldShowAimHealthbar),
+        $BranchNotThisUnit,
         $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_1),
         $AvailIl.Create([Mono.Cecil.Cil.OpCodes]::Ret)
     )
@@ -3518,18 +3729,11 @@ if ($AimHealthbarConfig.enabled) {
     $AlphaInstrs = @($AlphaUpdateMethod.Body.Instructions)
     $AlphaFirstInstr = $AlphaInstrs | Select-Object -First 1
 
-    # Inject at top:
-    #   ldarg.0
-    #   ldfld showNameByCrosshair
-    #   brfalse.s ORIGINAL          (skip if not aiming)
-    #   ldarg.0
-    #   ldc.r4 1.0
-    #   stfld showTime              (keep showTime positive so fade-in path runs)
-    # ORIGINAL: (existing method body)
     $BranchToOriginal = $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $AlphaFirstInstr)
 
     $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
-    $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Ldfld, $ImportedShowNameField))
+    $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Ldfld, $ImportedUnitField))
+    $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldShowAimHealthbar))
     $AlphaIl.InsertBefore($AlphaFirstInstr, $BranchToOriginal)
     $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
     $AlphaIl.InsertBefore($AlphaFirstInstr, $AlphaIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]1.0))
@@ -3613,7 +3817,7 @@ Copy-Item -LiteralPath $OutputPath -Destination $SavedCopyPath -Force
 Remove-Item -LiteralPath $TempBasePath -Force
 
 $Features = New-Object System.Collections.Generic.List[string]
-if ($FovConfig.enabled) { $Features.Add("fov") | Out-Null }
+if ($EnableFovFeature -and $FovConfig.enabled) { $Features.Add("fov") | Out-Null }
 if ($ProjectileConfig.enabled) { $Features.Add("projectile") | Out-Null }
 if ($AccuracyConfig.enabled) { $Features.Add("accuracy") | Out-Null }
 if ($WeaponSwitchConfig.enabled) { $Features.Add("weapon-switch") | Out-Null }
