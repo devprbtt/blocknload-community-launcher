@@ -1,22 +1,22 @@
 ﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.1.14",
+    "version":  "2.1.15",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-04T20:57:19.3048896+00:00",
-    "notes":  "## v2.1.14\r\n\r\n### New Features\r\n- **Death Cam HP**: When spectating a teammate during the death cam, their health bar and current HP are now displayed. A visual health bar (using Unicode block characters) and HP numbers (e.g., `Prbtt â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‘â–‘ 150/200`) appear on the death cam UI.\r\n\r\n### Bug Fixes\r\n- Fixed team healthbars showing for non-player units (devices, land mines, etc.) during death cam â€” now only actual player units with a `PlayerId` are shown\r\n- Fixed player nickname display â€” uses `PlayerData.FindFriend()` to look up the real player nickname instead of showing the Unity GameObject name\r\n\r\n### Technical Details\r\n- Added `DeathCamRuntime` helper class in `BnlCommunityFixes.dll` with `IsDeathCamFriendly()` and `UpdateDeathCamHpText()` methods\r\n- Patches `GuiHealthbar.IsUnitAvailableForShow()` and `AlphaUpdate()` to make friendy healthbars visible during death cam\r\n- Patches `GuiDeathCameraTargets.Update()` to append HP info with visual bar to the death cam nickname text\r\n- `IsDeathCamFriendly()` now filters by `Unit.PlayerId.HasValue` to exclude non-player entities\r\n",
+    "published_at":  "2026-05-05T01:39:29.8820778+00:00",
+    "notes":  "## v2.1.15\r\n\r\n### Bug Fixes\r\n- **Damage and healing numbers no longer float** â€” numbers are now attached to each player\u0027s healthbar UI via `AttachToHealthbarUi()`. When you turn the camera, numbers stay locked to the correct player instead of appearing at wrong screen positions.\r\n- **Healing number size no longer grows each heal** â€” `ApplyHealTextAndColor` now has an `applySize` parameter that prevents the font size multiplier from being applied on every refresh call.\r\n- **Fixed `MissingMethodException: FieldInfo.op_Equality`** â€” all `FieldInfo` comparisons now use `object.ReferenceEquals()` instead of `==` for Unity 5 Mono compatibility.\r\n- **`GuiFollow` disabled immediately** â€” changed from `Destroy()` to `enabled = false` + `Destroy()` to prevent GuiFollow from repositioning numbers on the same frame after reparenting.\r\n\r\n### Changes\r\n- Default damage number size changed from **1.0 to 2.0**\r\n- Default heal number size changed from **1.0 to 2.0**\r\n- Healthbar-attached number Y offset increased from 30 to 65\r\n\r\n### Technical Details\r\n- Added `HashSet\u003cint\u003e` guard in `AttachToHealthbarUi()` to ensure attachment runs only once per number instance\r\n- Uses reflection to access `GuiHealthbar.maker` field for matching healthbar UI to unit\r\n- Numbers are reparented to `GuiHealthbar.Content.transform` and inherit correct canvas positioning\r\n",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.14/BnlCommunityFixes.exe",
-                                        "sha256":  "0DC7C3983C694C8FD952B7F9ED3D32891048D4AE5B0CA12646B02066DAE891AE",
-                                        "size":  162661582
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.15/BnlCommunityFixes.exe",
+                                        "sha256":  "7419479ABA16ACC26499239AEE979C8B341963A2E681E49872567C0AD00604C4",
+                                        "size":  162662606
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.14/BnlUpdater.exe",
-                                       "sha256":  "CEA11E731381B9D48CDDBC5A69162AA424AAB8F2E91AC1060491FEA76000639D",
-                                       "size":  67608313
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.15/BnlUpdater.exe",
+                                       "sha256":  "04C930D049CD80B643FC44C9DEE45211CBDFE5E81B4B6E8C73B87F8463676E2A",
+                                       "size":  67609337
                                    }
                }
 }

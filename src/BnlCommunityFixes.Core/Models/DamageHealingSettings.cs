@@ -17,10 +17,10 @@ public sealed class DamageHealingSettings
     public string HealNumberColor { get; set; } = "#91ED78";
 
     [JsonPropertyName("damage_number_size_multiplier")]
-    public double DamageNumberSizeMultiplier { get; set; } = 1.0;
+    public double DamageNumberSizeMultiplier { get; set; } = 2.0;
 
     [JsonPropertyName("heal_number_size_multiplier")]
-    public double HealNumberSizeMultiplier { get; set; } = 1.0;
+    public double HealNumberSizeMultiplier { get; set; } = 2.0;
 
     [JsonPropertyName("alpha")]
     public double Alpha { get; set; } = 1.0;

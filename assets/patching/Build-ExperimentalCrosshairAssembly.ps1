@@ -122,8 +122,8 @@ $DamageHealingConfig = Get-JsonConfig -Path $DamageHealingConfigPath -Default @{
     damage_number_color = "#FFFFFF"
     crit_damage_number_color = "#FFFFFF"
     heal_number_color = "#91ED78"
-    damage_number_size_multiplier = 1.0
-    heal_number_size_multiplier = 1.0
+    damage_number_size_multiplier = 2.0
+    heal_number_size_multiplier = 2.0
     alpha = 1.0
     show_friendly_healing = $false
     show_self_healing = $false
@@ -297,8 +297,8 @@ $CrosshairSpreadMultiplierLiteral = Format-FloatLiteral $CrosshairSpreadMultipli
 $CrosshairForceShapeLiteral = ($CrosshairForceShape -replace '\\', '\\\\') -replace '"', '\"'
 $CrosshairForceShowInAdsLiteral = if ($CrosshairForceShowInAds) { "true" } else { "false" }
 [double]$DamageHealingAlpha = if ($null -ne $DamageHealingConfig.alpha) { [double]$DamageHealingConfig.alpha } else { 1.0 }
-[double]$DamageNumberSize = if ($null -ne $DamageHealingConfig.damage_number_size_multiplier) { [double]$DamageHealingConfig.damage_number_size_multiplier } else { 1.0 }
-[double]$HealNumberSize = if ($null -ne $DamageHealingConfig.heal_number_size_multiplier) { [double]$DamageHealingConfig.heal_number_size_multiplier } else { 1.0 }
+[double]$DamageNumberSize = if ($null -ne $DamageHealingConfig.damage_number_size_multiplier) { [double]$DamageHealingConfig.damage_number_size_multiplier } else { 2.0 }
+[double]$HealNumberSize = if ($null -ne $DamageHealingConfig.heal_number_size_multiplier) { [double]$DamageHealingConfig.heal_number_size_multiplier } else { 2.0 }
 [double]$MinimumHeal = if ($null -ne $DamageHealingConfig.minimum_heal) { [double]$DamageHealingConfig.minimum_heal } else { 0.5 }
 [bool]$ShowFriendlyHealing = if ($null -ne $DamageHealingConfig.show_friendly_healing) { [bool]$DamageHealingConfig.show_friendly_healing } else { $false }
 [bool]$ShowSelfHealing = if ($null -ne $DamageHealingConfig.show_self_healing) { [bool]$DamageHealingConfig.show_self_healing } else { $false }
@@ -1449,9 +1449,44 @@ namespace BnlCommunityFixes
                 source.OwnerPlayerId == Singleton<PlayerData>.Instance.Id;
         }
 
+        private static readonly System.Collections.Generic.HashSet<int> attachedNumbers = new System.Collections.Generic.HashSet<int>();
+        private static readonly System.Reflection.FieldInfo healthbarMakerField = typeof(GuiHealthbar).GetField("maker", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        private static void AttachToHealthbarUi(GuiDamageNumber number, Unit unit)
+        {
+            if (object.ReferenceEquals(number, null) || object.ReferenceEquals(unit, null)) return;
+            if (!attachedNumbers.Add(number.GetInstanceID())) return;
+            GuiHealthBarMaker maker = unit.GetComponentInChildren<GuiHealthBarMaker>();
+            if (object.ReferenceEquals(maker, null)) return;
+            if (object.ReferenceEquals(healthbarMakerField, null))
+            {
+                number.GetOrAddComponent<GuiFollow>().WorldTarget = maker.transform;
+                return;
+            }
+            GuiHealthbar[] allBars = UnityEngine.Object.FindObjectsOfType<GuiHealthbar>();
+            for (int i = 0; i < allBars.Length; i++)
+            {
+                if (object.ReferenceEquals(allBars[i], null)) continue;
+                object hbMaker = healthbarMakerField.GetValue(allBars[i]);
+                if (object.ReferenceEquals(hbMaker, maker))
+                {
+                    number.transform.SetParent(allBars[i].Content.transform, false);
+                    number.transform.localPosition = new Vector3(0f, 65f, 0f);
+                    GuiFollow existing = number.GetComponent<GuiFollow>();
+                    if (!object.ReferenceEquals(existing, null))
+                    {
+                        existing.enabled = false;
+                        UnityEngine.Object.Destroy(existing);
+                    }
+                    return;
+                }
+            }
+        }
+
         public static void ApplyDamageNumber(GuiDamageNumber number, bool crit)
         {
-            if (number == null) return;
+            if (object.ReferenceEquals(number, null)) return;
+            AttachToHealthbarUi(number, number.Unit);
             if (DamageNumberSizeMultiplier != 1f) number.transform.localScale = number.transform.localScale * DamageNumberSizeMultiplier;
             bool useColor = crit ? UseCritDamageNumberColor : UseDamageNumberColor;
             Color color = crit ? CritDamageNumberColor : DamageNumberColor;
@@ -1550,7 +1585,7 @@ namespace BnlCommunityFixes
                 }
                 else
                 {
-                    ApplyHealTextAndColor(active.Number, active.Value, detector.HealColor);
+                    ApplyHealTextAndColor(active.Number, active.Value, detector.HealColor, false);
                     RefreshHealHold(active.Number);
                 }
                 return;
@@ -1572,10 +1607,9 @@ namespace BnlCommunityFixes
             number.Unit = unit;
             number.DamageValue = amount;
 
-            GuiHealthBarMaker healthBar = unit.GetComponentInChildren<GuiHealthBarMaker>();
-            number.GetOrAddComponent<GuiFollow>().WorldTarget = healthBar ? healthBar.transform : unit.transform;
+            AttachToHealthbarUi(number, unit);
             if (HealNumberSizeMultiplier != 1f) number.transform.localScale = number.transform.localScale * HealNumberSizeMultiplier;
-            ApplyHealTextAndColor(number, amount, detector.HealColor);
+            ApplyHealTextAndColor(number, amount, detector.HealColor, true);
             RefreshHealHold(number);
             return number;
         }
@@ -1629,12 +1663,12 @@ namespace BnlCommunityFixes
             hold.Extend(Time.time + HealContinueGrace);
         }
 
-        private static void ApplyHealTextAndColor(GuiDamageNumber number, float amount, Color defaultHealColor)
+        private static void ApplyHealTextAndColor(GuiDamageNumber number, float amount, Color defaultHealColor, bool applySize)
         {
             if (number == null || number.Damage == null) return;
             number.Damage.text = "+" + Mathf.RoundToInt(amount).ToString();
             number.Damage.color = UseConfigHealColor ? ConfigHealColor : defaultHealColor;
-            if (HealNumberSizeMultiplier != 1f)
+            if (applySize && HealNumberSizeMultiplier != 1f)
             {
                 number.Damage.fontSize = Mathf.Max(1, Mathf.RoundToInt(number.Damage.fontSize * HealNumberSizeMultiplier));
             }
