@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "debug_menu_key": "F9",
+  "main_menu_key": "F10",
+  "lobby_menu_key": "F11",
+  "zone_menu_key": "F12"
+}

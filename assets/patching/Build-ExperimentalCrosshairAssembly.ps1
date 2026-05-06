@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$GameRoot = "H:\Programas\Steam\steamapps\common\BlockNLoad"
 )
 
@@ -18,6 +18,7 @@ $HealAlertConfigPath = Join-Path $PSScriptRoot "heal-alert-indicator-config.json
 $BaseObjectiveBeamConfigPath = Join-Path $PSScriptRoot "experimental-base-objective-beam-config.json"
 $EnemyShieldBuffBarConfigPath = Join-Path $PSScriptRoot "experimental-enemy-shield-buffbar-config.json"
 $LocalBuildPreviewConfigPath = Join-Path $PSScriptRoot "experimental-local-build-preview-config.json"
+$DebugMenuConfigPath = Join-Path $PSScriptRoot "experimental-debug-menu-config.json"
 $AimHealthbarConfigPath = Join-Path $PSScriptRoot "aim-healthbar-config.json"
 $DeathCamHealthbarConfigPath = Join-Path $PSScriptRoot "deathcam-healthbar-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
@@ -118,7 +119,7 @@ $FovConfig = Get-JsonConfig -Path $FovConfigPath -Default @{
     fov = 120.0
     ads_sensitivity_multiplier = 1.0
 }
-[bool]$EnableFovFeature = $false
+[bool]$EnableFovFeature = $true
 $DamageHealingConfig = Get-JsonConfig -Path $DamageHealingConfigPath -Default @{
     enabled = $false
     damage_number_color = "#FFFFFF"
@@ -159,6 +160,13 @@ $LocalBuildPreviewConfig = Get-JsonConfig -Path $LocalBuildPreviewConfigPath -De
     enabled = $false
     prediction_timeout_seconds = 2.0
 }
+$DebugMenuConfig = Get-JsonConfig -Path $DebugMenuConfigPath -Default @{
+    enabled = $false
+    debug_menu_key = "F9"
+    main_menu_key = "F10"
+    lobby_menu_key = "F11"
+    zone_menu_key = "F12"
+}
 $AimHealthbarConfig = Get-JsonConfig -Path $AimHealthbarConfigPath -Default @{
     enabled = $true
 }
@@ -181,6 +189,7 @@ $AnyEnabled = @(
     [bool]$BaseObjectiveBeamConfig.enabled,
     [bool]$EnemyShieldBuffBarConfig.enabled,
     [bool]$LocalBuildPreviewConfig.enabled,
+    [bool]$DebugMenuConfig.enabled,
     [bool]$AimHealthbarConfig.enabled,
     [bool]$DeathCamHealthbarConfig.enabled
 ) -contains $true
@@ -345,6 +354,14 @@ $EnemyShieldBuffBarColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrW
 [double]$EnemyShieldClockOffsetY = if ($null -ne $EnemyShieldBuffBarConfig.shield_clock_offset_y) { [double]$EnemyShieldBuffBarConfig.shield_clock_offset_y } else { 0.0 }
 [string]$EnemyShieldTimerDisplayMode = if ($null -ne $EnemyShieldBuffBarConfig.shield_timer_display_mode -and -not [string]::IsNullOrWhiteSpace([string]$EnemyShieldBuffBarConfig.shield_timer_display_mode)) { [string]$EnemyShieldBuffBarConfig.shield_timer_display_mode } else { "circle" }
 [double]$LocalBuildPreviewTimeoutSeconds = if ($null -ne $LocalBuildPreviewConfig.prediction_timeout_seconds) { [double]$LocalBuildPreviewConfig.prediction_timeout_seconds } else { 2.0 }
+[string]$DebugMenuKeyName = if ($null -ne $DebugMenuConfig.debug_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.debug_menu_key)) { [string]$DebugMenuConfig.debug_menu_key } else { "F9" }
+[string]$DebugMainMenuKeyName = if ($null -ne $DebugMenuConfig.main_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.main_menu_key)) { [string]$DebugMenuConfig.main_menu_key } else { "F10" }
+[string]$DebugLobbyMenuKeyName = if ($null -ne $DebugMenuConfig.lobby_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.lobby_menu_key)) { [string]$DebugMenuConfig.lobby_menu_key } else { "F11" }
+[string]$DebugZoneMenuKeyName = if ($null -ne $DebugMenuConfig.zone_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.zone_menu_key)) { [string]$DebugMenuConfig.zone_menu_key } else { "F12" }
+$DebugMenuKeyLiteral = $DebugMenuKeyName.Replace("\", "\\").Replace('"', '\"')
+$DebugMainMenuKeyLiteral = $DebugMainMenuKeyName.Replace("\", "\\").Replace('"', '\"')
+$DebugLobbyMenuKeyLiteral = $DebugLobbyMenuKeyName.Replace("\", "\\").Replace('"', '\"')
+$DebugZoneMenuKeyLiteral = $DebugZoneMenuKeyName.Replace("\", "\\").Replace('"', '\"')
 
 $HelperSource = @"
 using System;
@@ -1824,39 +1841,36 @@ namespace BnlCommunityFixes
             return currentScale;
         }
 
-        public static void ApplyCameraFov(CameraFov cameraFov)
-        {
-            if (!RuntimeFeatureState.FovSupported || cameraFov == null)
-            {
-                return;
-            }
+        private static CameraFov cachedCameraFov;
+        private static CameraArms cachedCameraArms;
 
+        public static void ApplyCameraFov()
+        {
+            if (!RuntimeFeatureState.FovSupported) return;
             try
             {
-                Camera camera = FindPrimaryCamera(cameraFov);
+                if (cachedCameraFov == null)
+                    cachedCameraFov = UnityEngine.Object.FindObjectOfType<CameraFov>();
+                if (cachedCameraFov == null) return;
+                Camera camera = FindPrimaryCamera(cachedCameraFov);
                 if (camera != null)
-                {
                     camera.fieldOfView = RuntimeFeatureState.ForcedFov;
-                }
             }
-            catch
-            {
-            }
+            catch { }
         }
 
-        public static void ApplyWeaponModelFov(CameraArms cameraArms)
+        public static void ApplyWeaponModelFov()
         {
-            if (!RuntimeFeatureState.FovSupported || cameraArms == null)
-            {
-                return;
-            }
-
+            if (!RuntimeFeatureState.FovSupported) return;
             try
             {
-                Camera[] cameras = cameraArms.GetComponentsInChildren<Camera>(true);
+                if (cachedCameraArms == null)
+                    cachedCameraArms = UnityEngine.Object.FindObjectOfType<CameraArms>();
+                if (cachedCameraArms == null) return;
+                Camera[] cameras = cachedCameraArms.GetComponentsInChildren<Camera>(true);
                 if (cameras == null || cameras.Length == 0)
                 {
-                    Camera primary = FindPrimaryCamera(cameraArms);
+                    Camera primary = cachedCameraArms.GetComponent<Camera>();
                     if (primary != null)
                     {
                         primary.fieldOfView = RuntimeFeatureState.WeaponModelFov;
@@ -2046,7 +2060,7 @@ namespace BnlCommunityFixes
                 int filled = Mathf.RoundToInt(pct * 10f);
                 string bar = "";
                 for (int i = 0; i < 10; i++)
-                    bar += (i < filled) ? "█" : "░";
+                    bar += (i < filled) ? "�" : "�";
                 string playerName = targetUnit.name;
                 if (targetUnit.PlayerId.HasValue)
                 {
@@ -2518,6 +2532,27 @@ $ReaderParameters.AssemblyResolver = $Resolver
 $Assembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($TempBasePath, $ReaderParameters)
 $Module = $Assembly.MainModule
 $HelperAssembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($HelperOutputPath, $ReaderParameters)
+$DebugMenuRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.DebugMenuRuntime" | Select-Object -First 1
+$ImportedConfigureDebugMenu = $null
+$ImportedEnsureDebugMenu = $null
+if ($DebugMenuRuntimeType) {
+    $ConfigureDebugMenuMethod = $DebugMenuRuntimeType.Methods | Where-Object { $_.Name -eq "Configure" -and $_.Parameters.Count -eq 5 } | Select-Object -First 1
+    $EnsureDebugMenuMethod = $DebugMenuRuntimeType.Methods | Where-Object Name -eq "EnsureInstance" | Select-Object -First 1
+    if ($ConfigureDebugMenuMethod) {
+        $ImportedConfigureDebugMenu = $Module.ImportReference($ConfigureDebugMenuMethod)
+    }
+    if ($EnsureDebugMenuMethod) {
+        $ImportedEnsureDebugMenu = $Module.ImportReference($EnsureDebugMenuMethod)
+    }
+}
+$RuntimeMenuType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.RuntimeSettingsMenuManager" | Select-Object -First 1
+$ImportedEnsureRuntimeMenu = $null
+if ($RuntimeMenuType) {
+    $EnsureRuntimeMenuMethod = $RuntimeMenuType.Methods | Where-Object Name -eq "EnsureInstance" | Select-Object -First 1
+    if ($EnsureRuntimeMenuMethod) {
+        $ImportedEnsureRuntimeMenu = $Module.ImportReference($EnsureRuntimeMenuMethod)
+    }
+}
 $FontRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.FontRuntime" | Select-Object -First 1
 $ApplyAllCanvasesMethod = $FontRuntimeType.Methods | Where-Object Name -eq "ApplyAllCanvases" | Select-Object -First 1
 $ApplyToTextMethod = $FontRuntimeType.Methods | Where-Object { $_.Name -eq "ApplyToText" -and $_.Parameters.Count -eq 1 } | Select-Object -First 1
@@ -2567,10 +2602,20 @@ if ($TrackingRuntimeType) {
 $AdsRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.AdsSensitivityRuntime" | Select-Object -First 1
 $AdsScaleMethod = $null
 $ImportedAdsScaleMethod = $null
+$ImportedApplyCameraFov = $null
+$ImportedApplyWeaponModelFov = $null
 if ($AdsRuntimeType) {
     $AdsScaleMethod = $AdsRuntimeType.Methods | Where-Object Name -eq "ApplyAdsScale" | Select-Object -First 1
     if ($AdsScaleMethod) {
         $ImportedAdsScaleMethod = $Module.ImportReference($AdsScaleMethod)
+    }
+    $ApplyCameraFovMethod = $AdsRuntimeType.Methods | Where-Object Name -eq "ApplyCameraFov" | Select-Object -First 1
+    if ($ApplyCameraFovMethod) {
+        $ImportedApplyCameraFov = $Module.ImportReference($ApplyCameraFovMethod)
+    }
+    $ApplyWeaponModelFovMethod = $AdsRuntimeType.Methods | Where-Object Name -eq "ApplyWeaponModelFov" | Select-Object -First 1
+    if ($ApplyWeaponModelFovMethod) {
+        $ImportedApplyWeaponModelFov = $Module.ImportReference($ApplyWeaponModelFovMethod)
     }
 }
 $CombatNumberRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.CombatNumberRuntime" | Select-Object -First 1
@@ -2587,6 +2632,42 @@ $GetDamageCollectTime = $Module.ImportReference($GetDamageCollectTimeMethod)
 $RefreshDamageNumberMethod = $CombatNumberRuntimeType.Methods | Where-Object Name -eq "RefreshDamageNumber" | Select-Object -First 1
 if (-not $RefreshDamageNumberMethod) { throw "CombatNumberRuntime.RefreshDamageNumber method not found." }
 $RefreshDamageNumber = $Module.ImportReference($RefreshDamageNumberMethod)
+
+if ([bool]$DebugMenuConfig.enabled) {
+    if (-not $ImportedConfigureDebugMenu -or -not $ImportedEnsureDebugMenu) {
+        throw "DebugMenuRuntime helper methods not found."
+    }
+
+    $MainMenuType = $Module.Types | Where-Object Name -eq "MainMenu" | Select-Object -First 1
+    if (-not $MainMenuType) { throw "MainMenu type not found." }
+    $MainMenuStartMethod = $MainMenuType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+    if (-not $MainMenuStartMethod -or -not $MainMenuStartMethod.HasBody) { throw "MainMenu.Start not found." }
+
+    $MainMenuStartIl = $MainMenuStartMethod.Body.GetILProcessor()
+    $MainMenuStartFirst = $MainMenuStartMethod.Body.Instructions | Select-Object -First 1
+    foreach ($instruction in @(
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_1),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $DebugMenuKeyLiteral),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $DebugMainMenuKeyLiteral),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $DebugLobbyMenuKeyLiteral),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $DebugZoneMenuKeyLiteral),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedConfigureDebugMenu),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedEnsureDebugMenu)
+    )) {
+        $MainMenuStartIl.InsertBefore($MainMenuStartFirst, $instruction)
+    }
+}
+
+if ($ImportedEnsureRuntimeMenu) {
+    $MainMenuType = $Module.Types | Where-Object Name -eq "MainMenu" | Select-Object -First 1
+    if (-not $MainMenuType) { throw "MainMenu type not found." }
+    $MainMenuStartMethod = $MainMenuType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+    if (-not $MainMenuStartMethod -or -not $MainMenuStartMethod.HasBody) { throw "MainMenu.Start not found." }
+
+    $MainMenuStartIl = $MainMenuStartMethod.Body.GetILProcessor()
+    $MainMenuStartFirst = $MainMenuStartMethod.Body.Instructions | Select-Object -First 1
+    $MainMenuStartIl.InsertBefore($MainMenuStartFirst, $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedEnsureRuntimeMenu))
+}
 
 $AttachHealingMethod = $CombatNumberRuntimeType.Methods | Where-Object Name -eq "AttachHealing" | Select-Object -First 1
 if (-not $AttachHealingMethod) { throw "CombatNumberRuntime.AttachHealing method not found." }
@@ -2914,22 +2995,39 @@ if ($Config.enabled) {
     }
 }
 
-if ($EnableFovFeature -and $FovConfig.enabled) {
-    $UpdateMethod = $CameraFov.Methods | Where-Object Name -eq "Update" | Select-Object -First 1
-    $Instructions = @($UpdateMethod.Body.Instructions)
-    $ForcedFov = [single]$FovConfig.fov
-    if ($null -ne $FovConfig.weapon_model_fov) {
-        $WeaponModelFov = [single]([double]$FovConfig.weapon_model_fov)
-    } else {
-        $WeaponModelFov = [single]30.0
+if ($EnableFovFeature -and $CameraFov -and $ImportedApplyCameraFov) {
+    # Direct offset-based patching for CameraFov.Update() like the old working bundle
+    $FovUpdateMethod = $CameraFov.Methods | Where-Object Name -eq "Update" | Select-Object -First 1
+    if ($FovUpdateMethod -and $FovUpdateMethod.HasBody) {
+        $FovInstrs = @($FovUpdateMethod.Body.Instructions)
+        $ForcedFov = [single]$FovConfig.fov
+        ($FovInstrs | Where-Object Offset -eq 72 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Ldc_R4
+        ($FovInstrs | Where-Object Offset -eq 72 | Select-Object -First 1).Operand = $ForcedFov
+        ($FovInstrs | Where-Object Offset -eq 77 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Nop
+        ($FovInstrs | Where-Object Offset -eq 77 | Select-Object -First 1).Operand = $null
+        ($FovInstrs | Where-Object Offset -eq 82 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Nop
+        ($FovInstrs | Where-Object Offset -eq 82 | Select-Object -First 1).Operand = $null
     }
+}
 
-    ($Instructions | Where-Object Offset -eq 72 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Ldc_R4
-    ($Instructions | Where-Object Offset -eq 72 | Select-Object -First 1).Operand = $ForcedFov
-    ($Instructions | Where-Object Offset -eq 77 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Nop
-    ($Instructions | Where-Object Offset -eq 77 | Select-Object -First 1).Operand = $null
-    ($Instructions | Where-Object Offset -eq 82 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Nop
-    ($Instructions | Where-Object Offset -eq 82 | Select-Object -First 1).Operand = $null
+if ($EnableFovFeature) {
+    $CameraArmsType = $Module.Types | Where-Object Name -eq "CameraArms" | Select-Object -First 1
+    if ($CameraArmsType) {
+        $CameraArmsUpdate = $CameraArmsType.Methods | Where-Object Name -eq "Update" | Select-Object -First 1
+        if ($CameraArmsUpdate -and $CameraArmsUpdate.HasBody) {
+            $CamArmInstrs = @($CameraArmsUpdate.Body.Instructions)
+            $WeapFov = [single]30.0
+            if ($null -ne $FovConfig.weapon_model_fov) { $WeapFov = [single]([double]$FovConfig.weapon_model_fov) }
+            ($CamArmInstrs | Where-Object Offset -eq 103 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Ldc_R4
+            ($CamArmInstrs | Where-Object Offset -eq 103 | Select-Object -First 1).Operand = $WeapFov
+            ($CamArmInstrs | Where-Object Offset -eq 104 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Nop
+            ($CamArmInstrs | Where-Object Offset -eq 104 | Select-Object -First 1).Operand = $null
+            ($CamArmInstrs | Where-Object Offset -eq 109 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Nop
+            ($CamArmInstrs | Where-Object Offset -eq 109 | Select-Object -First 1).Operand = $null
+            ($CamArmInstrs | Where-Object Offset -eq 130 | Select-Object -First 1).Operand = $WeapFov
+        }
+    }
+}
 
     if ($ImportedAdsScaleMethod) {
         $MouseLookType = $Module.Types | Where-Object Name -eq "MouseLook" | Select-Object -First 1
@@ -2958,19 +3056,6 @@ if ($EnableFovFeature -and $FovConfig.enabled) {
             $RotateByMouseIl.InsertBefore($YScaleTarget, $Instruction)
         }
     }
-
-    $CameraArmsType = $Module.Types | Where-Object Name -eq "CameraArms" | Select-Object -First 1
-    $CameraArmsUpdate = $CameraArmsType.Methods | Where-Object Name -eq "Update" | Select-Object -First 1
-    $CameraArmsInstructions = @($CameraArmsUpdate.Body.Instructions)
-
-    ($CameraArmsInstructions | Where-Object Offset -eq 103 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Ldc_R4
-    ($CameraArmsInstructions | Where-Object Offset -eq 103 | Select-Object -First 1).Operand = $WeaponModelFov
-    ($CameraArmsInstructions | Where-Object Offset -eq 104 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Nop
-    ($CameraArmsInstructions | Where-Object Offset -eq 104 | Select-Object -First 1).Operand = $null
-    ($CameraArmsInstructions | Where-Object Offset -eq 109 | Select-Object -First 1).OpCode = [Mono.Cecil.Cil.OpCodes]::Nop
-    ($CameraArmsInstructions | Where-Object Offset -eq 109 | Select-Object -First 1).Operand = $null
-    ($CameraArmsInstructions | Where-Object Offset -eq 130 | Select-Object -First 1).Operand = $WeaponModelFov
-}
 
 if ($AccuracyConfig.enabled) {
     $BloomLogic = $Module.Types | Where-Object Name -eq "BloomLogic"
@@ -3536,7 +3621,7 @@ if ($LocalBuildPreviewConfig.enabled) {
     $ImpTryInstantAcceptStartBuild = $Module.ImportReference(($LbpRuntimeType.Methods | Where-Object Name -eq "TryInstantAcceptStartBuild" | Select-Object -First 1))
     $ImpTryInstantAcceptSwitchGear = $Module.ImportReference(($LbpRuntimeType.Methods | Where-Object Name -eq "TryInstantAcceptSwitchGear" | Select-Object -First 1))
 
-    # BuildGhostController.Place — call OnLocalPlace after ServiceZone.Hit
+    # BuildGhostController.Place � call OnLocalPlace after ServiceZone.Hit
     $BuildGhostControllerType = $Module.Types | Where-Object Name -eq "BuildGhostController" | Select-Object -First 1
     $PlaceMethod = $BuildGhostControllerType.Methods | Where-Object Name -eq "Place" | Select-Object -First 1
     if (-not $PlaceMethod -or -not $PlaceMethod.HasBody) { throw "BuildGhostController.Place not found." }
@@ -3551,7 +3636,7 @@ if ($LocalBuildPreviewConfig.enabled) {
         $PlaceIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImpOnLocalPlace)
     )
 
-    # ZoneServiceListener — BlockUpdates, DeviceBuilt, UnitCreate reconciliation
+    # ZoneServiceListener � BlockUpdates, DeviceBuilt, UnitCreate reconciliation
     $ZoneServiceListenerType = $Module.Types | Where-Object Name -eq "ZoneServiceListener" | Select-Object -First 1
     if (-not $ZoneServiceListenerType) { throw "ZoneServiceListener type not found." }
 
@@ -3581,7 +3666,7 @@ if ($LocalBuildPreviewConfig.enabled) {
         $UnitCreateIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImpOnUnitCreate)
     )
 
-    # ServiceZone.StartBuild — inject TryInstantAcceptStartBuild before return
+    # ServiceZone.StartBuild � inject TryInstantAcceptStartBuild before return
     $ServiceZoneType = $Module.Types | Where-Object Name -eq "ServiceZone" | Select-Object -First 1
     $StartBuildMethod = $ServiceZoneType.Methods | Where-Object Name -eq "StartBuild" | Select-Object -First 1
     if (-not $StartBuildMethod -or -not $StartBuildMethod.HasBody) { throw "ServiceZone.StartBuild not found." }
@@ -3593,7 +3678,7 @@ if ($LocalBuildPreviewConfig.enabled) {
         $StartBuildIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImpTryInstantAcceptStartBuild)
     )
 
-    # BuffHelper.BuildTime — zero build time for instant-placement devices
+    # BuffHelper.BuildTime � zero build time for instant-placement devices
     $BuffHelperType = $Module.Types | Where-Object Name -eq "BuffHelper" | Select-Object -First 1
     $BuildTimeMethod = $BuffHelperType.Methods | Where-Object Name -eq "BuildTime" | Select-Object -First 1
     if (-not $BuildTimeMethod -or -not $BuildTimeMethod.HasBody) { throw "BuffHelper.BuildTime not found." }
@@ -3604,13 +3689,13 @@ if ($LocalBuildPreviewConfig.enabled) {
         $BuildTimeIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImpShouldZeroBuildTime)
     )
 
-    # ToolLogicBuild.ValidateUse — bypass validation for instant-placement
+    # ToolLogicBuild.ValidateUse � bypass validation for instant-placement
     $ToolLogicBuildType = $Module.Types | Where-Object Name -eq "ToolLogicBuild" | Select-Object -First 1
     $ValidateUseMethod = $ToolLogicBuildType.Methods | Where-Object Name -eq "ValidateUse" | Select-Object -First 1
     if (-not $ValidateUseMethod -or -not $ValidateUseMethod.HasBody) { throw "ToolLogicBuild.ValidateUse not found." }
     Inject-BoolTrueBypass -Method $ValidateUseMethod -Call $ImpShouldBypassBuildValidate -LoadArg ([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
 
-    # PlayerActSwitch coroutine — instant gear switch
+    # PlayerActSwitch coroutine � instant gear switch
     $PlayerActType = $Module.Types | Where-Object Name -eq "PlayerAct" | Select-Object -First 1
     $PlayerActUnitField = $PlayerActType.Fields | Where-Object Name -eq "unit" | Select-Object -First 1
     $PlayerActSwitchType = $Module.Types | Where-Object Name -eq "PlayerActSwitch" | Select-Object -First 1
@@ -3633,7 +3718,7 @@ if ($LocalBuildPreviewConfig.enabled) {
         $SwitchIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImpTryInstantAcceptSwitchGear)
     )
 
-    # ToolLogicBuild coroutines — replace timing helpers to zero build time
+    # ToolLogicBuild coroutines � replace timing helpers to zero build time
     $ProjectileIteratorType = $ToolLogicBuildType.NestedTypes | Where-Object Name -eq "<DoUseProjectile>c__IteratorC2" | Select-Object -First 1
     $ProjectileMoveNext = $ProjectileIteratorType.Methods | Where-Object Name -eq "MoveNext" | Select-Object -First 1
     if (-not $ProjectileMoveNext -or -not $ProjectileMoveNext.HasBody) { throw "ToolLogicBuild/<DoUseProjectile>c__IteratorC2.MoveNext not found." }
@@ -3714,7 +3799,7 @@ if ($AimHealthbarConfig.enabled) {
 
     # --- Patch AlphaUpdate(): at the top, if showNameByCrosshair set showTime=1 so the existing
     # showTime>0 fade-in path keeps alpha at 1 each frame while aiming.
-    # Branching directly to set_alpha(1) was insufficient — the next frame showTime=0 triggered
+    # Branching directly to set_alpha(1) was insufficient � the next frame showTime=0 triggered
     # the fade-out path and overwrote alpha back to 0.
     $ShowNameByCrosshairField = $GuiHealthbarType.Fields | Where-Object Name -eq "showNameByCrosshair" | Select-Object -First 1
     $ImportedShowNameField = $Module.ImportReference($ShowNameByCrosshairField)
@@ -3830,6 +3915,7 @@ if ($HealAlertConfig.enabled) { $Features.Add("heal-alert-indicator") | Out-Null
 if ($Config.enabled) { $Features.Add("font") | Out-Null }
 if ($BaseObjectiveBeamConfig.enabled) { $Features.Add("base-objective-beam") | Out-Null }
 if ($LocalBuildPreviewConfig.enabled) { $Features.Add("local-build-preview") | Out-Null }
+if ($DebugMenuConfig.enabled) { $Features.Add("debug-menu") | Out-Null }
 if ($AimHealthbarConfig.enabled) { $Features.Add("aim-healthbar") | Out-Null }
 if ($DeathCamHealthbarConfig.enabled) { $Features.Add("deathcam-healthbar") | Out-Null }
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash

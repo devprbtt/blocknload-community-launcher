@@ -20,7 +20,8 @@ public sealed class AppBootstrapper
             ?? throw new InvalidOperationException("Could not resolve current process path.");
 
         var normalizedCurrent = Path.GetFullPath(currentExe);
-        var normalizedTarget = Path.GetFullPath(paths.LauncherPath);
+        var targetFileName = Path.GetFileName(normalizedCurrent);
+        var normalizedTarget = Path.GetFullPath(Path.Combine(paths.AppDir, targetFileName));
         if (string.Equals(normalizedCurrent, normalizedTarget, StringComparison.OrdinalIgnoreCase))
         {
             return Task.FromResult(false);

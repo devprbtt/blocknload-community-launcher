@@ -15,7 +15,8 @@ public sealed class ExperimentalAssemblyBuildService
         "heal-alert-indicator-config.json",
         "experimental-base-objective-beam-config.json",
         "experimental-enemy-shield-buffbar-config.json",
-        "aim-healthbar-config.json"
+        "aim-healthbar-config.json",
+        "experimental-debug-menu-config.json"
     ];
 
     private readonly AppPaths paths;

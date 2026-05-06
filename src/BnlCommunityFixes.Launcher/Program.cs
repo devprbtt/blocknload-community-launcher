@@ -27,6 +27,8 @@ internal static class Program
 
             var bundledAssetService = new BundledPatchingAssetService(paths, logger);
             bundledAssetService.EnsureAssetsExtracted();
+            var debugProfileService = new LauncherDebugProfileService(paths, logger);
+            debugProfileService.ApplyCurrentLauncherProfile();
 
             var settingsService = new SettingsService(paths);
             settingsService.EnsureDefaultFile();

@@ -1,21 +1,21 @@
 ﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.1.16",
+    "version":  "2.1.17",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-05T18:44:31.1361399+00:00",
-    "notes":  "## v2.1.16\n\n### Fixes\n- Removed the runtime menu dependency on external framework assemblies that were crashing the injected helper at runtime\n- Replaced runtime menu persistence with a plain-text config format\n- Disabled the FOV feature path in the experimental assembly builder for now to stop the `CameraFov.Update()` runtime regression\n\n### Runtime Menu\n- `F8` toggles the menu\n- `Up` / `Down` selects a setting\n- `Left` / `Right` changes the selected value\n- `F5` saves\n- `F6` resets defaults\n\n### Notes\n- FOV settings are temporarily ignored by this build while that feature path is quarantined\r\n",
+    "published_at":  "2026-05-06T00:29:15.9364527+00:00",
+    "notes":  "## v2.1.17\r\n\r\n### New Features\r\n- **Predicted saucer projectile drop** â€” Astro saucers now detonate locally on timeout or right-click, with server reconciliation. Added `PredictedProjectileRuntime` helper class with HashSet-based double-detonation guard.\r\n- **Path Hud.Update()** for per-frame right-click detonation detection.\r\n- **ProjectileRegistry iteration via reflection** for finding local player\u0027s server-owned grenades.\r\n\r\n### Bug Fixes\r\n- FOV feature re-enabled (`$EnableFovFeature = $true`) and migrated to offset-based IL patching for CameraFov and CameraArms (same approach as the old working `fov150` bundle)\r\n- Weapon model FOV now reads from `fov-config.json` properly instead of hardcoded 30\r\n- Fixed `InvalidProgramException` in CameraFov/CameraArms caused by Insert-CallAtStart injecting bare `call` without arguments\r\n- Fixed `FindObjectOfType` performance issue â€” cached component references in `AdsSensitivityRuntime`\r\n- Fixed orphaned closing brace that broke the experimental assembly build\r\n- Fixed unused `activeSaucerShotId` field causing C# compiler error\r\n",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.16/BnlCommunityFixes.exe",
-                                        "sha256":  "39B20F76A8CAB0802B1DEE82F0AA11E43F6B7176A38DEC36D7406B2F692473AA",
-                                        "size":  162740430
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.17/BnlCommunityFixes.exe",
+                                        "sha256":  "EC4E8BBD2198D1D8E19004B75FBF321BEA2AC2511C9351DE7E61BAEF7D589614",
+                                        "size":  162756814
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.16/BnlUpdater.exe",
-                                       "sha256":  "385074E8991E5A70D8D03E8DFBEC961913194AA9B3D420725BF88EBB7E1130E1",
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.1.17/BnlUpdater.exe",
+                                       "sha256":  "2DB73B875CAB98B56C3E95CD67DA591C1D73BB1DC4AD9E886E0A9DA35E32D724",
                                        "size":  67609337
                                    }
                }
