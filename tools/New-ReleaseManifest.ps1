@@ -37,7 +37,7 @@ if ([string]::IsNullOrWhiteSpace($MinimumSupportedVersion)) {
 }
 
 if (-not [string]::IsNullOrWhiteSpace($NotesFile)) {
-    $Notes = Get-Content -LiteralPath $NotesFile -Raw
+    $Notes = Get-Content -LiteralPath $NotesFile -Raw -Encoding UTF8
 }
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {

@@ -4,7 +4,7 @@
     "version":  "2.1.17",
     "minimum_supported_version":  "1.9.0",
     "published_at":  "2026-05-06T00:29:15.9364527+00:00",
-    "notes":  "## v2.1.17\r\n\r\n### New Features\r\n- **Predicted saucer projectile drop** â€” Astro saucers now detonate locally on timeout or right-click, with server reconciliation. Added `PredictedProjectileRuntime` helper class with HashSet-based double-detonation guard.\r\n- **Path Hud.Update()** for per-frame right-click detonation detection.\r\n- **ProjectileRegistry iteration via reflection** for finding local player\u0027s server-owned grenades.\r\n\r\n### Bug Fixes\r\n- FOV feature re-enabled (`$EnableFovFeature = $true`) and migrated to offset-based IL patching for CameraFov and CameraArms (same approach as the old working `fov150` bundle)\r\n- Weapon model FOV now reads from `fov-config.json` properly instead of hardcoded 30\r\n- Fixed `InvalidProgramException` in CameraFov/CameraArms caused by Insert-CallAtStart injecting bare `call` without arguments\r\n- Fixed `FindObjectOfType` performance issue â€” cached component references in `AdsSensitivityRuntime`\r\n- Fixed orphaned closing brace that broke the experimental assembly build\r\n- Fixed unused `activeSaucerShotId` field causing C# compiler error\r\n",
+    "notes":  "## v2.1.17\r\n\r\n### New Features\r\n- **Predicted saucer projectile drop** — Astro saucers now detonate locally on timeout or right-click, with server reconciliation. Added `PredictedProjectileRuntime` helper class with HashSet-based double-detonation guard.\r\n- **Path Hud.Update()** for per-frame right-click detonation detection.\r\n- **ProjectileRegistry iteration via reflection** for finding local player\u0027s server-owned grenades.\r\n\r\n### Bug Fixes\r\n- FOV feature re-enabled (`$EnableFovFeature = $true`) and migrated to offset-based IL patching for CameraFov and CameraArms (same approach as the old working `fov150` bundle)\r\n- Weapon model FOV now reads from `fov-config.json` properly instead of hardcoded 30\r\n- Fixed `InvalidProgramException` in CameraFov/CameraArms caused by Insert-CallAtStart injecting bare `call` without arguments\r\n- Fixed `FindObjectOfType` performance issue — cached component references in `AdsSensitivityRuntime`\r\n- Fixed orphaned closing brace that broke the experimental assembly build\r\n- Fixed unused `activeSaucerShotId` field causing C# compiler error\r\n",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
@@ -20,3 +20,4 @@
                                    }
                }
 }
+
