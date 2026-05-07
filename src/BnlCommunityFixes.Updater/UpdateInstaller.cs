@@ -101,7 +101,7 @@ public sealed class UpdateInstaller
                 return;
             }
 
-            File.Copy(installedTarget, externalTarget, true);
+            CopyWithRetry(installedTarget, externalTarget);
             logger.Info($"Updated external launcher copy at {externalTarget}.");
         }
         catch (Exception exception)
@@ -170,5 +170,26 @@ public sealed class UpdateInstaller
         var fileName = Path.GetFileNameWithoutExtension(targetPath);
         var extension = Path.GetExtension(targetPath);
         return Path.Combine(directory, $"{fileName}.previous{extension}");
+    }
+
+    private static void CopyWithRetry(string sourcePath, string destinationPath)
+    {
+        const int attempts = 10;
+        for (var attempt = 1; attempt <= attempts; attempt++)
+        {
+            try
+            {
+                File.Copy(sourcePath, destinationPath, true);
+                return;
+            }
+            catch (IOException) when (attempt < attempts)
+            {
+                Thread.Sleep(500);
+            }
+            catch (UnauthorizedAccessException) when (attempt < attempts)
+            {
+                Thread.Sleep(500);
+            }
+        }
     }
 }

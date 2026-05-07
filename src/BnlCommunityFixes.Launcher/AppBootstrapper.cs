@@ -24,7 +24,7 @@ public sealed class AppBootstrapper
         var normalizedTarget = Path.GetFullPath(Path.Combine(paths.AppDir, targetFileName));
         if (string.Equals(normalizedCurrent, normalizedTarget, StringComparison.OrdinalIgnoreCase))
         {
-            TryRefreshBootstrapSource(normalizedCurrent);
+            TryRefreshBootstrapSources(normalizedCurrent);
             return Task.FromResult(false);
         }
 
@@ -76,14 +76,16 @@ public sealed class AppBootstrapper
         return Task.FromResult(true);
     }
 
-    private void TryRefreshBootstrapSource(string installedPath)
+    private void TryRefreshBootstrapSources(string installedPath)
     {
-        var sourcePath = ReadBootstrapSource();
-        if (string.IsNullOrWhiteSpace(sourcePath))
+        foreach (var sourcePath in ReadBootstrapSources())
         {
-            return;
+            TryRefreshBootstrapSource(installedPath, sourcePath);
         }
+    }
 
+    private void TryRefreshBootstrapSource(string installedPath, string sourcePath)
+    {
         try
         {
             sourcePath = Path.GetFullPath(sourcePath);
@@ -101,7 +103,7 @@ public sealed class AppBootstrapper
                 return;
             }
 
-            File.Copy(installedPath, sourcePath, true);
+            CopyWithRetry(installedPath, sourcePath);
             logger.Info($"Refreshed bootstrap source '{sourcePath}' from installed launcher version '{installedVersion}'.");
         }
         catch (Exception exception)
@@ -110,33 +112,48 @@ public sealed class AppBootstrapper
         }
     }
 
-    private string? ReadBootstrapSource()
+    private IEnumerable<string> ReadBootstrapSources()
     {
-        try
-        {
-            if (File.Exists(paths.BootstrapSourcePath))
-            {
-                var sourcePath = File.ReadAllText(paths.BootstrapSourcePath).Trim();
-                if (!string.IsNullOrWhiteSpace(sourcePath))
-                {
-                    return sourcePath;
-                }
-            }
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            return ReadLastBootstrapSourceFromLog();
-        }
-        catch (Exception exception)
+        foreach (var sourcePath in ReadBootstrapSourceFile().Concat(ReadBootstrapSourcesFromLog()))
         {
-            logger.Warning($"Could not read bootstrap source: {exception.Message}");
-            return null;
+            if (!string.IsNullOrWhiteSpace(sourcePath) && seen.Add(sourcePath))
+            {
+                yield return sourcePath;
+            }
         }
     }
 
-    private string? ReadLastBootstrapSourceFromLog()
+    private IEnumerable<string> ReadBootstrapSourceFile()
+    {
+        if (!File.Exists(paths.BootstrapSourcePath))
+        {
+            yield break;
+        }
+
+        string sourcePath;
+        try
+        {
+            sourcePath = File.ReadAllText(paths.BootstrapSourcePath).Trim();
+        }
+        catch (Exception exception)
+        {
+            logger.Warning($"Could not read bootstrap source file: {exception.Message}");
+            yield break;
+        }
+
+        if (!string.IsNullOrWhiteSpace(sourcePath))
+        {
+            yield return sourcePath;
+        }
+    }
+
+    private IEnumerable<string> ReadBootstrapSourcesFromLog()
     {
         if (!File.Exists(paths.LauncherLogPath))
         {
-            return null;
+            yield break;
         }
 
         var lines = File.ReadLines(paths.LauncherLogPath).Reverse();
@@ -153,11 +170,9 @@ public sealed class AppBootstrapper
             var end = line.IndexOf("' to '", start, StringComparison.Ordinal);
             if (end > start)
             {
-                return line[start..end];
+                yield return line[start..end];
             }
         }
-
-        return null;
     }
 
     private static bool IsInsideDirectory(string path, string directory)
@@ -165,5 +180,26 @@ public sealed class AppBootstrapper
         var fullPath = Path.GetFullPath(path);
         var fullDirectory = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
         return fullPath.StartsWith(fullDirectory, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void CopyWithRetry(string sourcePath, string destinationPath)
+    {
+        const int attempts = 10;
+        for (var attempt = 1; attempt <= attempts; attempt++)
+        {
+            try
+            {
+                File.Copy(sourcePath, destinationPath, true);
+                return;
+            }
+            catch (IOException) when (attempt < attempts)
+            {
+                Thread.Sleep(500);
+            }
+            catch (UnauthorizedAccessException) when (attempt < attempts)
+            {
+                Thread.Sleep(500);
+            }
+        }
     }
 }
