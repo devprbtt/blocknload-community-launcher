@@ -6,6 +6,7 @@ public sealed class UpdaterArguments
     public string SourcePath { get; set; } = "";
     public string? UpdaterTargetPath { get; set; }
     public string? UpdaterSourcePath { get; set; }
+    public string? ExternalTargetPath { get; set; }
     public int ProcessId { get; set; }
     public bool Restart { get; set; }
     public string LogPath { get; set; } = "";

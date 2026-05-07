@@ -153,7 +153,7 @@ public sealed class UpdateCoordinator
     {
         logger.Info("Launching updater.");
 
-        var updaterPath = File.Exists(paths.UpdaterPath) ? paths.UpdaterPath : paths.UpdaterTempPath;
+        var updaterPath = File.Exists(paths.UpdaterTempPath) ? paths.UpdaterTempPath : paths.UpdaterPath;
         var launcherProcess = Process.GetCurrentProcess();
         var startInfo = new ProcessStartInfo
         {
@@ -170,6 +170,7 @@ public sealed class UpdateCoordinator
         startInfo.ArgumentList.Add(paths.UpdaterPath);
         startInfo.ArgumentList.Add("--updater-source");
         startInfo.ArgumentList.Add(paths.UpdaterTempPath);
+        AddExternalLauncherTarget(startInfo);
         startInfo.ArgumentList.Add("--pid");
         startInfo.ArgumentList.Add(launcherProcess.Id.ToString());
         startInfo.ArgumentList.Add("--log");
@@ -183,5 +184,35 @@ public sealed class UpdateCoordinator
         }
 
         Process.Start(startInfo);
+    }
+
+    private void AddExternalLauncherTarget(ProcessStartInfo startInfo)
+    {
+        try
+        {
+            if (!File.Exists(paths.BootstrapSourcePath))
+            {
+                return;
+            }
+
+            var bootstrapSource = File.ReadAllText(paths.BootstrapSourcePath).Trim();
+            if (string.IsNullOrWhiteSpace(bootstrapSource))
+            {
+                return;
+            }
+
+            var normalizedSource = Path.GetFullPath(bootstrapSource);
+            if (string.Equals(normalizedSource, Path.GetFullPath(paths.LauncherPath), StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            startInfo.ArgumentList.Add("--external-target");
+            startInfo.ArgumentList.Add(normalizedSource);
+        }
+        catch (Exception exception)
+        {
+            logger.Warning($"Could not add external launcher target: {exception.Message}");
+        }
     }
 }

@@ -22,6 +22,7 @@ public sealed class AppPaths
     public string UpdaterPendingPath => Path.Combine(UpdatesDir, "BnlUpdater.pending.exe");
     public string LauncherLogPath => Path.Combine(LogsDir, "launcher.log");
     public string UpdaterLogPath => Path.Combine(LogsDir, "updater.log");
+    public string BootstrapSourcePath => Path.Combine(DataDir, "bootstrap-source.txt");
     public string PatchingDir => Path.Combine(AppDir, "patching");
     public string PresetsFilePath => Path.Combine(DataDir, "presets.json");
 

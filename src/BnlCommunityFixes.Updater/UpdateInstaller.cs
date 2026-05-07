@@ -18,6 +18,7 @@ public sealed class UpdateInstaller
         {
             await WaitForProcessExitAsync(arguments.ProcessId, cancellationToken);
             InstallLauncher(arguments);
+            InstallExternalLauncher(arguments);
             StageUpdater(arguments);
 
             if (arguments.Restart)
@@ -73,6 +74,40 @@ public sealed class UpdateInstaller
 
         File.Move(arguments.SourcePath, arguments.TargetPath, true);
         logger.Info($"Installed launcher update to {arguments.TargetPath}.");
+    }
+
+    private void InstallExternalLauncher(UpdaterArguments arguments)
+    {
+        if (string.IsNullOrWhiteSpace(arguments.ExternalTargetPath))
+        {
+            return;
+        }
+
+        try
+        {
+            var externalTarget = Path.GetFullPath(arguments.ExternalTargetPath);
+            var installedTarget = Path.GetFullPath(arguments.TargetPath);
+            if (string.Equals(externalTarget, installedTarget, StringComparison.OrdinalIgnoreCase) ||
+                !File.Exists(externalTarget) ||
+                !File.Exists(installedTarget))
+            {
+                return;
+            }
+
+            var installedVersion = FileVersionInfo.GetVersionInfo(installedTarget).FileVersion;
+            var externalVersion = FileVersionInfo.GetVersionInfo(externalTarget).FileVersion;
+            if (!VersionService.IsRemoteNewer(externalVersion ?? "0.0.0", installedVersion ?? "0.0.0"))
+            {
+                return;
+            }
+
+            File.Copy(installedTarget, externalTarget, true);
+            logger.Info($"Updated external launcher copy at {externalTarget}.");
+        }
+        catch (Exception exception)
+        {
+            logger.Warning($"Could not update external launcher copy '{arguments.ExternalTargetPath}': {exception.Message}");
+        }
     }
 
     private void StageUpdater(UpdaterArguments arguments)

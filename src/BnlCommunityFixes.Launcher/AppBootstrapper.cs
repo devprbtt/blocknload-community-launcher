@@ -24,10 +24,12 @@ public sealed class AppBootstrapper
         var normalizedTarget = Path.GetFullPath(Path.Combine(paths.AppDir, targetFileName));
         if (string.Equals(normalizedCurrent, normalizedTarget, StringComparison.OrdinalIgnoreCase))
         {
+            TryRefreshBootstrapSource(normalizedCurrent);
             return Task.FromResult(false);
         }
 
         logger.Info($"Bootstrapping launcher from '{normalizedCurrent}' to '{normalizedTarget}'.");
+        File.WriteAllText(paths.BootstrapSourcePath, normalizedCurrent);
 
         // Don't overwrite if the installed version is newer than the source
         if (File.Exists(normalizedTarget))
@@ -72,5 +74,96 @@ public sealed class AppBootstrapper
 
         Process.Start(startInfo);
         return Task.FromResult(true);
+    }
+
+    private void TryRefreshBootstrapSource(string installedPath)
+    {
+        var sourcePath = ReadBootstrapSource();
+        if (string.IsNullOrWhiteSpace(sourcePath))
+        {
+            return;
+        }
+
+        try
+        {
+            sourcePath = Path.GetFullPath(sourcePath);
+            if (!File.Exists(sourcePath) ||
+                string.Equals(sourcePath, installedPath, StringComparison.OrdinalIgnoreCase) ||
+                IsInsideDirectory(sourcePath, paths.AppDir))
+            {
+                return;
+            }
+
+            var installedVersion = FileVersionInfo.GetVersionInfo(installedPath).FileVersion;
+            var sourceVersion = FileVersionInfo.GetVersionInfo(sourcePath).FileVersion;
+            if (!VersionService.IsRemoteNewer(sourceVersion ?? "0.0.0", installedVersion ?? "0.0.0"))
+            {
+                return;
+            }
+
+            File.Copy(installedPath, sourcePath, true);
+            logger.Info($"Refreshed bootstrap source '{sourcePath}' from installed launcher version '{installedVersion}'.");
+        }
+        catch (Exception exception)
+        {
+            logger.Warning($"Could not refresh bootstrap source '{sourcePath}': {exception.Message}");
+        }
+    }
+
+    private string? ReadBootstrapSource()
+    {
+        try
+        {
+            if (File.Exists(paths.BootstrapSourcePath))
+            {
+                var sourcePath = File.ReadAllText(paths.BootstrapSourcePath).Trim();
+                if (!string.IsNullOrWhiteSpace(sourcePath))
+                {
+                    return sourcePath;
+                }
+            }
+
+            return ReadLastBootstrapSourceFromLog();
+        }
+        catch (Exception exception)
+        {
+            logger.Warning($"Could not read bootstrap source: {exception.Message}");
+            return null;
+        }
+    }
+
+    private string? ReadLastBootstrapSourceFromLog()
+    {
+        if (!File.Exists(paths.LauncherLogPath))
+        {
+            return null;
+        }
+
+        var lines = File.ReadLines(paths.LauncherLogPath).Reverse();
+        foreach (var line in lines)
+        {
+            const string prefix = "Bootstrapping launcher from '";
+            var start = line.IndexOf(prefix, StringComparison.Ordinal);
+            if (start < 0)
+            {
+                continue;
+            }
+
+            start += prefix.Length;
+            var end = line.IndexOf("' to '", start, StringComparison.Ordinal);
+            if (end > start)
+            {
+                return line[start..end];
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsInsideDirectory(string path, string directory)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var fullDirectory = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return fullPath.StartsWith(fullDirectory, StringComparison.OrdinalIgnoreCase);
     }
 }
