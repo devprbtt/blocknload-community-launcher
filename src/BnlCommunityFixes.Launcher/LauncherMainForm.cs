@@ -37,7 +37,7 @@ public sealed class LauncherMainForm : Form
         this.settings = settings;
         this.installInfo = installInfo;
         this.launcherConfig = launcherConfig;
-        launcherVersion = LauncherVersion.GetCurrentVersion();
+        launcherVersion = LauncherVersion.GetDisplayVersion();
         launchCoordinator = new LaunchCoordinator(paths, logger);
         launcherConfigService = new LauncherConfigService();
 
