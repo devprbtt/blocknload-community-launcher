@@ -38,7 +38,10 @@ public sealed class AppBootstrapper
         {
             var installedVersion = System.Diagnostics.FileVersionInfo.GetVersionInfo(normalizedTarget).FileVersion;
             var sourceVersion = System.Diagnostics.FileVersionInfo.GetVersionInfo(normalizedCurrent).FileVersion;
-            if (!VersionService.IsRemoteNewer(installedVersion ?? "0.0.0", sourceVersion ?? "0.0.0"))
+            var installedParsedVersion = VersionService.Parse(installedVersion);
+            var sourceParsedVersion = VersionService.Parse(sourceVersion);
+            if (installedParsedVersion > sourceParsedVersion ||
+                (installedParsedVersion == sourceParsedVersion && FilesAreEqual(normalizedTarget, normalizedCurrent)))
             {
                 logger.Info($"Skipping bootstrapper copy: installed version '{installedVersion}' is same or newer than source '{sourceVersion}'.");
                 var restartInfo = new ProcessStartInfo
@@ -106,7 +109,10 @@ public sealed class AppBootstrapper
 
             var installedVersion = FileVersionInfo.GetVersionInfo(installedPath).FileVersion;
             var sourceVersion = FileVersionInfo.GetVersionInfo(sourcePath).FileVersion;
-            if (!VersionService.IsRemoteNewer(sourceVersion ?? "0.0.0", installedVersion ?? "0.0.0"))
+            var installedParsedVersion = VersionService.Parse(installedVersion);
+            var sourceParsedVersion = VersionService.Parse(sourceVersion);
+            if (sourceParsedVersion < installedParsedVersion ||
+                (sourceParsedVersion == installedParsedVersion && FilesAreEqual(sourcePath, installedPath)))
             {
                 return;
             }
@@ -215,5 +221,20 @@ public sealed class AppBootstrapper
                 Thread.Sleep(500);
             }
         }
+    }
+
+    private static bool FilesAreEqual(string leftPath, string rightPath)
+    {
+        var left = new FileInfo(leftPath);
+        var right = new FileInfo(rightPath);
+        if (!left.Exists || !right.Exists || left.Length != right.Length)
+        {
+            return false;
+        }
+
+        return string.Equals(
+            HashService.ComputeSha1(leftPath),
+            HashService.ComputeSha1(rightPath),
+            StringComparison.OrdinalIgnoreCase);
     }
 }

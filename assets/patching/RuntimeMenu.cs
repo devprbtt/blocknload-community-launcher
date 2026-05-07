@@ -49,6 +49,7 @@ namespace BnlCommunityFixes
         public bool aim_healthbar_enabled = true;
         public bool deathcam_healthbar_enabled = true;
         public bool auto_casual_queue_enabled;
+        public bool has_auto_casual_queue_enabled;
     }
 
     public static class RuntimeFeatureState
@@ -872,7 +873,7 @@ namespace BnlCommunityFixes
         private static void ApplyLoadedAutoCasualQueue()
         {
             EnsureLoadedData();
-            if (loadedData == null)
+            if (loadedData == null || !loadedData.has_auto_casual_queue_enabled)
             {
                 return;
             }
@@ -1098,7 +1099,11 @@ namespace BnlCommunityFixes
                     if (bool.TryParse(value, out parsedBool)) data.deathcam_healthbar_enabled = parsedBool;
                     break;
                 case "auto_casual_queue_enabled":
-                    if (bool.TryParse(value, out parsedBool)) data.auto_casual_queue_enabled = parsedBool;
+                    if (bool.TryParse(value, out parsedBool))
+                    {
+                        data.auto_casual_queue_enabled = parsedBool;
+                        data.has_auto_casual_queue_enabled = true;
+                    }
                     break;
             }
         }

@@ -78,7 +78,7 @@ public sealed class LaunchCoordinator
             gameAssemblyService.SyncCommunityFixAssembly(installInfo, logger);
             patchService.ApplyPatchSet(installInfo.GameRoot, config, server.Patch, logger, skipPaths);
 
-            if (experimentalEnabled && !gameAssemblyService.DeployExperimentalAssembly(installInfo, logger))
+            if ((experimentalEnabled || builtExperimentalAssembly) && !gameAssemblyService.DeployExperimentalAssembly(installInfo, logger))
             {
                 throw new InvalidOperationException("Feature Assembly-CSharp mode was enabled but the DLL could not be deployed.");
             }

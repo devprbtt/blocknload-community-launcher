@@ -27,6 +27,11 @@ internal static class Program
 
             var bundledAssetService = new BundledPatchingAssetService(paths, logger);
             bundledAssetService.EnsureAssetsExtracted();
+            var featureSettingsService = new FeatureSettingsService(paths);
+            if (featureSettingsService.EnsureAutoCasualQueueTestDefaultEnabled())
+            {
+                logger.Info("Enabled auto casual queue test feature config for launcher 2.3.");
+            }
             var debugProfileService = new LauncherDebugProfileService(paths, logger);
             debugProfileService.ApplyCurrentLauncherProfile();
 

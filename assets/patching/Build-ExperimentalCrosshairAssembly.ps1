@@ -2525,6 +2525,8 @@ namespace BnlCommunityFixes
     {
         private static AutoCasualQueueRuntime instance;
         private bool wasInCustomGame;
+        private bool leaveRequestedForMatch;
+        private MatchmakerStateType lastLoggedState = MatchmakerStateType.None;
 
         static AutoCasualQueueRuntime()
         {
@@ -2543,7 +2545,7 @@ namespace BnlCommunityFixes
 
         private void Update()
         {
-            if (!RuntimeFeatureState.AutoCasualQueueEnabled) { wasInCustomGame = false; return; }
+            if (!RuntimeFeatureState.AutoCasualQueueEnabled) { wasInCustomGame = false; leaveRequestedForMatch = false; lastLoggedState = MatchmakerStateType.None; return; }
             try
             {
                 CustomGameData customGameData = Singleton<CustomGameData>.Instance;
@@ -2552,21 +2554,43 @@ namespace BnlCommunityFixes
                 if (customGameData == null || matchmakerData == null || dispatcher == null) return;
 
                 bool isInCustomGame = customGameData.IsCustomGame;
+                MatchmakerStateType currentState = matchmakerData.State != null ? matchmakerData.State.State : MatchmakerStateType.None;
+
+                if (currentState != lastLoggedState)
+                {
+                    UnityEngine.Debug.Log("BNL auto casual queue: matchmaker state=" + currentState + " inCustom=" + isInCustomGame);
+                    lastLoggedState = currentState;
+                }
+
+                if (currentState != MatchmakerStateType.Confirming)
+                {
+                    leaveRequestedForMatch = false;
+                }
 
                 if (isInCustomGame && !wasInCustomGame)
                 {
-                    MatchmakerStateType currentState = matchmakerData.State != null ? matchmakerData.State.State : MatchmakerStateType.None;
                     if (currentState == MatchmakerStateType.None)
                     {
+                        UnityEngine.Debug.Log("BNL auto casual queue: entering casual queue from custom game");
                         dispatcher.ServiceMatchmaker.EnterQueue(CatalogueHelper.ModeFriendly.Key);
                     }
                 }
 
                 wasInCustomGame = isInCustomGame;
 
-                if (isInCustomGame && matchmakerData.State != null && matchmakerData.State.State == MatchmakerStateType.Confirming)
+                if (isInCustomGame && currentState == MatchmakerStateType.Confirming && !leaveRequestedForMatch)
                 {
-                    dispatcher.ServiceMatchmaker.ConfirmMatch(true);
+                    UnityEngine.Debug.Log("BNL auto casual queue: leaving custom game after match found");
+                    ZoneData zoneData = Singleton<ZoneData>.Instance;
+                    if (zoneData != null && zoneData.IsCustomGame)
+                    {
+                        dispatcher.ServiceZone.ExitMatch();
+                    }
+                    else
+                    {
+                        customGameData.LeaveGame();
+                    }
+                    leaveRequestedForMatch = true;
                 }
             }
             catch { }

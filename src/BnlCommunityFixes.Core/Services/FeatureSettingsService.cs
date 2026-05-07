@@ -59,6 +59,27 @@ public sealed class FeatureSettingsService
     public AutoCasualQueueSettings LoadAutoCasualQueueSettings() => Load("experimental-auto-casual-queue-config.json", new AutoCasualQueueSettings());
     public void SaveAutoCasualQueueSettings(AutoCasualQueueSettings settings) => Save("experimental-auto-casual-queue-config.json", settings);
 
+    public bool EnsureAutoCasualQueueTestDefaultEnabled()
+    {
+        var migrationMarkerPath = Path.Combine(paths.DataDir, "auto-casual-queue-2.3-default-enabled.migrated");
+        if (File.Exists(migrationMarkerPath))
+        {
+            return false;
+        }
+
+        var settings = LoadAutoCasualQueueSettings();
+        var changed = !settings.Enabled;
+        if (changed)
+        {
+            settings.Enabled = true;
+            SaveAutoCasualQueueSettings(settings);
+        }
+
+        Directory.CreateDirectory(paths.DataDir);
+        File.WriteAllText(migrationMarkerPath, DateTimeOffset.UtcNow.ToString("O"), new UTF8Encoding(false));
+        return changed;
+    }
+
     private T Load<T>(string fileName, T fallback) where T : class
     {
         var path = Path.Combine(paths.PatchingDir, fileName);
