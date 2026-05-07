@@ -13,6 +13,7 @@ public sealed class LauncherMainForm : Form
     private readonly string launcherVersion;
     private readonly LaunchCoordinator launchCoordinator;
     private readonly LauncherConfigService launcherConfigService;
+    private readonly ReplayLauncherService replayLauncherService;
 
     private readonly Label gamePathLabel;
     private readonly Label detectionLabel;
@@ -21,6 +22,9 @@ public sealed class LauncherMainForm : Form
     private readonly Button launchButton;
     private readonly Button featureSettingsButton;
     private readonly Button moreOptionsButton;
+    private readonly Button openReplayFolderButton;
+    private readonly Button analyzeReplayButton;
+    private readonly Button openReplayViewerButton;
     private readonly TextBox statusTextBox;
 
     private LauncherConfig? launcherConfig;
@@ -30,7 +34,8 @@ public sealed class LauncherMainForm : Form
         Logger logger,
         LauncherSettings settings,
         GameInstallInfo installInfo,
-        LauncherConfig? launcherConfig)
+        LauncherConfig? launcherConfig,
+        HttpClient httpClient)
     {
         this.paths = paths;
         this.logger = logger;
@@ -40,13 +45,14 @@ public sealed class LauncherMainForm : Form
         launcherVersion = LauncherVersion.GetDisplayVersion();
         launchCoordinator = new LaunchCoordinator(paths, logger);
         launcherConfigService = new LauncherConfigService();
+        replayLauncherService = new ReplayLauncherService(paths, logger, settings, httpClient);
 
         Text = $"Block N Load Community Fixes V2 - {launcherVersion}";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = true;
-        ClientSize = new System.Drawing.Size(760, 430);
+        ClientSize = new System.Drawing.Size(760, 500);
 
         using var appIconStream = typeof(LauncherMainForm).Assembly.GetManifestResourceStream("BnlCommunityFixes.Launcher.launcher-icon.ico");
         if (appIconStream != null) Icon = new System.Drawing.Icon(appIconStream);
@@ -149,13 +155,45 @@ public sealed class LauncherMainForm : Form
         };
         moreOptionsButton.Click += (_, _) => OpenMoreOptions();
 
+        var replayLabel = new Label
+        {
+            Text = "Match Replays",
+            AutoSize = true,
+            Location = new System.Drawing.Point(24, 256),
+            Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold)
+        };
+
+        openReplayFolderButton = new Button
+        {
+            Text = "Open Folder",
+            Location = new System.Drawing.Point(24, 278),
+            Size = new System.Drawing.Size(112, 28)
+        };
+        openReplayFolderButton.Click += (_, _) => OpenReplayFolder();
+
+        analyzeReplayButton = new Button
+        {
+            Text = "Browse Replays",
+            Location = new System.Drawing.Point(142, 278),
+            Size = new System.Drawing.Size(112, 28)
+        };
+        analyzeReplayButton.Click += (_, _) => OpenReplayBrowser();
+
+        openReplayViewerButton = new Button
+        {
+            Text = "Open Viewer",
+            Location = new System.Drawing.Point(260, 278),
+            Size = new System.Drawing.Size(112, 28)
+        };
+        openReplayViewerButton.Click += (_, _) => OpenReplayViewer();
+
         statusTextBox = new TextBox
         {
             Multiline = true,
             ReadOnly = true,
             ScrollBars = ScrollBars.Vertical,
-            Location = new System.Drawing.Point(24, 255),
-            Size = new System.Drawing.Size(712, 153),
+            Location = new System.Drawing.Point(24, 320),
+            Size = new System.Drawing.Size(712, 158),
             Font = new System.Drawing.Font("Consolas", 9F)
         };
 
@@ -171,6 +209,10 @@ public sealed class LauncherMainForm : Form
             launchButton,
             featureSettingsButton,
             moreOptionsButton,
+            replayLabel,
+            openReplayFolderButton,
+            analyzeReplayButton,
+            openReplayViewerButton,
             statusTextBox
         ]);
 
@@ -260,6 +302,9 @@ public sealed class LauncherMainForm : Form
         {
             lines.Add($"servers.txt: {installInfo.ServersFilePath}");
             lines.Add($"Managed dir: {installInfo.ManagedDirectoryPath}");
+            lines.Add($"Replay dir: {replayLauncherService.GetReplayDirectory(installInfo)}");
+            lines.Add($"Latest replay: {replayLauncherService.GetLatestCapture(installInfo)?.Name ?? "none"}");
+            lines.Add($"Latest replay analysis: {replayLauncherService.LatestAnalysisDirectory}");
             lines.Add($"Feature builder script: {Path.Combine(paths.PatchingDir, "Build-ExperimentalCrosshairAssembly.ps1")}");
             lines.Add($"Feature DLL present: {File.Exists(Path.Combine(paths.PatchingDir, "Assembly-CSharp.experimental.dll"))}");
             lines.Add($"Helper DLL present: {File.Exists(Path.Combine(paths.PatchingDir, "BnlCommunityFixes.dll"))}");
@@ -277,6 +322,11 @@ public sealed class LauncherMainForm : Form
         }
 
         statusTextBox.Text = string.Join(Environment.NewLine, lines);
+
+        var replayControlsEnabled = installInfo.IsDetected;
+        openReplayFolderButton.Enabled = replayControlsEnabled;
+        analyzeReplayButton.Enabled = replayControlsEnabled;
+        openReplayViewerButton.Enabled = replayControlsEnabled && File.Exists(replayLauncherService.LatestViewerPath);
     }
 
     private void LaunchSelectedServer()
@@ -359,6 +409,93 @@ public sealed class LauncherMainForm : Form
             ManageServers,
             VerifyGameFiles);
         form.ShowDialog(this);
+    }
+
+    private void OpenReplayFolder()
+    {
+        if (!installInfo.IsDetected)
+        {
+            return;
+        }
+
+        try
+        {
+            replayLauncherService.OpenReplayDirectory(installInfo);
+        }
+        catch (Exception exception)
+        {
+            logger.Exception(exception, "Failed to open replay folder");
+            MessageBox.Show(
+                exception.Message,
+                "Block N Load Community Fixes V2",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+    }
+
+    private async Task AnalyzeLatestReplayAsync()
+    {
+        if (!installInfo.IsDetected)
+        {
+            return;
+        }
+
+        analyzeReplayButton.Enabled = false;
+        analyzeReplayButton.Text = "Analyzing...";
+
+        try
+        {
+            var result = await replayLauncherService.AnalyzeLatestAsync(installInfo, CancellationToken.None).ConfigureAwait(true);
+            UpdateStatusSummary();
+            MessageBox.Show(
+                $"Analyzed replay:{Environment.NewLine}{Path.GetFileName(result.CapturePath)}{Environment.NewLine}{Environment.NewLine}Output:{Environment.NewLine}{result.OutputDirectory}",
+                "Block N Load Community Fixes V2",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception exception)
+        {
+            logger.Exception(exception, "Replay analysis failed");
+            MessageBox.Show(
+                exception.Message,
+                "Block N Load Community Fixes V2",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+        finally
+        {
+            analyzeReplayButton.Text = "Analyze Latest";
+            UpdateStatusSummary();
+        }
+    }
+
+    private void OpenReplayBrowser()
+    {
+        if (!installInfo.IsDetected)
+        {
+            return;
+        }
+
+        using var form = new ReplayBrowserForm(installInfo, replayLauncherService);
+        form.ShowDialog(this);
+        UpdateStatusSummary();
+    }
+
+    private void OpenReplayViewer()
+    {
+        try
+        {
+            replayLauncherService.OpenLatestViewer();
+        }
+        catch (Exception exception)
+        {
+            logger.Exception(exception, "Failed to open replay viewer");
+            MessageBox.Show(
+                exception.Message,
+                "Block N Load Community Fixes V2",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
     }
 
     private sealed record ServerItem(string Key, LauncherServer Server)

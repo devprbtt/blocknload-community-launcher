@@ -78,6 +78,8 @@ public sealed class FeatureSettingsForm : Form
 
     private readonly CheckBox deathCamHealthbarEnabledCheckBox;
 
+    private readonly CheckBox autoCasualQueueEnabledCheckBox;
+
     // Color field columns: each block is label+textbox(130)+gap(4)+button(44)+gap(4)+swatch(22) = 204px; 26px between columns
     private const int ColA = 14;
     private const int ColB = 244;
@@ -498,7 +500,18 @@ public sealed class FeatureSettingsForm : Form
             readFields: () => new DeathCamHealthbarSettings { Enabled = deathCamHealthbarEnabledCheckBox.Checked },
             applyFields: s => { deathCamHealthbarEnabledCheckBox.Checked = s.Enabled; });
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab]);
+        // --- Auto Casual Queue ---
+        var autoCasualQueueTab = new TabPage("Auto Queue");
+        AddDescription(autoCasualQueueTab,
+            "Automatically joins the casual matchmaking queue as soon as you enter a custom game lobby, " +
+            "and auto-accepts the match popup when a game is found — pulling you out of the custom game into the casual match.");
+        autoCasualQueueEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        autoCasualQueueTab.Controls.Add(autoCasualQueueEnabledCheckBox);
+        AddPresetBar<AutoCasualQueueSettings>(autoCasualQueueTab, "autoCasualQueue",
+            readFields: () => new AutoCasualQueueSettings { Enabled = autoCasualQueueEnabledCheckBox.Checked },
+            applyFields: s => { autoCasualQueueEnabledCheckBox.Checked = s.Enabled; });
+
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab]);
 
         var saveButton = new Button
         {
@@ -746,6 +759,9 @@ public sealed class FeatureSettingsForm : Form
 
         var deathCamHealthbar = featureSettingsService.LoadDeathCamHealthbarSettings();
         deathCamHealthbarEnabledCheckBox.Checked = deathCamHealthbar.Enabled;
+
+        var autoCasualQueue = featureSettingsService.LoadAutoCasualQueueSettings();
+        autoCasualQueueEnabledCheckBox.Checked = autoCasualQueue.Enabled;
     }
 
     private void SaveAndClose()
@@ -870,6 +886,11 @@ public sealed class FeatureSettingsForm : Form
         featureSettingsService.SaveDeathCamHealthbarSettings(new DeathCamHealthbarSettings
         {
             Enabled = deathCamHealthbarEnabledCheckBox.Checked
+        });
+
+        featureSettingsService.SaveAutoCasualQueueSettings(new AutoCasualQueueSettings
+        {
+            Enabled = autoCasualQueueEnabledCheckBox.Checked
         });
 
         DialogResult = DialogResult.OK;

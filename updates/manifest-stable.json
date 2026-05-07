@@ -1,27 +1,27 @@
 ﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.2.6",
-    "minimum_supported_version":  "2.2.6",
-    "published_at":  "2026-05-07T18:47:15.7331991+00:00",
-    "notes":  "# BNL Community Launcher v2.2.6\n\n## Fixes\n- Fixed a crash on launch when a feature config file is present but `Assembly-CSharp-backup.dll` has not yet been created (first-time feature users).\n\n## Files\n- BnlCommunityFixes.exe\n- BnlUpdater.exe\n",
+    "version":  "2.3.0",
+    "minimum_supported_version":  "2.3.0",
+    "published_at":  "2026-05-07T19:54:30.7449349+00:00",
+    "notes":  "# BNL Community Launcher v2.3.0\n\n## New Features\n- Auto casual queue: automatically joins the casual matchmaking queue when you enter a custom game lobby, and auto-accepts the match popup when a game is found. Enable via Feature Settings → Auto Queue tab. Can also be toggled live in-game with F8.\n\n## Fixes\n- Fixed a crash on launch when a feature config file is present but `Assembly-CSharp-backup.dll` has not yet been created (first-time feature users).\n\n## Files\n- BnlCommunityFixes.exe\n- BnlUpdater.exe\n",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.6/BnlCommunityFixes.exe",
-                                        "sha256":  "FF9F8A6E721C607943CE75EC14FEF59783B42D6A66B7C0C6DC98F1E82333D721",
-                                        "size":  162811591
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.0/BnlCommunityFixes.exe",
+                                        "sha256":  "56A4B1E7742D96DC4BC96786C44D8A8936D839CD85D1325914DA95FFD4AF83C8",
+                                        "size":  162820295
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.6/BnlUpdater.exe",
-                                       "sha256":  "B316E248190EFD42E1C5AF1B0555E2B2191CB228869F5F0A28698DF228C0EB4A",
-                                       "size":  67610866
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.0/BnlUpdater.exe",
+                                       "sha256":  "6FB4E19A6F2F6D70BF6CD0A95A14D02B82DB096581D549D837FF6B0AD0A390BD",
+                                       "size":  67611378
                                    },
                    "replay_analyzer_exe":  {
                                                "file_name":  "BnlCommunityFixes.ReplayAnalyzer.exe",
-                                               "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.6/BnlCommunityFixes.ReplayAnalyzer.exe",
-                                               "sha256":  "FBE883F2C51CE673B565A4522136C4E6A03895BB4DBAF4BF8B035626D8B5C316",
+                                               "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.0/BnlCommunityFixes.ReplayAnalyzer.exe",
+                                               "sha256":  "0D6934F5251492726D471902E8DA314B12668F2D0558C4CC21E85ABE11451094",
                                                "size":  67949813
                                            }
                }

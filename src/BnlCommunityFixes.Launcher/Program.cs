@@ -58,7 +58,7 @@ internal static class Program
             var launcherConfigService = new LauncherConfigService();
             var launcherConfig = launcherConfigService.LoadOrCreate(installInfo, logger);
 
-            Application.Run(new LauncherMainForm(paths, logger, settings, installInfo, launcherConfig));
+            Application.Run(new LauncherMainForm(paths, logger, settings, installInfo, launcherConfig, httpClient));
         }
         catch (Exception exception)
         {

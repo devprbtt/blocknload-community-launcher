@@ -112,8 +112,9 @@ public sealed class UpdateCoordinator
     {
         var launcherAsset = manifest.Assets["launcher_exe"];
         var updaterAsset = manifest.Assets["updater_exe"];
+        manifest.Assets.TryGetValue("replay_analyzer_exe", out var replayAnalyzerAsset);
 
-        var totalBytes = (launcherAsset.Size ?? 0) + (updaterAsset.Size ?? 0);
+        var totalBytes = (launcherAsset.Size ?? 0) + (updaterAsset.Size ?? 0) + (replayAnalyzerAsset?.Size ?? 0);
         long downloadedBytes = 0;
 
         var progress = new Progress<long>(bytes =>
@@ -131,12 +132,19 @@ public sealed class UpdateCoordinator
 
         logger.Info($"Downloading updater update from {updaterAsset.Url}.");
         await downloadService.DownloadFileAsync(updaterAsset.Url, paths.UpdaterTempPath, progress, cancellationToken);
+
+        if (replayAnalyzerAsset is not null)
+        {
+            logger.Info($"Downloading replay analyzer from {replayAnalyzerAsset.Url}.");
+            await downloadService.DownloadFileAsync(replayAnalyzerAsset.Url, paths.ReplayAnalyzerTempPath, progress, cancellationToken);
+        }
     }
 
     private async Task VerifyAssetsAsync(UpdateManifest manifest, CancellationToken cancellationToken)
     {
         var launcherAsset = manifest.Assets["launcher_exe"];
         var updaterAsset = manifest.Assets["updater_exe"];
+        manifest.Assets.TryGetValue("replay_analyzer_exe", out var replayAnalyzerAsset);
 
         if (!await HashService.VerifySha256Async(paths.LauncherTempPath, launcherAsset.Sha256, cancellationToken))
         {
@@ -146,6 +154,12 @@ public sealed class UpdateCoordinator
         if (!await HashService.VerifySha256Async(paths.UpdaterTempPath, updaterAsset.Sha256, cancellationToken))
         {
             throw new InvalidOperationException("Downloaded updater hash verification failed.");
+        }
+
+        if (replayAnalyzerAsset is not null &&
+            !await HashService.VerifySha256Async(paths.ReplayAnalyzerTempPath, replayAnalyzerAsset.Sha256, cancellationToken))
+        {
+            throw new InvalidOperationException("Downloaded replay analyzer hash verification failed.");
         }
     }
 
@@ -170,6 +184,13 @@ public sealed class UpdateCoordinator
         startInfo.ArgumentList.Add(paths.UpdaterPath);
         startInfo.ArgumentList.Add("--updater-source");
         startInfo.ArgumentList.Add(paths.UpdaterTempPath);
+        if (manifest.Assets.ContainsKey("replay_analyzer_exe"))
+        {
+            startInfo.ArgumentList.Add("--replay-analyzer-target");
+            startInfo.ArgumentList.Add(paths.ReplayAnalyzerPath);
+            startInfo.ArgumentList.Add("--replay-analyzer-source");
+            startInfo.ArgumentList.Add(paths.ReplayAnalyzerTempPath);
+        }
         AddExternalLauncherTarget(startInfo);
         startInfo.ArgumentList.Add("--pid");
         startInfo.ArgumentList.Add(launcherProcess.Id.ToString());

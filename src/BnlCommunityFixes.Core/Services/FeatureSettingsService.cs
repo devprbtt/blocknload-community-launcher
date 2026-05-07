@@ -56,6 +56,9 @@ public sealed class FeatureSettingsService
     public DeathCamHealthbarSettings LoadDeathCamHealthbarSettings() => Load("deathcam-healthbar-config.json", new DeathCamHealthbarSettings());
     public void SaveDeathCamHealthbarSettings(DeathCamHealthbarSettings settings) => Save("deathcam-healthbar-config.json", settings);
 
+    public AutoCasualQueueSettings LoadAutoCasualQueueSettings() => Load("experimental-auto-casual-queue-config.json", new AutoCasualQueueSettings());
+    public void SaveAutoCasualQueueSettings(AutoCasualQueueSettings settings) => Save("experimental-auto-casual-queue-config.json", settings);
+
     private T Load<T>(string fileName, T fallback) where T : class
     {
         var path = Path.Combine(paths.PatchingDir, fileName);

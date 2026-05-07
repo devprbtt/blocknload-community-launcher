@@ -19,6 +19,7 @@ public sealed class UpdateInstaller
             await WaitForProcessExitAsync(arguments.ProcessId, cancellationToken);
             InstallLauncher(arguments);
             InstallExternalLauncher(arguments);
+            InstallReplayAnalyzer(arguments);
             StageUpdater(arguments);
 
             if (arguments.Restart)
@@ -108,6 +109,20 @@ public sealed class UpdateInstaller
         {
             logger.Warning($"Could not update external launcher copy '{arguments.ExternalTargetPath}': {exception.Message}");
         }
+    }
+
+    private void InstallReplayAnalyzer(UpdaterArguments arguments)
+    {
+        if (string.IsNullOrWhiteSpace(arguments.ReplayAnalyzerTargetPath) ||
+            string.IsNullOrWhiteSpace(arguments.ReplayAnalyzerSourcePath) ||
+            !File.Exists(arguments.ReplayAnalyzerSourcePath))
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(arguments.ReplayAnalyzerTargetPath)!);
+        File.Move(arguments.ReplayAnalyzerSourcePath, arguments.ReplayAnalyzerTargetPath, true);
+        logger.Info($"Installed replay analyzer to {arguments.ReplayAnalyzerTargetPath}.");
     }
 
     private void StageUpdater(UpdaterArguments arguments)

@@ -48,6 +48,7 @@ namespace BnlCommunityFixes
 
         public bool aim_healthbar_enabled = true;
         public bool deathcam_healthbar_enabled = true;
+        public bool auto_casual_queue_enabled;
     }
 
     public static class RuntimeFeatureState
@@ -61,6 +62,7 @@ namespace BnlCommunityFixes
         private static bool localBuildPreviewConfigured;
         private static bool aimHealthbarConfigured;
         private static bool deathCamHealthbarConfigured;
+        private static bool autoCasualQueueConfigured;
 
         private static Color defaultCrosshairIdleColor;
         private static Color defaultCrosshairFullDamageColor;
@@ -108,6 +110,7 @@ namespace BnlCommunityFixes
 
         private static bool defaultAimHealthbarEnabled = true;
         private static bool defaultDeathCamHealthbarEnabled = true;
+        private static bool defaultAutoCasualQueueEnabled;
 
         private static bool loadedFromDisk;
         private static RuntimeMenuSettingsData loadedData;
@@ -121,6 +124,7 @@ namespace BnlCommunityFixes
         public static bool LocalBuildPreviewSupported { get; private set; }
         public static bool AimHealthbarSupported { get; private set; }
         public static bool DeathCamHealthbarSupported { get; private set; }
+        public static bool AutoCasualQueueSupported { get; private set; }
 
         public static float CrosshairSizeMultiplier { get; private set; }
         public static float CrosshairSpreadMultiplier { get; private set; }
@@ -162,6 +166,7 @@ namespace BnlCommunityFixes
 
         public static bool AimHealthbarEnabled { get; private set; }
         public static bool DeathCamHealthbarEnabled { get; private set; }
+        public static bool AutoCasualQueueEnabled { get; private set; }
 
         static RuntimeFeatureState()
         {
@@ -194,6 +199,7 @@ namespace BnlCommunityFixes
             LocalBuildPreviewTimeoutSeconds = 2f;
             AimHealthbarEnabled = true;
             DeathCamHealthbarEnabled = true;
+            AutoCasualQueueEnabled = false;
         }
 
         private static string ConfigPath
@@ -378,6 +384,19 @@ namespace BnlCommunityFixes
             }
         }
 
+        public static void ConfigureAutoCasualQueue(bool supported, bool enabled)
+        {
+            AutoCasualQueueSupported = AutoCasualQueueSupported || supported;
+            defaultAutoCasualQueueEnabled = enabled;
+
+            if (!autoCasualQueueConfigured)
+            {
+                AutoCasualQueueEnabled = defaultAutoCasualQueueEnabled;
+                autoCasualQueueConfigured = true;
+                ApplyLoadedAutoCasualQueue();
+            }
+        }
+
         public static Color GetCrosshairIdleColor()
         {
             return WithAlpha(defaultCrosshairIdleColor, CrosshairAlpha);
@@ -517,6 +536,11 @@ namespace BnlCommunityFixes
             if (deathCamHealthbarConfigured)
             {
                 DeathCamHealthbarEnabled = defaultDeathCamHealthbarEnabled;
+            }
+
+            if (autoCasualQueueConfigured)
+            {
+                AutoCasualQueueEnabled = defaultAutoCasualQueueEnabled;
             }
         }
 
@@ -696,6 +720,11 @@ namespace BnlCommunityFixes
             DeathCamHealthbarEnabled = value;
         }
 
+        public static void SetAutoCasualQueueEnabled(bool value)
+        {
+            AutoCasualQueueEnabled = value;
+        }
+
         private static void EnsureLoadedData()
         {
             if (loadedFromDisk)
@@ -840,6 +869,17 @@ namespace BnlCommunityFixes
             DeathCamHealthbarEnabled = loadedData.deathcam_healthbar_enabled;
         }
 
+        private static void ApplyLoadedAutoCasualQueue()
+        {
+            EnsureLoadedData();
+            if (loadedData == null)
+            {
+                return;
+            }
+
+            AutoCasualQueueEnabled = loadedData.auto_casual_queue_enabled;
+        }
+
         private static Color WithAlpha(Color value, float alpha)
         {
             return new Color(value.r, value.g, value.b, Mathf.Clamp01(alpha));
@@ -881,6 +921,7 @@ namespace BnlCommunityFixes
             data.local_build_preview_timeout_seconds = LocalBuildPreviewTimeoutSeconds;
             data.aim_healthbar_enabled = AimHealthbarEnabled;
             data.deathcam_healthbar_enabled = DeathCamHealthbarEnabled;
+            data.auto_casual_queue_enabled = AutoCasualQueueEnabled;
             return data;
         }
 
@@ -920,6 +961,7 @@ namespace BnlCommunityFixes
             lines.Add("local_build_preview_timeout_seconds=" + data.local_build_preview_timeout_seconds.ToString(System.Globalization.CultureInfo.InvariantCulture));
             lines.Add("aim_healthbar_enabled=" + data.aim_healthbar_enabled);
             lines.Add("deathcam_healthbar_enabled=" + data.deathcam_healthbar_enabled);
+            lines.Add("auto_casual_queue_enabled=" + data.auto_casual_queue_enabled);
             return string.Join("\n", lines.ToArray());
         }
 
@@ -1054,6 +1096,9 @@ namespace BnlCommunityFixes
                     break;
                 case "deathcam_healthbar_enabled":
                     if (bool.TryParse(value, out parsedBool)) data.deathcam_healthbar_enabled = parsedBool;
+                    break;
+                case "auto_casual_queue_enabled":
+                    if (bool.TryParse(value, out parsedBool)) data.auto_casual_queue_enabled = parsedBool;
                     break;
             }
         }
@@ -1269,6 +1314,11 @@ namespace BnlCommunityFixes
                 count += 1;
             }
 
+            if (RuntimeFeatureState.AutoCasualQueueSupported)
+            {
+                count += 1;
+            }
+
             if (DebugMenuRuntime.Enabled)
             {
                 count += 1;
@@ -1367,6 +1417,12 @@ namespace BnlCommunityFixes
                 index -= 1;
             }
 
+            if (RuntimeFeatureState.AutoCasualQueueSupported)
+            {
+                if (index == 0) return "Auto casual queue";
+                index -= 1;
+            }
+
             if (DebugMenuRuntime.Enabled)
             {
                 if (index == 0) return "Debug force start match";
@@ -1462,6 +1518,12 @@ namespace BnlCommunityFixes
             if (RuntimeFeatureState.DeathCamHealthbarSupported)
             {
                 if (index == 0) return RuntimeFeatureState.DeathCamHealthbarEnabled ? "ON" : "OFF";
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.AutoCasualQueueSupported)
+            {
+                if (index == 0) return RuntimeFeatureState.AutoCasualQueueEnabled ? "ON" : "OFF";
                 index -= 1;
             }
 
@@ -1624,6 +1686,17 @@ namespace BnlCommunityFixes
             }
 
             if (RuntimeFeatureState.DeathCamHealthbarSupported)
+            {
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.AutoCasualQueueSupported && index == 0)
+            {
+                RuntimeFeatureState.SetAutoCasualQueueEnabled(!RuntimeFeatureState.AutoCasualQueueEnabled);
+                return;
+            }
+
+            if (RuntimeFeatureState.AutoCasualQueueSupported)
             {
                 index -= 1;
             }

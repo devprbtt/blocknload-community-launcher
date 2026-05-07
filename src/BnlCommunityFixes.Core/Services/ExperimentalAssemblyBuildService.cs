@@ -17,7 +17,8 @@ public sealed class ExperimentalAssemblyBuildService
         "experimental-enemy-shield-buffbar-config.json",
         "experimental-match-replay-recorder-config.json",
         "aim-healthbar-config.json",
-        "experimental-debug-menu-config.json"
+        "experimental-debug-menu-config.json",
+        "experimental-auto-casual-queue-config.json"
     ];
 
     private readonly AppPaths paths;

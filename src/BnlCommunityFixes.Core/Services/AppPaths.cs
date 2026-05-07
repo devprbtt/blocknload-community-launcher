@@ -16,7 +16,9 @@ public sealed class AppPaths
 
     public string LauncherPath => Path.Combine(AppDir, "BnlCommunityFixes.exe");
     public string UpdaterPath => Path.Combine(AppDir, "BnlUpdater.exe");
+    public string ReplayAnalyzerPath => Path.Combine(AppDir, "BnlCommunityFixes.ReplayAnalyzer.exe");
     public string LauncherTempPath => Path.Combine(UpdatesDir, "BnlCommunityFixes.new.exe");
+    public string ReplayAnalyzerTempPath => Path.Combine(UpdatesDir, "BnlCommunityFixes.ReplayAnalyzer.new.exe");
     public string UpdaterTempPath => Path.Combine(UpdatesDir, "BnlUpdater.new.exe");
     public string LauncherBackupPath => Path.Combine(BackupDir, "BnlCommunityFixes.previous.exe");
     public string UpdaterPendingPath => Path.Combine(UpdatesDir, "BnlUpdater.pending.exe");

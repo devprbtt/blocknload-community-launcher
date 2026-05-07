@@ -19,6 +19,7 @@ $BaseObjectiveBeamConfigPath = Join-Path $PSScriptRoot "experimental-base-object
 $EnemyShieldBuffBarConfigPath = Join-Path $PSScriptRoot "experimental-enemy-shield-buffbar-config.json"
 $LocalBuildPreviewConfigPath = Join-Path $PSScriptRoot "experimental-local-build-preview-config.json"
 $DebugMenuConfigPath = Join-Path $PSScriptRoot "experimental-debug-menu-config.json"
+$MatchReplayRecorderConfigPath = Join-Path $PSScriptRoot "experimental-match-replay-recorder-config.json"
 $AimHealthbarConfigPath = Join-Path $PSScriptRoot "aim-healthbar-config.json"
 $DeathCamHealthbarConfigPath = Join-Path $PSScriptRoot "deathcam-healthbar-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
@@ -28,6 +29,7 @@ $HelperOutputPath = Join-Path $PSScriptRoot "BnlCommunityFixes.dll"
 $LockOnHelperSourcePath = Join-Path $PSScriptRoot "LockOnRuntime.cs"
 $TrackingHelperSourcePath = Join-Path $PSScriptRoot "TrackingProjectileRuntime.cs"
 $RuntimeMenuSourcePath = Join-Path $PSScriptRoot "RuntimeMenu.cs"
+$MatchReplayRecorderSourcePath = Join-Path $PSScriptRoot "MatchReplayRecorderRuntime.cs"
 $ManagedDir = Join-Path $GameRoot "Win64\BlockNLoad_Data\Managed"
 $BackupPath = Join-Path $ManagedDir "Assembly-CSharp-backup.dll"
 $CecilPath = Join-Path $PSScriptRoot "Mono.Cecil.dll"
@@ -167,11 +169,20 @@ $DebugMenuConfig = Get-JsonConfig -Path $DebugMenuConfigPath -Default @{
     lobby_menu_key = "F11"
     zone_menu_key = "F12"
 }
+$MatchReplayRecorderConfig = Get-JsonConfig -Path $MatchReplayRecorderConfigPath -Default @{
+    enabled = $false
+    capture_payload = $true
+    max_payload_bytes = 262144
+}
 $AimHealthbarConfig = Get-JsonConfig -Path $AimHealthbarConfigPath -Default @{
     enabled = $true
 }
 $DeathCamHealthbarConfig = Get-JsonConfig -Path $DeathCamHealthbarConfigPath -Default @{
     enabled = $true
+}
+$AutoCasualQueueConfigPath = Join-Path $PSScriptRoot "experimental-auto-casual-queue-config.json"
+$AutoCasualQueueConfig = Get-JsonConfig -Path $AutoCasualQueueConfigPath -Default @{
+    enabled = $false
 }
 
 $AnyEnabled = @(
@@ -190,8 +201,10 @@ $AnyEnabled = @(
     [bool]$EnemyShieldBuffBarConfig.enabled,
     [bool]$LocalBuildPreviewConfig.enabled,
     [bool]$DebugMenuConfig.enabled,
+    [bool]$MatchReplayRecorderConfig.enabled,
     [bool]$AimHealthbarConfig.enabled,
-    [bool]$DeathCamHealthbarConfig.enabled
+    [bool]$DeathCamHealthbarConfig.enabled,
+    [bool]$AutoCasualQueueConfig.enabled
 ) -contains $true
 
 if (-not $AnyEnabled) {
@@ -362,6 +375,10 @@ $DebugMenuKeyLiteral = $DebugMenuKeyName.Replace("\", "\\").Replace('"', '\"')
 $DebugMainMenuKeyLiteral = $DebugMainMenuKeyName.Replace("\", "\\").Replace('"', '\"')
 $DebugLobbyMenuKeyLiteral = $DebugLobbyMenuKeyName.Replace("\", "\\").Replace('"', '\"')
 $DebugZoneMenuKeyLiteral = $DebugZoneMenuKeyName.Replace("\", "\\").Replace('"', '\"')
+[bool]$MatchReplayRecorderCapturePayload = if ($null -ne $MatchReplayRecorderConfig.capture_payload) { [bool]$MatchReplayRecorderConfig.capture_payload } else { $true }
+[int]$MatchReplayRecorderMaxPayloadBytes = if ($null -ne $MatchReplayRecorderConfig.max_payload_bytes) { [int]$MatchReplayRecorderConfig.max_payload_bytes } else { 262144 }
+if ($MatchReplayRecorderMaxPayloadBytes -lt 0) { $MatchReplayRecorderMaxPayloadBytes = 0 }
+if ($MatchReplayRecorderMaxPayloadBytes -gt 1048576) { $MatchReplayRecorderMaxPayloadBytes = 1048576 }
 
 $HelperSource = @"
 using System;
@@ -1819,6 +1836,11 @@ if (Test-Path $RuntimeMenuSourcePath) {
     $RuntimeMenuSource = [regex]::Replace($RuntimeMenuSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     $HelperSource += "`r`n" + $RuntimeMenuSource
 }
+if (Test-Path $MatchReplayRecorderSourcePath) {
+    $MatchReplayRecorderSource = Get-Content -Raw -LiteralPath $MatchReplayRecorderSourcePath
+    $MatchReplayRecorderSource = [regex]::Replace($MatchReplayRecorderSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $HelperSource += "`r`n" + $MatchReplayRecorderSource
+}
 
 $HelperSource += @"
 
@@ -2494,6 +2516,66 @@ namespace BnlCommunityFixes
 "@
 }
 
+if ($AutoCasualQueueConfig.enabled) {
+$HelperSource += @"
+
+namespace BnlCommunityFixes
+{
+    public sealed class AutoCasualQueueRuntime : UnityEngine.MonoBehaviour
+    {
+        private static AutoCasualQueueRuntime instance;
+        private bool wasInCustomGame;
+
+        static AutoCasualQueueRuntime()
+        {
+            RuntimeFeatureState.ConfigureAutoCasualQueue(true, $(Format-BoolLiteral $AutoCasualQueueConfig.enabled));
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
+
+        public static void EnsureInstance()
+        {
+            if (instance != null) return;
+            UnityEngine.GameObject go = UnityEngine.GameObject.Find("BNL_AUTO_CASUAL_QUEUE");
+            if (go == null) { go = new UnityEngine.GameObject("BNL_AUTO_CASUAL_QUEUE"); UnityEngine.Object.DontDestroyOnLoad(go); }
+            instance = go.GetComponent<AutoCasualQueueRuntime>();
+            if (instance == null) instance = go.AddComponent<AutoCasualQueueRuntime>();
+        }
+
+        private void Update()
+        {
+            if (!RuntimeFeatureState.AutoCasualQueueEnabled) { wasInCustomGame = false; return; }
+            try
+            {
+                CustomGameData customGameData = Singleton<CustomGameData>.Instance;
+                MatchmakerData matchmakerData = Singleton<MatchmakerData>.Instance;
+                NetworkDispatcher dispatcher = Singleton<NetworkDispatcher>.Instance;
+                if (customGameData == null || matchmakerData == null || dispatcher == null) return;
+
+                bool isInCustomGame = customGameData.IsCustomGame;
+
+                if (isInCustomGame && !wasInCustomGame)
+                {
+                    MatchmakerStateType currentState = matchmakerData.State != null ? matchmakerData.State.State : MatchmakerStateType.None;
+                    if (currentState == MatchmakerStateType.None)
+                    {
+                        dispatcher.ServiceMatchmaker.EnterQueue(CatalogueHelper.ModeFriendly.Key);
+                    }
+                }
+
+                wasInCustomGame = isInCustomGame;
+
+                if (isInCustomGame && matchmakerData.State != null && matchmakerData.State.State == MatchmakerStateType.Confirming)
+                {
+                    dispatcher.ServiceMatchmaker.ConfirmMatch(true);
+                }
+            }
+            catch { }
+        }
+    }
+}
+"@
+}
+
 if (Test-Path $HelperOutputPath) {
     Remove-Item -LiteralPath $HelperOutputPath -Force
 }
@@ -2532,6 +2614,19 @@ $ReaderParameters.AssemblyResolver = $Resolver
 $Assembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($TempBasePath, $ReaderParameters)
 $Module = $Assembly.MainModule
 $HelperAssembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($HelperOutputPath, $ReaderParameters)
+$MatchReplayRecorderRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.MatchReplayRecorderRuntime" | Select-Object -First 1
+$ImportedConfigureMatchReplayRecorder = $null
+$ImportedRecordMatchReplayPacket = $null
+if ($MatchReplayRecorderRuntimeType) {
+    $ConfigureMatchReplayRecorderMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "Configure" -and $_.Parameters.Count -eq 3 } | Select-Object -First 1
+    $RecordMatchReplayPacketMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "RecordPacket" -and $_.Parameters.Count -eq 2 } | Select-Object -First 1
+    if ($ConfigureMatchReplayRecorderMethod) {
+        $ImportedConfigureMatchReplayRecorder = $Module.ImportReference($ConfigureMatchReplayRecorderMethod)
+    }
+    if ($RecordMatchReplayPacketMethod) {
+        $ImportedRecordMatchReplayPacket = $Module.ImportReference($RecordMatchReplayPacketMethod)
+    }
+}
 $DebugMenuRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.DebugMenuRuntime" | Select-Object -First 1
 $ImportedConfigureDebugMenu = $null
 $ImportedEnsureDebugMenu = $null
@@ -2632,6 +2727,55 @@ $GetDamageCollectTime = $Module.ImportReference($GetDamageCollectTimeMethod)
 $RefreshDamageNumberMethod = $CombatNumberRuntimeType.Methods | Where-Object Name -eq "RefreshDamageNumber" | Select-Object -First 1
 if (-not $RefreshDamageNumberMethod) { throw "CombatNumberRuntime.RefreshDamageNumber method not found." }
 $RefreshDamageNumber = $Module.ImportReference($RefreshDamageNumberMethod)
+
+if ([bool]$MatchReplayRecorderConfig.enabled) {
+    if (-not $ImportedConfigureMatchReplayRecorder -or -not $ImportedRecordMatchReplayPacket) {
+        throw "MatchReplayRecorderRuntime helper methods not found."
+    }
+
+    $MainMenuType = $Module.Types | Where-Object Name -eq "MainMenu" | Select-Object -First 1
+    if (-not $MainMenuType) { throw "MainMenu type not found." }
+    $MainMenuStartMethod = $MainMenuType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+    if (-not $MainMenuStartMethod -or -not $MainMenuStartMethod.HasBody) { throw "MainMenu.Start not found." }
+
+    $MainMenuStartIl = $MainMenuStartMethod.Body.GetILProcessor()
+    $MainMenuStartFirst = $MainMenuStartMethod.Body.Instructions | Select-Object -First 1
+    foreach ($instruction in @(
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_1),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $MatchReplayRecorderMaxPayloadBytes),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $(if ($MatchReplayRecorderCapturePayload) { 1 } else { 0 })),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedConfigureMatchReplayRecorder)
+    )) {
+        $MainMenuStartIl.InsertBefore($MainMenuStartFirst, $instruction)
+    }
+
+    $ServiceZoneType = $Module.Types | Where-Object FullName -eq "Protocol.ServiceZone" | Select-Object -First 1
+    if (-not $ServiceZoneType) { throw "Protocol.ServiceZone type not found." }
+
+    $PatchedRecorderMethods = 0
+    foreach ($RecvMethod in ($ServiceZoneType.Methods | Where-Object { $_.Name -like "Recv_*" -and $_.HasBody -and $_.Parameters.Count -ge 1 })) {
+        $ReaderParameter = $RecvMethod.Parameters[0]
+        if ($ReaderParameter.ParameterType.FullName -ne "System.IO.BinaryReader") {
+            continue
+        }
+
+        $RecvIl = $RecvMethod.Body.GetILProcessor()
+        $RecvFirst = $RecvMethod.Body.Instructions | Select-Object -First 1
+        foreach ($instruction in @(
+            $RecvIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $RecvMethod.Name),
+            $RecvIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1),
+            $RecvIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedRecordMatchReplayPacket)
+        )) {
+            $RecvIl.InsertBefore($RecvFirst, $instruction)
+        }
+
+        $PatchedRecorderMethods++
+    }
+
+    if ($PatchedRecorderMethods -eq 0) {
+        throw "No ServiceZone Recv_* methods were patched for match replay recording."
+    }
+}
 
 if ([bool]$DebugMenuConfig.enabled) {
     if (-not $ImportedConfigureDebugMenu -or -not $ImportedEnsureDebugMenu) {
@@ -3895,6 +4039,20 @@ if ($DeathCamHealthbarConfig.enabled) {
     }
 }
 
+if ($AutoCasualQueueConfig.enabled) {
+    $AutoCasualQueueRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.AutoCasualQueueRuntime" | Select-Object -First 1
+    if (-not $AutoCasualQueueRuntimeType) { throw "AutoCasualQueueRuntime type not found in helper assembly." }
+    $EnsureAutoCasualQueueMethod = $AutoCasualQueueRuntimeType.Methods | Where-Object Name -eq "EnsureInstance" | Select-Object -First 1
+    if (-not $EnsureAutoCasualQueueMethod) { throw "AutoCasualQueueRuntime.EnsureInstance not found." }
+    $ImportedEnsureAutoCasualQueue = $Module.ImportReference($EnsureAutoCasualQueueMethod)
+
+    $MainMenuType2 = $Module.Types | Where-Object Name -eq "MainMenu" | Select-Object -First 1
+    $MainMenuStartMethod2 = $MainMenuType2.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+    $MainMenuStartIl2 = $MainMenuStartMethod2.Body.GetILProcessor()
+    $MainMenuStartFirst2 = $MainMenuStartMethod2.Body.Instructions | Select-Object -First 1
+    $MainMenuStartIl2.InsertBefore($MainMenuStartFirst2, $MainMenuStartIl2.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedEnsureAutoCasualQueue))
+}
+
 $Assembly.Write($OutputPath)
 $Assembly.Dispose()
 $HelperAssembly.Dispose()
@@ -3918,5 +4076,7 @@ if ($LocalBuildPreviewConfig.enabled) { $Features.Add("local-build-preview") | O
 if ($DebugMenuConfig.enabled) { $Features.Add("debug-menu") | Out-Null }
 if ($AimHealthbarConfig.enabled) { $Features.Add("aim-healthbar") | Out-Null }
 if ($DeathCamHealthbarConfig.enabled) { $Features.Add("deathcam-healthbar") | Out-Null }
+if ($AutoCasualQueueConfig.enabled) { $Features.Add("auto-casual-queue") | Out-Null }
+if ($MatchReplayRecorderConfig.enabled) { $Features.Add("match-replay-recorder") | Out-Null }
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash
 Write-Output "Experimental all-in-one DLL built. SHA1=$Hash features=$([string]::Join(',', $Features))"

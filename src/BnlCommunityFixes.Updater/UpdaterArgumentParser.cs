@@ -23,6 +23,12 @@ public static class UpdaterArgumentParser
                 case "--updater-source":
                     parsed.UpdaterSourcePath = ReadValue(args, ref i, arg);
                     break;
+                case "--replay-analyzer-target":
+                    parsed.ReplayAnalyzerTargetPath = ReadValue(args, ref i, arg);
+                    break;
+                case "--replay-analyzer-source":
+                    parsed.ReplayAnalyzerSourcePath = ReadValue(args, ref i, arg);
+                    break;
                 case "--external-target":
                     parsed.ExternalTargetPath = ReadValue(args, ref i, arg);
                     break;
