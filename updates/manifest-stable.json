@@ -1,21 +1,21 @@
 ﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.2.1",
+    "version":  "2.2.2",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-07T02:47:48.1990436+00:00",
-    "notes":  "# BNL Community Launcher v2.2.1\n\nFollow-up fix for the repeated update prompt loop.\n\n## Changes\n- The installed launcher no longer trusts only one saved bootstrap source path.\n- It now scans recent bootstrap log entries and refreshes older launcher EXEs that users keep reopening from Downloads/Desktop/custom folders.\n- This covers users updating from older launchers that could not pass the new external replacement target to the updater.\n\n## Files\n- BnlCommunityFixes.exe\n- BnlUpdater.exe\n\n",
+    "published_at":  "2026-05-07T02:54:04.0939738+00:00",
+    "notes":  "# BNL Community Launcher v2.2.2\n\nFollow-up fix for the external launcher replacement flow.\n\n## Changes\n- If the installed launcher is the same version or newer than the external EXE the user opened, bootstrap now skips the copy and starts the installed launcher.\n- This avoids file-in-use errors after an old external launcher has already been refreshed to the current version.\n\n## Files\n- BnlCommunityFixes.exe\n- BnlUpdater.exe\n\n",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.1/BnlCommunityFixes.exe",
-                                        "sha256":  "F4A27D0E38DCD76196DC95D34377358CD4FCF2E1D8412EF12D34BE095624F147",
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.2/BnlCommunityFixes.exe",
+                                        "sha256":  "A26E9104F7587378E1C2F03263D9782F9E8AEB40124FFCEE38136758A08CC34F",
                                         "size":  162764999
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.1/BnlUpdater.exe",
-                                       "sha256":  "C6130B05D465EC7FCB33D8491C4259CEC14FEA815A4EB26A579CEBB5CDEA4022",
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.2/BnlUpdater.exe",
+                                       "sha256":  "FFB31FB4283632FA922F38216988394D9D7F7C70947E8BA5DB90E28A1612B339",
                                        "size":  67609330
                                    }
                }
