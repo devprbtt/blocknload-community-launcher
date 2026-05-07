@@ -6,6 +6,8 @@ namespace BnlCommunityFixes.Core.Services;
 public sealed class SettingsService
 {
     private const string ManifestUrlEnvironmentVariable = "BNL_MANIFEST_URL";
+    private const string DefaultManifestUrl = "https://api.github.com/repos/devprbtt/blocknload-community-launcher/contents/updates/manifest-stable.json?ref=main";
+    private const string LegacyRawManifestUrl = "https://raw.githubusercontent.com/devprbtt/blocknload-community-launcher/main/updates/manifest-stable.json";
 
     private readonly AppPaths paths;
 
@@ -27,7 +29,12 @@ public sealed class SettingsService
 
         if (string.IsNullOrWhiteSpace(settings.ManifestUrl))
         {
-            settings.ManifestUrl = "https://api.github.com/repos/devprbtt/blocknload-community-launcher/contents/updates/manifest-stable.json?ref=main";
+            settings.ManifestUrl = DefaultManifestUrl;
+        }
+        else if (IsLegacyRawManifestUrl(settings.ManifestUrl))
+        {
+            settings.ManifestUrl = DefaultManifestUrl;
+            Save(settings);
         }
 
         return settings;
@@ -68,5 +75,16 @@ public sealed class SettingsService
         });
 
         return settings ?? new LauncherSettings();
+    }
+
+    private static bool IsLegacyRawManifestUrl(string manifestUrl)
+    {
+        if (!Uri.TryCreate(manifestUrl, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        var normalized = uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
+        return string.Equals(normalized, LegacyRawManifestUrl, StringComparison.OrdinalIgnoreCase);
     }
 }

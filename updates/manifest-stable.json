@@ -1,22 +1,22 @@
 ﻿{
     "product":  "BnlCommunityFixes",
     "channel":  "stable",
-    "version":  "2.2.4",
+    "version":  "2.2.5",
     "minimum_supported_version":  "1.9.0",
-    "published_at":  "2026-05-07T03:08:37.2554590+00:00",
-    "notes":  "# BNL Community Launcher v2.2.4\n\nSmall UI polish release.\n\n## Fixes\n- Shows the clean launcher version in the title bar, top-right label, and status/details panel.\n- The full commit-suffixed informational version is still used internally for update comparison.\n\n## Files\n- BnlCommunityFixes.exe\n- BnlUpdater.exe\n\n",
+    "published_at":  "2026-05-07T03:11:58.7663680+00:00",
+    "notes":  "# BNL Community Launcher v2.2.5\n\nSmall updater reliability release.\n\n## Fixes\n- Existing installs that still point at `raw.githubusercontent.com` for the stable manifest are migrated to the GitHub contents API manifest URL.\n- This avoids stale raw CDN responses immediately after publishing a new release.\n\n## Files\n- BnlCommunityFixes.exe\n- BnlUpdater.exe\n\n",
     "assets":  {
                    "launcher_exe":  {
                                         "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.4/BnlCommunityFixes.exe",
-                                        "sha256":  "A0A8745215F2A207C908389AF12F15B57DEC90D3A733B192C6A2BB5A69E46DF9",
-                                        "size":  162764999
+                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.5/BnlCommunityFixes.exe",
+                                        "sha256":  "172F9D7B8593014C39454F09F9EA6AFD60E4061BA3146964A73A0B135197C12C",
+                                        "size":  162766023
                                     },
                    "updater_exe":  {
                                        "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.4/BnlUpdater.exe",
-                                       "sha256":  "D4EEA0C0931EE202BF57394E1A385AFA533A02811F622FEF01D0DE614E617498",
-                                       "size":  67609330
+                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.2.5/BnlUpdater.exe",
+                                       "sha256":  "C6115E430EAE2D52302C7850B22BBE0D246B349C333F53C6721EC5A5D3C55C67",
+                                       "size":  67610354
                                    }
                }
 }
