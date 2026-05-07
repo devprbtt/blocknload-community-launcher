@@ -5,6 +5,8 @@ namespace BnlCommunityFixes.Launcher;
 
 public sealed class AppBootstrapper
 {
+    private const int MaxBootstrapSourcesToRefresh = 3;
+
     private readonly AppPaths paths;
     private readonly Logger logger;
 
@@ -115,12 +117,18 @@ public sealed class AppBootstrapper
     private IEnumerable<string> ReadBootstrapSources()
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var returned = 0;
 
-        foreach (var sourcePath in ReadBootstrapSourceFile().Concat(ReadBootstrapSourcesFromLog()))
+        foreach (var sourcePath in ReadBootstrapSourcesFromLog().Concat(ReadBootstrapSourceFile()))
         {
             if (!string.IsNullOrWhiteSpace(sourcePath) && seen.Add(sourcePath))
             {
                 yield return sourcePath;
+                returned++;
+                if (returned >= MaxBootstrapSourcesToRefresh)
+                {
+                    yield break;
+                }
             }
         }
     }

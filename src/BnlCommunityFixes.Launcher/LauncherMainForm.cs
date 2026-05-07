@@ -10,6 +10,7 @@ public sealed class LauncherMainForm : Form
     private readonly Logger logger;
     private readonly LauncherSettings settings;
     private readonly GameInstallInfo installInfo;
+    private readonly string launcherVersion;
     private readonly LaunchCoordinator launchCoordinator;
     private readonly LauncherConfigService launcherConfigService;
 
@@ -36,10 +37,11 @@ public sealed class LauncherMainForm : Form
         this.settings = settings;
         this.installInfo = installInfo;
         this.launcherConfig = launcherConfig;
+        launcherVersion = LauncherVersion.GetCurrentVersion();
         launchCoordinator = new LaunchCoordinator(paths, logger);
         launcherConfigService = new LauncherConfigService();
 
-        Text = "Block N Load Community Fixes V2";
+        Text = $"Block N Load Community Fixes V2 - {launcherVersion}";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -60,6 +62,16 @@ public sealed class LauncherMainForm : Form
             AutoSize = true,
             Font = new System.Drawing.Font("Segoe UI Semibold", 16F, System.Drawing.FontStyle.Bold),
             Location = new System.Drawing.Point(20, 18)
+        };
+
+        var versionLabel = new Label
+        {
+            Text = $"Version {launcherVersion}",
+            AutoSize = false,
+            Size = new System.Drawing.Size(230, 22),
+            TextAlign = System.Drawing.ContentAlignment.TopRight,
+            ForeColor = System.Drawing.SystemColors.GrayText,
+            Location = new System.Drawing.Point(506, 24)
         };
 
         gamePathLabel = new Label
@@ -150,6 +162,7 @@ public sealed class LauncherMainForm : Form
         Controls.AddRange(
         [
             titleLabel,
+            versionLabel,
             gamePathLabel,
             detectionLabel,
             patchStatusLabel,
@@ -237,6 +250,7 @@ public sealed class LauncherMainForm : Form
 
         var lines = new List<string>
         {
+            $"Launcher version: {launcherVersion}",
             $"Manifest: {settings.ManifestUrl}",
             $"Settings file: {Path.Combine(paths.DataDir, "launcher-settings.json")}",
             $"Patching dir: {paths.PatchingDir}"
