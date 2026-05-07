@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>2.2.5</Version>
+    <Version>2.2.6</Version>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Launcher</RootNamespace>
@@ -26,7 +26,9 @@
     <EmbeddedResource Include="..\..\assets\patching\Build-ExperimentalCrosshairAssembly.ps1" LogicalName="Patching.Build-ExperimentalCrosshairAssembly.ps1" />
     <EmbeddedResource Include="..\..\assets\patching\CrosshairBundleRuntime.cs" LogicalName="Patching.CrosshairBundleRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\RuntimeMenu.cs" LogicalName="Patching.RuntimeMenu.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\MatchReplayRecorderRuntime.cs" LogicalName="Patching.MatchReplayRecorderRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-debug-menu-config.json" LogicalName="Patching.experimental-debug-menu-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-match-replay-recorder-config.json" LogicalName="Patching.experimental-match-replay-recorder-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\Mono.Cecil.dll" LogicalName="Patching.Mono.Cecil.dll" />
   </ItemGroup>
 

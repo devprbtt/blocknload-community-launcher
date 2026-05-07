@@ -56,10 +56,16 @@ public sealed class LaunchCoordinator
         {
             var skipPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var experimentalEnabled = gameAssemblyService.HasExperimentalAssembly();
+            var willBuildExperimental = experimentalAssemblyBuildService.WillBuildFromLocalConfig();
+
+            if (experimentalEnabled || willBuildExperimental)
+            {
+                gameAssemblyService.EnsureAssemblyBackup(installInfo, config, server.Patch, logger);
+            }
+
             if (experimentalEnabled)
             {
                 logger.Info("Feature Assembly-CSharp mode enabled.");
-                gameAssemblyService.EnsureAssemblyBackup(installInfo, config, server.Patch, logger);
                 skipPaths.Add(@"Win64/BlockNLoad_Data/Managed/Assembly-CSharp.dll");
             }
 

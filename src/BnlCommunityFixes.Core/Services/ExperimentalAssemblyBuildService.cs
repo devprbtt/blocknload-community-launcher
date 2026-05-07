@@ -15,6 +15,7 @@ public sealed class ExperimentalAssemblyBuildService
         "heal-alert-indicator-config.json",
         "experimental-base-objective-beam-config.json",
         "experimental-enemy-shield-buffbar-config.json",
+        "experimental-match-replay-recorder-config.json",
         "aim-healthbar-config.json",
         "experimental-debug-menu-config.json"
     ];
@@ -24,6 +25,19 @@ public sealed class ExperimentalAssemblyBuildService
     public ExperimentalAssemblyBuildService(AppPaths paths)
     {
         this.paths = paths;
+    }
+
+    public bool WillBuildFromLocalConfig()
+    {
+        var buildScriptPath = Path.Combine(paths.PatchingDir, "Build-ExperimentalCrosshairAssembly.ps1");
+        if (!File.Exists(buildScriptPath))
+        {
+            return false;
+        }
+
+        return TriggerConfigFileNames
+            .Select(fileName => Path.Combine(paths.PatchingDir, fileName))
+            .Any(File.Exists);
     }
 
     public bool BuildFromLocalConfig(GameInstallInfo installInfo, Logger logger)

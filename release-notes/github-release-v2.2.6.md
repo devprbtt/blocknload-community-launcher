@@ -1,0 +1,8 @@
+# BNL Community Launcher v2.2.6
+
+## Fixes
+- Fixed a crash on launch when a feature config file is present but `Assembly-CSharp-backup.dll` has not yet been created (first-time feature users).
+
+## Files
+- BnlCommunityFixes.exe
+- BnlUpdater.exe
