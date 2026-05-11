@@ -83,6 +83,10 @@ public sealed class FeatureSettingsForm : Form
 
     private readonly CheckBox autoCasualQueueEnabledCheckBox;
 
+    private readonly CheckBox friendlyLowHealthEnabledCheckBox;
+    private readonly TextBox friendlyLowHealthColorTextBox;
+    private readonly NumericUpDown friendlyLowHealthThresholdNumeric;
+
     // Color field columns: each block is label+textbox(130)+gap(4)+button(44)+gap(4)+swatch(22) = 204px; 26px between columns
     private const int ColA = 14;
     private const int ColB = 244;
@@ -534,7 +538,31 @@ public sealed class FeatureSettingsForm : Form
             readFields: () => new AutoCasualQueueSettings { Enabled = autoCasualQueueEnabledCheckBox.Checked },
             applyFields: s => { autoCasualQueueEnabledCheckBox.Checked = s.Enabled; });
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab]);
+        var friendlyLowHealthTab = new TabPage("Low HP Alert");
+        AddDescription(friendlyLowHealthTab,
+            "Changes the health bar and name color of friendly players when their health drops below a configurable threshold.");
+        friendlyLowHealthEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        friendlyLowHealthColorTextBox    = NewColorField(friendlyLowHealthTab, "Alert color", ColA, ColorRow1Y);
+        friendlyLowHealthThresholdNumeric = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.05M, 0.95M, 2, 0.05M);
+        friendlyLowHealthTab.Controls.AddRange([
+            friendlyLowHealthEnabledCheckBox,
+            NewLabel("Threshold (0–1)", NumC1, NumLabelY), friendlyLowHealthThresholdNumeric
+        ]);
+        AddPresetBar<FriendlyLowHealthSettings>(friendlyLowHealthTab, "friendlyLowHealth",
+            readFields: () => new FriendlyLowHealthSettings
+            {
+                Enabled   = friendlyLowHealthEnabledCheckBox.Checked,
+                Color     = friendlyLowHealthColorTextBox.Text.Trim(),
+                Threshold = (double)friendlyLowHealthThresholdNumeric.Value
+            },
+            applyFields: s =>
+            {
+                friendlyLowHealthEnabledCheckBox.Checked   = s.Enabled;
+                friendlyLowHealthColorTextBox.Text         = s.Color;
+                friendlyLowHealthThresholdNumeric.Value    = ToDecimal(s.Threshold, friendlyLowHealthThresholdNumeric);
+            });
+
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab]);
 
         var saveButton = new Button
         {
@@ -788,6 +816,11 @@ public sealed class FeatureSettingsForm : Form
 
         var autoCasualQueue = featureSettingsService.LoadAutoCasualQueueSettings();
         autoCasualQueueEnabledCheckBox.Checked = autoCasualQueue.Enabled;
+
+        var friendlyLowHealth = featureSettingsService.LoadFriendlyLowHealthSettings();
+        friendlyLowHealthEnabledCheckBox.Checked = friendlyLowHealth.Enabled;
+        friendlyLowHealthColorTextBox.Text = friendlyLowHealth.Color;
+        friendlyLowHealthThresholdNumeric.Value = ToDecimal(friendlyLowHealth.Threshold, friendlyLowHealthThresholdNumeric);
     }
 
     private void SaveAndClose()
@@ -804,6 +837,7 @@ public sealed class FeatureSettingsForm : Form
         CollectColorValidation(validationErrors, healAlertDamageColorTextBox.Text, allowDefaultToken: true);
         CollectColorValidation(validationErrors, healAlertHealColorTextBox.Text);
         CollectColorValidation(validationErrors, shieldColorTextBox.Text);
+        CollectColorValidation(validationErrors, friendlyLowHealthColorTextBox.Text);
 
         if (validationErrors.Count > 0)
         {
@@ -920,6 +954,13 @@ public sealed class FeatureSettingsForm : Form
         featureSettingsService.SaveAutoCasualQueueSettings(new AutoCasualQueueSettings
         {
             Enabled = autoCasualQueueEnabledCheckBox.Checked
+        });
+
+        featureSettingsService.SaveFriendlyLowHealthSettings(new FriendlyLowHealthSettings
+        {
+            Enabled   = friendlyLowHealthEnabledCheckBox.Checked,
+            Color     = friendlyLowHealthColorTextBox.Text.Trim(),
+            Threshold = (double)friendlyLowHealthThresholdNumeric.Value
         });
 
         DialogResult = DialogResult.OK;

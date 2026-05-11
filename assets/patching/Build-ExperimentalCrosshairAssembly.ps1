@@ -22,6 +22,7 @@ $DebugMenuConfigPath = Join-Path $PSScriptRoot "experimental-debug-menu-config.j
 $MatchReplayRecorderConfigPath = Join-Path $PSScriptRoot "experimental-match-replay-recorder-config.json"
 $AimHealthbarConfigPath = Join-Path $PSScriptRoot "aim-healthbar-config.json"
 $DeathCamHealthbarConfigPath = Join-Path $PSScriptRoot "deathcam-healthbar-config.json"
+$FriendlyLowHealthConfigPath = Join-Path $PSScriptRoot "friendly-low-health-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
 $SavedCopyPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.font-configured.dll"
 $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
@@ -187,6 +188,11 @@ $AutoCasualQueueConfigPath = Join-Path $PSScriptRoot "experimental-auto-casual-q
 $AutoCasualQueueConfig = Get-JsonConfig -Path $AutoCasualQueueConfigPath -Default @{
     enabled = $false
 }
+$FriendlyLowHealthConfig = Get-JsonConfig -Path $FriendlyLowHealthConfigPath -Default @{
+    enabled = $true
+    threshold = 0.3
+    color = "#FF4444"
+}
 
 $AnyEnabled = @(
     [bool]$Config.enabled,
@@ -207,7 +213,8 @@ $AnyEnabled = @(
     [bool]$MatchReplayRecorderConfig.enabled,
     [bool]$AimHealthbarConfig.enabled,
     [bool]$DeathCamHealthbarConfig.enabled,
-    [bool]$AutoCasualQueueConfig.enabled
+    [bool]$AutoCasualQueueConfig.enabled,
+    [bool]$FriendlyLowHealthConfig.enabled
 ) -contains $true
 
 if (-not $AnyEnabled) {
@@ -373,6 +380,9 @@ $EnemyShieldBuffBarColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrW
 [double]$EnemyShieldClockOffsetY = if ($null -ne $EnemyShieldBuffBarConfig.shield_clock_offset_y) { [double]$EnemyShieldBuffBarConfig.shield_clock_offset_y } else { 0.0 }
 [string]$EnemyShieldTimerDisplayMode = if ($null -ne $EnemyShieldBuffBarConfig.shield_timer_display_mode -and -not [string]::IsNullOrWhiteSpace([string]$EnemyShieldBuffBarConfig.shield_timer_display_mode)) { [string]$EnemyShieldBuffBarConfig.shield_timer_display_mode } else { "circle" }
 [double]$LocalBuildPreviewTimeoutSeconds = if ($null -ne $LocalBuildPreviewConfig.prediction_timeout_seconds) { [double]$LocalBuildPreviewConfig.prediction_timeout_seconds } else { 2.0 }
+[bool]$FriendlyLowHealthEnabled = if ($null -ne $FriendlyLowHealthConfig.enabled) { [bool]$FriendlyLowHealthConfig.enabled } else { $true }
+[double]$FriendlyLowHealthThreshold = if ($null -ne $FriendlyLowHealthConfig.threshold) { [double]$FriendlyLowHealthConfig.threshold } else { 0.3 }
+$FriendlyLowHealthColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrWhiteSpace([string]$FriendlyLowHealthConfig.color)) { "#FF4444" } else { [string]$FriendlyLowHealthConfig.color }) -Alpha 1.0
 [string]$DebugMenuKeyName = if ($null -ne $DebugMenuConfig.debug_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.debug_menu_key)) { [string]$DebugMenuConfig.debug_menu_key } else { "F9" }
 [string]$DebugMainMenuKeyName = if ($null -ne $DebugMenuConfig.main_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.main_menu_key)) { [string]$DebugMenuConfig.main_menu_key } else { "F10" }
 [string]$DebugLobbyMenuKeyName = if ($null -ne $DebugMenuConfig.lobby_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.lobby_menu_key)) { [string]$DebugMenuConfig.lobby_menu_key } else { "F11" }
@@ -834,6 +844,121 @@ namespace BnlCommunityFixes
                 controller = healthbar.gameObject.AddComponent<ShieldBuffBarController>();
             }
             controller.Init(healthbar);
+        }
+    }
+
+    public sealed class FriendlyLowHealthController : MonoBehaviour
+    {
+        internal static readonly bool FeatureEnabled = $(Format-BoolLiteral $FriendlyLowHealthEnabled);
+        internal static readonly float Threshold = $(Format-FloatLiteral $FriendlyLowHealthThreshold);
+        private static readonly Color AlertColor = new Color($(Format-FloatLiteral $FriendlyLowHealthColor.R), $(Format-FloatLiteral $FriendlyLowHealthColor.G), $(Format-FloatLiteral $FriendlyLowHealthColor.B), 1f);
+        private static readonly FieldInfo UnitField = typeof(GuiHealthbar).GetField("unit", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private GuiHealthbar healthbar;
+
+        public void Init(GuiHealthbar source)
+        {
+            healthbar = source;
+        }
+
+        private void LateUpdate()
+        {
+            if (!FeatureEnabled || healthbar == null || healthbar.HealthBar == null)
+            {
+                return;
+            }
+
+            Unit unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(healthbar) as Unit;
+            if (unit == null || unit.IsMyPlayer || !unit.PlayerId.HasValue || unit.Health <= 0f || unit.IsDeath)
+            {
+                return;
+            }
+
+            ZoneData zoneData = Singleton<ZoneData>.Instance;
+            if (zoneData == null)
+            {
+                return;
+            }
+
+            if (unit.Team == TeamType.Neutral || unit.Team != zoneData.MyTeam)
+            {
+                return;
+            }
+
+            float maxHp = unit.MaxHealth;
+            bool isLow = maxHp > 0f && (unit.Health / maxHp) <= Threshold;
+
+            if (isLow)
+            {
+                // LateUpdate runs after Update() which sets the team color each frame.
+                // We overwrite it here every frame so the alert color always wins while low.
+                healthbar.HealthBar.color = AlertColor;
+                if (healthbar.Title != null)
+                {
+                    healthbar.Title.color = AlertColor;
+                }
+            }
+        }
+    }
+
+    public static class FriendlyLowHealthRuntime
+    {
+        private static readonly FieldInfo FollowField = typeof(GuiHealthbar).GetField("follow", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo UnitFieldStatic = typeof(GuiHealthbar).GetField("unit", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        public static void AttachFriendlyLowHealth(GuiHealthbar healthbar)
+        {
+            if (healthbar == null || healthbar.HealthBar == null)
+            {
+                return;
+            }
+
+            FriendlyLowHealthController controller = healthbar.gameObject.GetComponent<FriendlyLowHealthController>();
+            if (controller == null)
+            {
+                controller = healthbar.gameObject.AddComponent<FriendlyLowHealthController>();
+            }
+            controller.Init(healthbar);
+        }
+
+        public static bool IsFriendlyLowHealth(GuiHealthbar healthbar)
+        {
+            if (!FriendlyLowHealthController.FeatureEnabled || healthbar == null)
+            {
+                return false;
+            }
+
+            // Respect camera visibility — don't show bars for units behind the camera
+            GuiFollow follow = ReferenceEquals(FollowField, null) ? null : FollowField.GetValue(healthbar) as GuiFollow;
+            if (follow == null || !follow.IsInFrontOfCamera)
+            {
+                return false;
+            }
+
+            Unit unit = ReferenceEquals(UnitFieldStatic, null) ? null : UnitFieldStatic.GetValue(healthbar) as Unit;
+            if (unit == null || unit.IsMyPlayer || !unit.PlayerId.HasValue || unit.IsDeath)
+            {
+                return false;
+            }
+
+            ZoneData zoneData = Singleton<ZoneData>.Instance;
+            if (zoneData == null)
+            {
+                return false;
+            }
+
+            if (unit.Team == TeamType.Neutral || unit.Team != zoneData.MyTeam)
+            {
+                return false;
+            }
+
+            float maxHp = unit.MaxHealth;
+            if (maxHp <= 0f)
+            {
+                return false;
+            }
+
+            return (unit.Health / maxHp) <= FriendlyLowHealthController.Threshold;
         }
     }
 }
@@ -2892,6 +3017,14 @@ if ($ShieldBuffBarRuntimeType) {
         $ImportedShieldBuffBarAttach = $Module.ImportReference($ShieldBuffBarAttachMethod)
     }
 }
+$FriendlyLowHealthRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.FriendlyLowHealthRuntime" | Select-Object -First 1
+$ImportedFriendlyLowHealthAttach = $null
+if ($FriendlyLowHealthRuntimeType) {
+    $FriendlyLowHealthAttachMethod = $FriendlyLowHealthRuntimeType.Methods | Where-Object Name -eq "AttachFriendlyLowHealth" | Select-Object -First 1
+    if ($FriendlyLowHealthAttachMethod) {
+        $ImportedFriendlyLowHealthAttach = $Module.ImportReference($FriendlyLowHealthAttachMethod)
+    }
+}
 function Insert-Before {
     param(
         [Mono.Cecil.Cil.ILProcessor]$Il,
@@ -3153,7 +3286,7 @@ $HitAlertStartRet = @($HitAlertStartMethod.Body.Instructions) | Where-Object { $
 $HitAlertStartIl.InsertBefore($HitAlertStartRet, $HitAlertStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
 $HitAlertStartIl.InsertBefore($HitAlertStartRet, $HitAlertStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedHealAlertAttachBridge))
 
-if ($ImportedShieldBuffBarAttach) {
+if ($ImportedShieldBuffBarAttach -or $ImportedFriendlyLowHealthAttach) {
     $GuiHealthbarType = $Module.Types | Where-Object Name -eq "GuiHealthbar" | Select-Object -First 1
     $GuiHealthbarStart = $GuiHealthbarType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
     if ($GuiHealthbarStart) {
@@ -3165,6 +3298,10 @@ if ($ImportedShieldBuffBarAttach) {
         if ($ImportedShieldBuffBarAttach) {
             $GuiHealthbarStartIl.InsertBefore($GuiHealthbarStartRet, $GuiHealthbarStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
             $GuiHealthbarStartIl.InsertBefore($GuiHealthbarStartRet, $GuiHealthbarStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShieldBuffBarAttach))
+        }
+        if ($ImportedFriendlyLowHealthAttach) {
+            $GuiHealthbarStartIl.InsertBefore($GuiHealthbarStartRet, $GuiHealthbarStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+            $GuiHealthbarStartIl.InsertBefore($GuiHealthbarStartRet, $GuiHealthbarStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedFriendlyLowHealthAttach))
         }
     }
 }
@@ -4088,6 +4225,48 @@ if ($DeathCamHealthbarConfig.enabled) {
                 $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]1.0))
                 $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Stfld, ($GuiHealthbarType.Fields | Where-Object Name -eq "showTime" | Select-Object -First 1)))
             }
+        }
+    }
+}
+
+if ($FriendlyLowHealthConfig.enabled) {
+    $FriendlyLowHealthRuntimeType2 = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.FriendlyLowHealthRuntime" | Select-Object -First 1
+    if (-not $FriendlyLowHealthRuntimeType2) { throw "FriendlyLowHealthRuntime type not found in helper assembly." }
+    $IsFriendlyLowHealthMethod = $FriendlyLowHealthRuntimeType2.Methods | Where-Object Name -eq "IsFriendlyLowHealth" | Select-Object -First 1
+    if (-not $IsFriendlyLowHealthMethod) { throw "FriendlyLowHealthRuntime.IsFriendlyLowHealth method not found." }
+    $ImportedIsFriendlyLowHealth = $Module.ImportReference($IsFriendlyLowHealthMethod)
+
+    $GuiHealthbarTypeFLH = $Module.Types | Where-Object Name -eq "GuiHealthbar" | Select-Object -First 1
+    if ($GuiHealthbarTypeFLH) {
+        $UnitFieldFLH   = $GuiHealthbarTypeFLH.Fields | Where-Object Name -eq "unit"     | Select-Object -First 1
+        $ShowTimeFieldFLH = $GuiHealthbarTypeFLH.Fields | Where-Object Name -eq "showTime" | Select-Object -First 1
+
+        # Patch IsUnitAvailableForShow(): return true early for friendly low-health units
+        # Pass 'this' (GuiHealthbar) so IsFriendlyLowHealth can check camera visibility
+        $AvailMethodFLH = $GuiHealthbarTypeFLH.Methods | Where-Object Name -eq "IsUnitAvailableForShow" | Select-Object -First 1
+        if ($AvailMethodFLH -and $AvailMethodFLH.HasBody) {
+            $AvailIlFLH    = $AvailMethodFLH.Body.GetILProcessor()
+            $FirstInstrFLH = $AvailMethodFLH.Body.Instructions | Select-Object -First 1
+            $BranchFLH     = $AvailIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $FirstInstrFLH)
+            $AvailIlFLH.InsertBefore($FirstInstrFLH, $AvailIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+            $AvailIlFLH.InsertBefore($FirstInstrFLH, $AvailIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedIsFriendlyLowHealth))
+            $AvailIlFLH.InsertBefore($FirstInstrFLH, $BranchFLH)
+            $AvailIlFLH.InsertBefore($FirstInstrFLH, $AvailIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_1))
+            $AvailIlFLH.InsertBefore($FirstInstrFLH, $AvailIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Ret))
+        }
+
+        # Patch AlphaUpdate(): keep showTime=1 each frame so the bar never fades out
+        $AlphaMethodFLH = $GuiHealthbarTypeFLH.Methods | Where-Object Name -eq "AlphaUpdate" | Select-Object -First 1
+        if ($AlphaMethodFLH -and $AlphaMethodFLH.HasBody -and $ShowTimeFieldFLH) {
+            $AlphaIlFLH       = $AlphaMethodFLH.Body.GetILProcessor()
+            $AlphaFirstFLH    = $AlphaMethodFLH.Body.Instructions | Select-Object -First 1
+            $BranchAlphaFLH   = $AlphaIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $AlphaFirstFLH)
+            $AlphaIlFLH.InsertBefore($AlphaFirstFLH, $AlphaIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+            $AlphaIlFLH.InsertBefore($AlphaFirstFLH, $AlphaIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedIsFriendlyLowHealth))
+            $AlphaIlFLH.InsertBefore($AlphaFirstFLH, $BranchAlphaFLH)
+            $AlphaIlFLH.InsertBefore($AlphaFirstFLH, $AlphaIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+            $AlphaIlFLH.InsertBefore($AlphaFirstFLH, $AlphaIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]1.0))
+            $AlphaIlFLH.InsertBefore($AlphaFirstFLH, $AlphaIlFLH.Create([Mono.Cecil.Cil.OpCodes]::Stfld, $Module.ImportReference($ShowTimeFieldFLH)))
         }
     }
 }

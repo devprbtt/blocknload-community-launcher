@@ -36,8 +36,25 @@ public sealed class FeatureSettingsService
     public FovSettings LoadFovSettings() => Load("fov-config.json", new FovSettings());
     public void SaveFovSettings(FovSettings settings) => Save("fov-config.json", settings);
 
-    public TeamColorSettings LoadTeamColorSettings() => Load("experimental-team-color-config.json", new TeamColorSettings());
-    public void SaveTeamColorSettings(TeamColorSettings settings) => Save("experimental-team-color-config.json", settings);
+    public TeamColorSettings LoadTeamColorSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "experimental-team-color-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("experimental-team-color-config.json", new TeamColorSettings());
+            settings = runtimeSync.ReadTeamColorSettings(runtimeConfigPath, settings);
+            Save("experimental-team-color-config.json", settings);
+            return settings;
+        }
+        return Load("experimental-team-color-config.json", new TeamColorSettings());
+    }
+
+    public void SaveTeamColorSettings(TeamColorSettings settings)
+    {
+        Save("experimental-team-color-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteTeamColorSettings(runtimeConfigPath, settings);
+    }
 
     public FontSettings LoadFontSettings() => Load("experimental-font-config.json", new FontSettings());
     public void SaveFontSettings(FontSettings settings) => Save("experimental-font-config.json", settings);
@@ -87,6 +104,9 @@ public sealed class FeatureSettingsService
 
     public AutoCasualQueueSettings LoadAutoCasualQueueSettings() => Load("experimental-auto-casual-queue-config.json", new AutoCasualQueueSettings());
     public void SaveAutoCasualQueueSettings(AutoCasualQueueSettings settings) => Save("experimental-auto-casual-queue-config.json", settings);
+
+    public FriendlyLowHealthSettings LoadFriendlyLowHealthSettings() => Load("friendly-low-health-config.json", new FriendlyLowHealthSettings());
+    public void SaveFriendlyLowHealthSettings(FriendlyLowHealthSettings settings) => Save("friendly-low-health-config.json", settings);
 
     public bool EnsureAutoCasualQueueTestDefaultEnabled()
     {

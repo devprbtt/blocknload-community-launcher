@@ -86,6 +86,53 @@ public sealed class RuntimeMenuSyncService
         }
     }
 
+    public TeamColorSettings ReadTeamColorSettings(string runtimeConfigPath, TeamColorSettings current)
+    {
+        if (!File.Exists(runtimeConfigPath))
+            return current;
+
+        try
+        {
+            var lines = File.ReadAllLines(runtimeConfigPath);
+            foreach (var line in lines)
+            {
+                var sep = line.IndexOf('=');
+                if (sep <= 0) continue;
+                var key = line[..sep].Trim();
+                var val = line[(sep + 1)..].Trim();
+                switch (key)
+                {
+                    case "team_friendly_color": current.FriendlyColor = val; break;
+                    case "team_enemy_color":    current.EnemyColor    = val; break;
+                }
+            }
+        }
+        catch { }
+
+        return current;
+    }
+
+    public void WriteTeamColorSettings(string runtimeConfigPath, TeamColorSettings settings)
+    {
+        try
+        {
+            var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(runtimeConfigPath))
+            {
+                foreach (var line in File.ReadAllLines(runtimeConfigPath))
+                {
+                    var sep = line.IndexOf('=');
+                    if (sep <= 0) continue;
+                    existing[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+                }
+            }
+            existing["team_friendly_color"] = settings.FriendlyColor;
+            existing["team_enemy_color"]    = settings.EnemyColor;
+            File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
+        }
+        catch { }
+    }
+
     private static void ApplyKeyValue(DamageHealingSettings s, string key, string val)
     {
         switch (key)
