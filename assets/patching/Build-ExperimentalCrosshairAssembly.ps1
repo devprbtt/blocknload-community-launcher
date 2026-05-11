@@ -135,6 +135,9 @@ $DamageHealingConfig = Get-JsonConfig -Path $DamageHealingConfigPath -Default @{
     combine_damage_until_hidden = $false
     combine_healing_until_hidden = $false
     minimum_heal = 0.5
+    self_heal_number_size_multiplier = 0.7
+    self_heal_x = 0
+    self_heal_y = 0
 }
 $HealAlertConfig = Get-JsonConfig -Path $HealAlertConfigPath -Default @{
     enabled = $false
@@ -350,6 +353,9 @@ $UseCritDamageColor = $UseCritDamageNumberColor
 $UseHealColor = $UseHealNumberColor
 $DamageSize = $DamageNumberSize
 $HealSize = $HealNumberSize
+[double]$SelfHealSize = if ($null -ne $DamageHealingConfig.self_heal_number_size_multiplier) { [double]$DamageHealingConfig.self_heal_number_size_multiplier } else { 0.7 }
+[double]$SelfHealX = if ($null -ne $DamageHealingConfig.self_heal_x) { [double]$DamageHealingConfig.self_heal_x } else { 0 }
+[double]$SelfHealY = if ($null -ne $DamageHealingConfig.self_heal_y) { [double]$DamageHealingConfig.self_heal_y } else { 0 }
 
 [double]$HealAlertAlpha = if ($null -ne $HealAlertConfig.alpha) { [double]$HealAlertConfig.alpha } else { 1.0 }
 [double]$HealAlertDamageSize = if ($null -ne $HealAlertConfig.damage_indicator_size_multiplier) { [double]$HealAlertConfig.damage_indicator_size_multiplier } else { 1.0 }
@@ -1446,7 +1452,7 @@ namespace BnlCommunityFixes
                 $(Format-BoolLiteral $UseHealColor),
                 $(Format-FloatLiteral $DamageSize),
                 $(Format-FloatLiteral $HealSize),
-                $(Format-FloatLiteral $HealSize),
+                $(Format-FloatLiteral $SelfHealSize),
                 $(Format-FloatLiteral $DamageHealingAlpha),
                 $(Format-FloatLiteral $MinimumHeal),
                 $(Format-BoolLiteral $ShowFriendlyHealing),
@@ -1455,6 +1461,8 @@ namespace BnlCommunityFixes
                 $(Format-BoolLiteral $CombineHealingUntilHidden),
                 65f,
                 65f);
+            RuntimeFeatureState.SetSelfHealX($(Format-FloatLiteral $SelfHealX));
+            RuntimeFeatureState.SetSelfHealY($(Format-FloatLiteral $SelfHealY));
             RuntimeSettingsMenuManager.EnsureInstance();
         }
 
@@ -2082,7 +2090,7 @@ namespace BnlCommunityFixes
                 int filled = Mathf.RoundToInt(pct * 10f);
                 string bar = "";
                 for (int i = 0; i < 10; i++)
-                    bar += (i < filled) ? "�" : "�";
+                    bar += (i < filled) ? "\u2588" : "\u2591";
                 string playerName = targetUnit.name;
                 if (targetUnit.PlayerId.HasValue)
                 {
@@ -2604,13 +2612,34 @@ if (Test-Path $HelperOutputPath) {
     Remove-Item -LiteralPath $HelperOutputPath -Force
 }
 
-Add-Type -TypeDefinition $HelperSource -Language CSharp -OutputAssembly $HelperOutputPath -ReferencedAssemblies @(
-    $UnityEngineDll,
-    $UnityEngineUiDll,
-    $BackupPath,
-    "System.dll",
-    "System.Core.dll"
+# Use csc.exe (net4 compiler) so that Unity/Mono references resolve correctly.
+# Add-Type in PowerShell 7 uses Roslyn targeting .NET 8 which conflicts with mscorlib 2.0.
+$CscPath = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe"
+if (-not (Test-Path $CscPath)) {
+    throw "csc.exe not found at $CscPath. Please install .NET Framework 4."
+}
+$TempCsPath = [System.IO.Path]::ChangeExtension($HelperOutputPath, ".tmp.cs")
+[System.IO.File]::WriteAllText($TempCsPath, $HelperSource, [System.Text.UTF8Encoding]::new($false))
+$CscArgs = @(
+    "/noconfig",
+    "/nostdlib",
+    "/target:library",
+    "/utf8output",
+    "/out:$HelperOutputPath",
+    "/reference:$UnityEngineDll",
+    "/reference:$UnityEngineUiDll",
+    "/reference:$BackupPath",
+    "/reference:C:\Windows\Microsoft.NET\Framework\v4.0.30319\mscorlib.dll",
+    "/reference:C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.dll",
+    "/reference:C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.Core.dll",
+    $TempCsPath
 )
+$cscResult = & $CscPath @CscArgs 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Remove-Item -LiteralPath $TempCsPath -Force -ErrorAction SilentlyContinue
+    throw "csc.exe compilation failed:`n$($cscResult -join "`n")"
+}
+Remove-Item -LiteralPath $TempCsPath -Force -ErrorAction SilentlyContinue
 [void][System.Reflection.Assembly]::LoadFrom($UnityEngineDll)
 
 Copy-Item -LiteralPath $BackupPath -Destination $TempBasePath -Force

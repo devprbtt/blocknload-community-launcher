@@ -1,22 +1,28 @@
-﻿{
-    "product":  "BnlCommunityFixes",
-    "channel":  "stable",
-    "version":  "2.3.0",
-    "minimum_supported_version":  "2.3.0",
-    "published_at":  "2026-05-07T23:24:35.9710920+00:00",
-    "notes":  "# BNL Community Launcher v2.3.0\n\n## New Features\n- Auto casual queue: automatically joins the casual matchmaking queue when you enter a custom game lobby.\n- When a casual match is found while you are in a custom game, the runtime exits via the in-match zone exit path and leaves the queue popup for manual acceptance. Enable via Feature Settings \u003e Auto Queue tab. Can also be toggled live in-game with F8.\n\n## Fixes\n- Fixed a crash on launch when a feature config file is present but `Assembly-CSharp-backup.dll` has not yet been created (first-time feature users).\n- Fixed same-version launcher bootstrapping so rebuilt 2.3 executables and bundled patching assets refresh correctly.\n- Ensured freshly built experimental assemblies are deployed on launch.\n\n## Files\n- BnlCommunityFixes.exe\n- BnlUpdater.exe\n",
-    "assets":  {
-                   "launcher_exe":  {
-                                        "file_name":  "BnlCommunityFixes.exe",
-                                        "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.0/BnlCommunityFixes.exe",
-                                        "sha256":  "4D95AE8B9922556B59B17E6DCFA06238C64513061195EAD88A05E17FF81ECC8E",
-                                        "size":  162824903
-                                    },
-                   "updater_exe":  {
-                                       "file_name":  "BnlUpdater.exe",
-                                       "url":  "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.0/BnlUpdater.exe",
-                                       "sha256":  "10FEC3470A495D2D750E218C261423C0DEF20058A8FF9D79853E476504AB8EFE",
-                                       "size":  67611890
-                                   }
-               }
+{
+  "product": "BnlCommunityFixes",
+  "channel": "stable",
+  "version": "2.3.1",
+  "minimum_supported_version": "2.3.0",
+  "published_at": "2026-05-11T15:03:14.4216938+00:00",
+  "notes": "# v2.3.1\n\n## Fixes\n- Self-heal position (X/Y) and size settings are now exposed in the Feature Settings launcher tab, not just the F8 in-game menu.\n",
+  "assets": {
+    "launcher_exe": {
+      "file_name": "BnlCommunityFixes.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.1/BnlCommunityFixes.exe",
+      "sha256": "181875866D4F1B4ECF54D5659B8C712BFC439666AF75B9502E3539BB0A10C8B6",
+      "size": 162832583
+    },
+    "updater_exe": {
+      "file_name": "BnlUpdater.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.1/BnlUpdater.exe",
+      "sha256": "604ABAFCBB1960640026F75573045E6843D6446709F45546FE0AF9D16DCF251A",
+      "size": 67615474
+    },
+    "replay_analyzer_exe": {
+      "file_name": "BnlCommunityFixes.ReplayAnalyzer.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.1/BnlCommunityFixes.ReplayAnalyzer.exe",
+      "sha256": "6D62A30131452169C303B20CA0D8098C7320552A81883681455341E401969EB8",
+      "size": 68048117
+    }
+  }
 }

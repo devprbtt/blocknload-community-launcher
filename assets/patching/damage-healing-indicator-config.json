@@ -10,5 +10,8 @@
     "show_self_healing":  false,
     "combine_damage_until_hidden":  false,
     "combine_healing_until_hidden":  false,
-    "minimum_heal":  0.5
+    "minimum_heal":  0.5,
+    "self_heal_number_size_multiplier":  0.7,
+    "self_heal_x":  0,
+    "self_heal_y":  0
 }

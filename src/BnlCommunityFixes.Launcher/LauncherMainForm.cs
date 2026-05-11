@@ -377,7 +377,7 @@ public sealed class LauncherMainForm : Form
 
     private void OpenFeatureSettings()
     {
-        using var form = new FeatureSettingsForm(paths);
+        using var form = new FeatureSettingsForm(paths, installInfo);
         form.ShowDialog(this);
         UpdateStatusSummary();
     }

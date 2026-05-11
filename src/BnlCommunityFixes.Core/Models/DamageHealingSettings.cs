@@ -39,4 +39,13 @@ public sealed class DamageHealingSettings
 
     [JsonPropertyName("minimum_heal")]
     public double MinimumHeal { get; set; } = 0.5;
+
+    [JsonPropertyName("self_heal_number_size_multiplier")]
+    public double SelfHealNumberSizeMultiplier { get; set; } = 0.7;
+
+    [JsonPropertyName("self_heal_x")]
+    public double SelfHealX { get; set; }
+
+    [JsonPropertyName("self_heal_y")]
+    public double SelfHealY { get; set; }
 }

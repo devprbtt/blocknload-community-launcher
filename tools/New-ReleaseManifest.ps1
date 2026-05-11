@@ -8,6 +8,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$UpdaterPath,
 
+    [string]$ReplayAnalyzerPath = "",
+
     [Parameter(Mandatory = $true)]
     [string]$Repository,
 
@@ -48,6 +50,12 @@ $LauncherResolved = (Resolve-Path $LauncherPath).Path
 $UpdaterResolved = (Resolve-Path $UpdaterPath).Path
 $LauncherFileName = [IO.Path]::GetFileName($LauncherResolved)
 $UpdaterFileName = [IO.Path]::GetFileName($UpdaterResolved)
+$ReplayAnalyzerResolved = $null
+$ReplayAnalyzerFileName = $null
+if (-not [string]::IsNullOrWhiteSpace($ReplayAnalyzerPath)) {
+    $ReplayAnalyzerResolved = (Resolve-Path $ReplayAnalyzerPath).Path
+    $ReplayAnalyzerFileName = [IO.Path]::GetFileName($ReplayAnalyzerResolved)
+}
 
 $BaseUrl = "https://github.com/$Repository/releases/download/$ReleaseTag"
 
@@ -71,6 +79,15 @@ $Manifest = [ordered]@{
             sha256 = (Get-FileHash -LiteralPath $UpdaterResolved -Algorithm SHA256).Hash
             size = (Get-Item -LiteralPath $UpdaterResolved).Length
         }
+    }
+}
+
+if ($ReplayAnalyzerResolved) {
+    $Manifest.assets.replay_analyzer_exe = [ordered]@{
+        file_name = $ReplayAnalyzerFileName
+        url = "$BaseUrl/$ReplayAnalyzerFileName"
+        sha256 = (Get-FileHash -LiteralPath $ReplayAnalyzerResolved -Algorithm SHA256).Hash
+        size = (Get-Item -LiteralPath $ReplayAnalyzerResolved).Length
     }
 }
 

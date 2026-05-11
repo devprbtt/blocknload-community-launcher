@@ -17,10 +17,17 @@ public sealed class FeatureSettingsService
     };
 
     private readonly AppPaths paths;
+    private readonly RuntimeMenuSyncService runtimeSync = new();
+    private string? runtimeConfigPath;
 
     public FeatureSettingsService(AppPaths paths)
     {
         this.paths = paths;
+    }
+
+    public void SetRuntimeConfigPath(string path)
+    {
+        runtimeConfigPath = path;
     }
 
     public CrosshairSettings LoadCrosshairSettings() => Load("crosshair-config.json", new CrosshairSettings());
@@ -35,8 +42,30 @@ public sealed class FeatureSettingsService
     public FontSettings LoadFontSettings() => Load("experimental-font-config.json", new FontSettings());
     public void SaveFontSettings(FontSettings settings) => Save("experimental-font-config.json", settings);
 
-    public DamageHealingSettings LoadDamageHealingSettings() => Load("damage-healing-indicator-config.json", new DamageHealingSettings());
-    public void SaveDamageHealingSettings(DamageHealingSettings settings) => Save("damage-healing-indicator-config.json", settings);
+    public DamageHealingSettings LoadDamageHealingSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "damage-healing-indicator-config.json");
+
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            // Runtime config is newer — read launcher JSON first for non-runtime fields
+            // (colors, enabled flag), then overlay the runtime values on top.
+            var settings = Load("damage-healing-indicator-config.json", new DamageHealingSettings());
+            settings = runtimeSync.ReadDamageHealingSettings(runtimeConfigPath, settings);
+            // Write back to launcher JSON so both files are in sync.
+            Save("damage-healing-indicator-config.json", settings);
+            return settings;
+        }
+
+        return Load("damage-healing-indicator-config.json", new DamageHealingSettings());
+    }
+
+    public void SaveDamageHealingSettings(DamageHealingSettings settings)
+    {
+        Save("damage-healing-indicator-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteDamageHealingSettings(runtimeConfigPath, settings);
+    }
 
     public HealAlertSettings LoadHealAlertSettings() => Load("heal-alert-indicator-config.json", new HealAlertSettings());
     public void SaveHealAlertSettings(HealAlertSettings settings) => Save("heal-alert-indicator-config.json", settings);

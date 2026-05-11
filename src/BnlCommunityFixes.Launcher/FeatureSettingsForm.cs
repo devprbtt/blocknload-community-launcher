@@ -51,6 +51,9 @@ public sealed class FeatureSettingsForm : Form
     private readonly CheckBox showSelfHealingCheckBox;
     private readonly CheckBox combineDamageCheckBox;
     private readonly CheckBox combineHealingCheckBox;
+    private readonly NumericUpDown selfHealSizeNumeric;
+    private readonly NumericUpDown selfHealXNumeric;
+    private readonly NumericUpDown selfHealYNumeric;
 
     private readonly CheckBox healAlertEnabledCheckBox;
     private readonly TextBox healAlertDamageColorTextBox;
@@ -103,11 +106,19 @@ public sealed class FeatureSettingsForm : Form
     private const int ExtraCtrlY  = 260;  // extra controls row
     private const int CheckRow1Y  = 238;  // first checkbox row (damage/healing, heal alerts)
     private const int CheckRow2Y  = 266;  // second checkbox row
+    private const int SelfHealLblY = 300; // self-healing label row
+    private const int SelfHealCtlY = 318; // self-healing control row
 
-    public FeatureSettingsForm(AppPaths paths)
+    public FeatureSettingsForm(AppPaths paths, GameInstallInfo? installInfo = null)
     {
         featureSettingsService = new FeatureSettingsService(paths);
         presetsService = new FeaturePresetsService(paths);
+
+        if (installInfo?.IsDetected == true)
+        {
+            var runtimeSync = new RuntimeMenuSyncService();
+            featureSettingsService.SetRuntimeConfigPath(runtimeSync.GetRuntimeConfigPath(installInfo.ManagedDirectoryPath));
+        }
 
         Text = "Feature Settings";
         StartPosition = FormStartPosition.CenterParent;
@@ -315,6 +326,9 @@ public sealed class FeatureSettingsForm : Form
         showSelfHealingCheckBox     = NewCheckBox("Show self healing",    214,  CheckRow1Y);
         combineDamageCheckBox       = NewCheckBox("Combine damage",        14,  CheckRow2Y);
         combineHealingCheckBox      = NewCheckBox("Combine healing",      214,  CheckRow2Y);
+        selfHealSizeNumeric = NewDecimalNumeric(NumC1, SelfHealCtlY, NumW, 0.1M,  5, 2, 0.05M);
+        selfHealXNumeric    = NewDecimalNumeric(NumC2, SelfHealCtlY, NumW, -2000, 2000, 1, 1M);
+        selfHealYNumeric    = NewDecimalNumeric(NumC3, SelfHealCtlY, NumW, -2000, 2000, 1, 1M);
         damageTab.Controls.AddRange([
             damageHealingEnabledCheckBox,
             NewLabel("Damage size",  NumC1, NumLabelY), damageSizeNumeric,
@@ -324,7 +338,10 @@ public sealed class FeatureSettingsForm : Form
             showFriendlyHealingCheckBox,
             showSelfHealingCheckBox,
             combineDamageCheckBox,
-            combineHealingCheckBox
+            combineHealingCheckBox,
+            NewLabel("Self-heal size", NumC1, SelfHealLblY), selfHealSizeNumeric,
+            NewLabel("Self-heal X",    NumC2, SelfHealLblY), selfHealXNumeric,
+            NewLabel("Self-heal Y",    NumC3, SelfHealLblY), selfHealYNumeric
         ]);
         AddPresetBar<DamageHealingSettings>(damageTab, "damage",
             readFields: () => new DamageHealingSettings
@@ -340,7 +357,10 @@ public sealed class FeatureSettingsForm : Form
                 ShowFriendlyHealing = showFriendlyHealingCheckBox.Checked,
                 ShowSelfHealing = showSelfHealingCheckBox.Checked,
                 CombineDamageUntilHidden = combineDamageCheckBox.Checked,
-                CombineHealingUntilHidden = combineHealingCheckBox.Checked
+                CombineHealingUntilHidden = combineHealingCheckBox.Checked,
+                SelfHealNumberSizeMultiplier = (double)selfHealSizeNumeric.Value,
+                SelfHealX = (double)selfHealXNumeric.Value,
+                SelfHealY = (double)selfHealYNumeric.Value
             },
             applyFields: s =>
             {
@@ -356,6 +376,9 @@ public sealed class FeatureSettingsForm : Form
                 showSelfHealingCheckBox.Checked = s.ShowSelfHealing;
                 combineDamageCheckBox.Checked = s.CombineDamageUntilHidden;
                 combineHealingCheckBox.Checked = s.CombineHealingUntilHidden;
+                selfHealSizeNumeric.Value = ToDecimal(s.SelfHealNumberSizeMultiplier, selfHealSizeNumeric);
+                selfHealXNumeric.Value = ToDecimal(s.SelfHealX, selfHealXNumeric);
+                selfHealYNumeric.Value = ToDecimal(s.SelfHealY, selfHealYNumeric);
             });
 
         // --- Heal Alerts ---
@@ -727,6 +750,9 @@ public sealed class FeatureSettingsForm : Form
         showSelfHealingCheckBox.Checked = damage.ShowSelfHealing;
         combineDamageCheckBox.Checked = damage.CombineDamageUntilHidden;
         combineHealingCheckBox.Checked = damage.CombineHealingUntilHidden;
+        selfHealSizeNumeric.Value = ToDecimal(damage.SelfHealNumberSizeMultiplier, selfHealSizeNumeric);
+        selfHealXNumeric.Value = ToDecimal(damage.SelfHealX, selfHealXNumeric);
+        selfHealYNumeric.Value = ToDecimal(damage.SelfHealY, selfHealYNumeric);
 
         var healAlert = featureSettingsService.LoadHealAlertSettings();
         healAlertEnabledCheckBox.Checked = healAlert.Enabled;
@@ -841,7 +867,10 @@ public sealed class FeatureSettingsForm : Form
             ShowFriendlyHealing = showFriendlyHealingCheckBox.Checked,
             ShowSelfHealing = showSelfHealingCheckBox.Checked,
             CombineDamageUntilHidden = combineDamageCheckBox.Checked,
-            CombineHealingUntilHidden = combineHealingCheckBox.Checked
+            CombineHealingUntilHidden = combineHealingCheckBox.Checked,
+            SelfHealNumberSizeMultiplier = (double)selfHealSizeNumeric.Value,
+            SelfHealX = (double)selfHealXNumeric.Value,
+            SelfHealY = (double)selfHealYNumeric.Value
         });
 
         featureSettingsService.SaveHealAlertSettings(new HealAlertSettings

@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "capture_payload": true,
+  "max_payload_bytes": 262144
+}
