@@ -1,22 +1,22 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "minimum_supported_version": "2.3.0",
-  "published_at": "2026-05-11T15:18:37.9879795+00:00",
-  "notes": "# v2.3.1\n\n## Fixes\n- Self-heal position (X/Y) and size settings are now exposed in the Feature Settings launcher tab, not just the F8 in-game menu.\n",
+  "published_at": "2026-05-11T17:00:00.0000000+00:00",
+  "notes": "# v2.3.2\n\n## New Features\n- Friendly Low Health Alert: when a friendly player's HP drops below a configurable threshold their healthbar and name turn a custom alert color, always visible through walls and at any distance (camera-facing only). Configure via Feature Settings → Low HP Alert.\n\n## Fixes\n- Team color settings set in the launcher UI now correctly apply in-game.\n",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.1/BnlCommunityFixes.exe",
-      "sha256": "181875866D4F1B4ECF54D5659B8C712BFC439666AF75B9502E3539BB0A10C8B6",
-      "size": 162832583
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.2/BnlCommunityFixes.exe",
+      "sha256": "B5406B25BE26ACC851564D261AD9F72F2757EA535396B66894ED053F39073C04",
+      "size": 154453472
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.1/BnlUpdater.exe",
-      "sha256": "604ABAFCBB1960640026F75573045E6843D6446709F45546FE0AF9D16DCF251A",
-      "size": 67615474
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.2/BnlUpdater.exe",
+      "sha256": "492B732DD2DADE7EA3DA3DE60B6E756FBB61AAF346AFF682E83542EFC753DBF8",
+      "size": 67616498
     }
   }
 }
