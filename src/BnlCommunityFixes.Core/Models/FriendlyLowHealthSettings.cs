@@ -12,4 +12,13 @@ public sealed class FriendlyLowHealthSettings
 
     [JsonPropertyName("color")]
     public string Color { get; set; } = "#FF4444";
+
+    [JsonPropertyName("show_direction_indicator")]
+    public bool ShowDirectionIndicator { get; set; } = true;
+
+    [JsonPropertyName("indicator_size")]
+    public double IndicatorSize { get; set; } = 1.0;
+
+    [JsonPropertyName("indicator_alpha")]
+    public double IndicatorAlpha { get; set; } = 1.0;
 }

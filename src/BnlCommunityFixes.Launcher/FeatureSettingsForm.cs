@@ -86,6 +86,9 @@ public sealed class FeatureSettingsForm : Form
     private readonly CheckBox friendlyLowHealthEnabledCheckBox;
     private readonly TextBox friendlyLowHealthColorTextBox;
     private readonly NumericUpDown friendlyLowHealthThresholdNumeric;
+    private readonly CheckBox friendlyLowHealthIndicatorCheckBox;
+    private readonly NumericUpDown friendlyLowHealthIndicatorSizeNumeric;
+    private readonly NumericUpDown friendlyLowHealthIndicatorAlphaNumeric;
 
     // Color field columns: each block is label+textbox(130)+gap(4)+button(44)+gap(4)+swatch(22) = 204px; 26px between columns
     private const int ColA = 14;
@@ -544,22 +547,34 @@ public sealed class FeatureSettingsForm : Form
         friendlyLowHealthEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
         friendlyLowHealthColorTextBox    = NewColorField(friendlyLowHealthTab, "Alert color", ColA, ColorRow1Y);
         friendlyLowHealthThresholdNumeric = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.05M, 0.95M, 2, 0.05M);
+        friendlyLowHealthIndicatorCheckBox = NewCheckBox("Show direction indicator when off-screen", 14, CheckRow1Y);
+        friendlyLowHealthIndicatorSizeNumeric  = NewDecimalNumeric(NumC1, CheckRow2Y + 18, NumW, 0.1M, 5.0M, 2, 0.1M);
+        friendlyLowHealthIndicatorAlphaNumeric = NewDecimalNumeric(NumC2, CheckRow2Y + 18, NumW, 0.1M, 1.0M, 2, 0.05M);
         friendlyLowHealthTab.Controls.AddRange([
             friendlyLowHealthEnabledCheckBox,
-            NewLabel("Threshold (0–1)", NumC1, NumLabelY), friendlyLowHealthThresholdNumeric
+            NewLabel("Threshold (0–1)", NumC1, NumLabelY), friendlyLowHealthThresholdNumeric,
+            friendlyLowHealthIndicatorCheckBox,
+            NewLabel("Indicator size", NumC1, CheckRow2Y), friendlyLowHealthIndicatorSizeNumeric,
+            NewLabel("Indicator alpha", NumC2, CheckRow2Y), friendlyLowHealthIndicatorAlphaNumeric
         ]);
         AddPresetBar<FriendlyLowHealthSettings>(friendlyLowHealthTab, "friendlyLowHealth",
             readFields: () => new FriendlyLowHealthSettings
             {
-                Enabled   = friendlyLowHealthEnabledCheckBox.Checked,
-                Color     = friendlyLowHealthColorTextBox.Text.Trim(),
-                Threshold = (double)friendlyLowHealthThresholdNumeric.Value
+                Enabled                = friendlyLowHealthEnabledCheckBox.Checked,
+                Color                  = friendlyLowHealthColorTextBox.Text.Trim(),
+                Threshold              = (double)friendlyLowHealthThresholdNumeric.Value,
+                ShowDirectionIndicator = friendlyLowHealthIndicatorCheckBox.Checked,
+                IndicatorSize          = (double)friendlyLowHealthIndicatorSizeNumeric.Value,
+                IndicatorAlpha         = (double)friendlyLowHealthIndicatorAlphaNumeric.Value
             },
             applyFields: s =>
             {
-                friendlyLowHealthEnabledCheckBox.Checked   = s.Enabled;
-                friendlyLowHealthColorTextBox.Text         = s.Color;
-                friendlyLowHealthThresholdNumeric.Value    = ToDecimal(s.Threshold, friendlyLowHealthThresholdNumeric);
+                friendlyLowHealthEnabledCheckBox.Checked        = s.Enabled;
+                friendlyLowHealthColorTextBox.Text              = s.Color;
+                friendlyLowHealthThresholdNumeric.Value         = ToDecimal(s.Threshold, friendlyLowHealthThresholdNumeric);
+                friendlyLowHealthIndicatorCheckBox.Checked      = s.ShowDirectionIndicator;
+                friendlyLowHealthIndicatorSizeNumeric.Value     = ToDecimal(s.IndicatorSize, friendlyLowHealthIndicatorSizeNumeric);
+                friendlyLowHealthIndicatorAlphaNumeric.Value    = ToDecimal(s.IndicatorAlpha, friendlyLowHealthIndicatorAlphaNumeric);
             });
 
         tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab]);
@@ -821,6 +836,9 @@ public sealed class FeatureSettingsForm : Form
         friendlyLowHealthEnabledCheckBox.Checked = friendlyLowHealth.Enabled;
         friendlyLowHealthColorTextBox.Text = friendlyLowHealth.Color;
         friendlyLowHealthThresholdNumeric.Value = ToDecimal(friendlyLowHealth.Threshold, friendlyLowHealthThresholdNumeric);
+        friendlyLowHealthIndicatorCheckBox.Checked      = friendlyLowHealth.ShowDirectionIndicator;
+        friendlyLowHealthIndicatorSizeNumeric.Value     = ToDecimal(friendlyLowHealth.IndicatorSize, friendlyLowHealthIndicatorSizeNumeric);
+        friendlyLowHealthIndicatorAlphaNumeric.Value    = ToDecimal(friendlyLowHealth.IndicatorAlpha, friendlyLowHealthIndicatorAlphaNumeric);
     }
 
     private void SaveAndClose()
@@ -958,9 +976,12 @@ public sealed class FeatureSettingsForm : Form
 
         featureSettingsService.SaveFriendlyLowHealthSettings(new FriendlyLowHealthSettings
         {
-            Enabled   = friendlyLowHealthEnabledCheckBox.Checked,
-            Color     = friendlyLowHealthColorTextBox.Text.Trim(),
-            Threshold = (double)friendlyLowHealthThresholdNumeric.Value
+            Enabled                = friendlyLowHealthEnabledCheckBox.Checked,
+            Color                  = friendlyLowHealthColorTextBox.Text.Trim(),
+            Threshold              = (double)friendlyLowHealthThresholdNumeric.Value,
+            ShowDirectionIndicator = friendlyLowHealthIndicatorCheckBox.Checked,
+            IndicatorSize          = (double)friendlyLowHealthIndicatorSizeNumeric.Value,
+            IndicatorAlpha         = (double)friendlyLowHealthIndicatorAlphaNumeric.Value
         });
 
         DialogResult = DialogResult.OK;

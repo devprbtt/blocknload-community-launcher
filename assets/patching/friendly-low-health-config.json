@@ -1,5 +1,8 @@
 {
   "enabled": true,
   "threshold": 0.3,
-  "color": "#FF4444"
+  "color": "#FF4444",
+  "show_direction_indicator": true,
+  "indicator_size": 1.0,
+  "indicator_alpha": 1.0
 }

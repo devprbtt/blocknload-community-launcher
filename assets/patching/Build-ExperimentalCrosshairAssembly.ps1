@@ -383,6 +383,9 @@ $EnemyShieldBuffBarColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrW
 [bool]$FriendlyLowHealthEnabled = if ($null -ne $FriendlyLowHealthConfig.enabled) { [bool]$FriendlyLowHealthConfig.enabled } else { $true }
 [double]$FriendlyLowHealthThreshold = if ($null -ne $FriendlyLowHealthConfig.threshold) { [double]$FriendlyLowHealthConfig.threshold } else { 0.3 }
 $FriendlyLowHealthColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrWhiteSpace([string]$FriendlyLowHealthConfig.color)) { "#FF4444" } else { [string]$FriendlyLowHealthConfig.color }) -Alpha 1.0
+[bool]$FriendlyLowHealthIndicatorEnabled = if ($null -ne $FriendlyLowHealthConfig.show_direction_indicator) { [bool]$FriendlyLowHealthConfig.show_direction_indicator } else { $true }
+[double]$FriendlyLowHealthIndicatorSize = if ($null -ne $FriendlyLowHealthConfig.indicator_size) { [double]$FriendlyLowHealthConfig.indicator_size } else { 1.0 }
+[double]$FriendlyLowHealthIndicatorAlpha = if ($null -ne $FriendlyLowHealthConfig.indicator_alpha) { [double]$FriendlyLowHealthConfig.indicator_alpha } else { 1.0 }
 [string]$DebugMenuKeyName = if ($null -ne $DebugMenuConfig.debug_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.debug_menu_key)) { [string]$DebugMenuConfig.debug_menu_key } else { "F9" }
 [string]$DebugMainMenuKeyName = if ($null -ne $DebugMenuConfig.main_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.main_menu_key)) { [string]$DebugMenuConfig.main_menu_key } else { "F10" }
 [string]$DebugLobbyMenuKeyName = if ($null -ne $DebugMenuConfig.lobby_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.lobby_menu_key)) { [string]$DebugMenuConfig.lobby_menu_key } else { "F11" }
@@ -851,14 +854,26 @@ namespace BnlCommunityFixes
     {
         internal static readonly bool FeatureEnabled = $(Format-BoolLiteral $FriendlyLowHealthEnabled);
         internal static readonly float Threshold = $(Format-FloatLiteral $FriendlyLowHealthThreshold);
+        internal static readonly bool IndicatorEnabled = $(Format-BoolLiteral ($FriendlyLowHealthEnabled -and $FriendlyLowHealthIndicatorEnabled));
         private static readonly Color AlertColor = new Color($(Format-FloatLiteral $FriendlyLowHealthColor.R), $(Format-FloatLiteral $FriendlyLowHealthColor.G), $(Format-FloatLiteral $FriendlyLowHealthColor.B), 1f);
         private static readonly FieldInfo UnitField = typeof(GuiHealthbar).GetField("unit", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo FollowFieldCtrl = typeof(GuiHealthbar).GetField("follow", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private GuiHealthbar healthbar;
 
         public void Init(GuiHealthbar source)
         {
             healthbar = source;
+        }
+
+        private void OnDestroy()
+        {
+            if (IndicatorEnabled)
+            {
+                Unit unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(healthbar) as Unit;
+                if (unit != null)
+                    FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
+            }
         }
 
         private void LateUpdate()
@@ -871,6 +886,8 @@ namespace BnlCommunityFixes
             Unit unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(healthbar) as Unit;
             if (unit == null || unit.IsMyPlayer || !unit.PlayerId.HasValue || unit.Health <= 0f || unit.IsDeath)
             {
+                if (IndicatorEnabled && unit != null)
+                    FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
                 return;
             }
 
@@ -882,6 +899,8 @@ namespace BnlCommunityFixes
 
             if (unit.Team == TeamType.Neutral || unit.Team != zoneData.MyTeam)
             {
+                if (IndicatorEnabled)
+                    FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
                 return;
             }
 
@@ -897,6 +916,71 @@ namespace BnlCommunityFixes
                 {
                     healthbar.Title.color = AlertColor;
                 }
+
+                if (IndicatorEnabled)
+                {
+                    GuiFollow follow = ReferenceEquals(FollowFieldCtrl, null) ? null : FollowFieldCtrl.GetValue(healthbar) as GuiFollow;
+                    bool isOffScreen = follow == null || !follow.IsInFrontOfCamera;
+                    FriendlyLowHealthIndicatorService.UpdateIndicator(unit, isOffScreen, AlertColor);
+                }
+            }
+            else
+            {
+                if (IndicatorEnabled)
+                    FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
+            }
+        }
+    }
+
+    public static class FriendlyLowHealthIndicatorService
+    {
+        private const float IndicatorSize  = $(Format-FloatLiteral $FriendlyLowHealthIndicatorSize);
+        private const float IndicatorAlpha = $(Format-FloatLiteral $FriendlyLowHealthIndicatorAlpha);
+
+        private static readonly Dictionary<Unit, GuiWorldSpaceIndicator> indicators = new Dictionary<Unit, GuiWorldSpaceIndicator>();
+
+        public static void UpdateIndicator(Unit unit, bool isOffScreen, Color color)
+        {
+            if (!isOffScreen)
+            {
+                RemoveIndicator(unit);
+                return;
+            }
+
+            GuiWorldSpaceIndicatorFactory factory = Singleton<GuiWorldSpaceIndicatorFactory>.Instance;
+            if (factory == null) return;
+
+            GuiWorldSpaceIndicator existing;
+            if (indicators.TryGetValue(unit, out existing))
+            {
+                if (existing == null)
+                    indicators.Remove(unit);
+                return;
+            }
+
+            GuiWorldSpaceIndicator indicator = factory.AddArrow(unit);
+            if (indicator == null) return;
+
+            indicator.SetColor(color);
+            indicator.IconMinSize = IndicatorSize;
+            indicator.IconMaxSize = IndicatorSize;
+
+            // Override the fade-in tween's target alpha so it settles at our configured value.
+            UiTweenAlpha tween = indicator.GetComponent<UiTweenAlpha>();
+            if (tween != null)
+                tween.to = IndicatorAlpha;
+
+            indicators[unit] = indicator;
+        }
+
+        public static void RemoveIndicator(Unit unit)
+        {
+            GuiWorldSpaceIndicator existing;
+            if (indicators.TryGetValue(unit, out existing))
+            {
+                indicators.Remove(unit);
+                if (existing != null)
+                    existing.Kill();
             }
         }
     }
