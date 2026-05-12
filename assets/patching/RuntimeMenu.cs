@@ -50,6 +50,7 @@ namespace BnlCommunityFixes
         public bool deathcam_healthbar_enabled = true;
         public bool auto_casual_queue_enabled;
         public bool has_auto_casual_queue_enabled;
+        public bool teammate_hp_enabled;
     }
 
     public static class RuntimeFeatureState
@@ -112,6 +113,8 @@ namespace BnlCommunityFixes
         private static bool defaultAimHealthbarEnabled = true;
         private static bool defaultDeathCamHealthbarEnabled = true;
         private static bool defaultAutoCasualQueueEnabled;
+        private static bool defaultTeammateHpEnabled;
+        private static bool teammateHpConfigured;
 
         private static bool loadedFromDisk;
         private static RuntimeMenuSettingsData loadedData;
@@ -126,6 +129,7 @@ namespace BnlCommunityFixes
         public static bool AimHealthbarSupported { get; private set; }
         public static bool DeathCamHealthbarSupported { get; private set; }
         public static bool AutoCasualQueueSupported { get; private set; }
+        public static bool TeammateHpSupported { get; private set; }
 
         public static float CrosshairSizeMultiplier { get; private set; }
         public static float CrosshairSpreadMultiplier { get; private set; }
@@ -168,6 +172,7 @@ namespace BnlCommunityFixes
         public static bool AimHealthbarEnabled { get; private set; }
         public static bool DeathCamHealthbarEnabled { get; private set; }
         public static bool AutoCasualQueueEnabled { get; private set; }
+        public static bool TeammateHpEnabled { get; private set; }
 
         static RuntimeFeatureState()
         {
@@ -201,6 +206,7 @@ namespace BnlCommunityFixes
             AimHealthbarEnabled = true;
             DeathCamHealthbarEnabled = true;
             AutoCasualQueueEnabled = false;
+            TeammateHpEnabled = false;
         }
 
         private static string ConfigPath
@@ -398,6 +404,19 @@ namespace BnlCommunityFixes
             }
         }
 
+        public static void ConfigureTeammateHp(bool supported, bool enabled)
+        {
+            TeammateHpSupported = TeammateHpSupported || supported;
+            defaultTeammateHpEnabled = enabled;
+
+            if (!teammateHpConfigured)
+            {
+                TeammateHpEnabled = defaultTeammateHpEnabled;
+                teammateHpConfigured = true;
+                ApplyLoadedTeammateHp();
+            }
+        }
+
         public static Color GetCrosshairIdleColor()
         {
             return WithAlpha(defaultCrosshairIdleColor, CrosshairAlpha);
@@ -542,6 +561,11 @@ namespace BnlCommunityFixes
             if (autoCasualQueueConfigured)
             {
                 AutoCasualQueueEnabled = defaultAutoCasualQueueEnabled;
+            }
+
+            if (teammateHpConfigured)
+            {
+                TeammateHpEnabled = defaultTeammateHpEnabled;
             }
         }
 
@@ -726,6 +750,11 @@ namespace BnlCommunityFixes
             AutoCasualQueueEnabled = value;
         }
 
+        public static void SetTeammateHpEnabled(bool value)
+        {
+            TeammateHpEnabled = value;
+        }
+
         private static void EnsureLoadedData()
         {
             if (loadedFromDisk)
@@ -881,6 +910,17 @@ namespace BnlCommunityFixes
             AutoCasualQueueEnabled = loadedData.auto_casual_queue_enabled;
         }
 
+        private static void ApplyLoadedTeammateHp()
+        {
+            EnsureLoadedData();
+            if (loadedData == null)
+            {
+                return;
+            }
+
+            TeammateHpEnabled = loadedData.teammate_hp_enabled;
+        }
+
         private static Color WithAlpha(Color value, float alpha)
         {
             return new Color(value.r, value.g, value.b, Mathf.Clamp01(alpha));
@@ -923,6 +963,7 @@ namespace BnlCommunityFixes
             data.aim_healthbar_enabled = AimHealthbarEnabled;
             data.deathcam_healthbar_enabled = DeathCamHealthbarEnabled;
             data.auto_casual_queue_enabled = AutoCasualQueueEnabled;
+            data.teammate_hp_enabled = TeammateHpEnabled;
             return data;
         }
 
@@ -963,6 +1004,7 @@ namespace BnlCommunityFixes
             lines.Add("aim_healthbar_enabled=" + data.aim_healthbar_enabled);
             lines.Add("deathcam_healthbar_enabled=" + data.deathcam_healthbar_enabled);
             lines.Add("auto_casual_queue_enabled=" + data.auto_casual_queue_enabled);
+            lines.Add("teammate_hp_enabled=" + data.teammate_hp_enabled);
             return string.Join("\n", lines.ToArray());
         }
 
@@ -1104,6 +1146,9 @@ namespace BnlCommunityFixes
                         data.auto_casual_queue_enabled = parsedBool;
                         data.has_auto_casual_queue_enabled = true;
                     }
+                    break;
+                case "teammate_hp_enabled":
+                    if (bool.TryParse(value, out parsedBool)) data.teammate_hp_enabled = parsedBool;
                     break;
             }
         }
@@ -1324,6 +1369,11 @@ namespace BnlCommunityFixes
                 count += 1;
             }
 
+            if (RuntimeFeatureState.TeammateHpSupported)
+            {
+                count += 1;
+            }
+
             if (DebugMenuRuntime.Enabled)
             {
                 count += 1;
@@ -1428,6 +1478,12 @@ namespace BnlCommunityFixes
                 index -= 1;
             }
 
+            if (RuntimeFeatureState.TeammateHpSupported)
+            {
+                if (index == 0) return "Teammate HP";
+                index -= 1;
+            }
+
             if (DebugMenuRuntime.Enabled)
             {
                 if (index == 0) return "Debug force start match";
@@ -1529,6 +1585,12 @@ namespace BnlCommunityFixes
             if (RuntimeFeatureState.AutoCasualQueueSupported)
             {
                 if (index == 0) return RuntimeFeatureState.AutoCasualQueueEnabled ? "ON" : "OFF";
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.TeammateHpSupported)
+            {
+                if (index == 0) return RuntimeFeatureState.TeammateHpEnabled ? "ON" : "OFF";
                 index -= 1;
             }
 
@@ -1702,6 +1764,17 @@ namespace BnlCommunityFixes
             }
 
             if (RuntimeFeatureState.AutoCasualQueueSupported)
+            {
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.TeammateHpSupported && index == 0)
+            {
+                RuntimeFeatureState.SetTeammateHpEnabled(!RuntimeFeatureState.TeammateHpEnabled);
+                return;
+            }
+
+            if (RuntimeFeatureState.TeammateHpSupported)
             {
                 index -= 1;
             }

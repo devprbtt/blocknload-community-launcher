@@ -84,6 +84,8 @@ public sealed class FeatureSettingsForm : Form
 
     private readonly CheckBox autoCasualQueueEnabledCheckBox;
 
+    private readonly CheckBox teammateHpEnabledCheckBox;
+
     private readonly CheckBox friendlyLowHealthEnabledCheckBox;
     private readonly TextBox friendlyLowHealthColorTextBox;
     private readonly NumericUpDown friendlyLowHealthThresholdNumeric;
@@ -582,6 +584,16 @@ public sealed class FeatureSettingsForm : Form
                 friendlyLowHealthIndicatorAlphaNumeric.Value    = ToDecimal(s.IndicatorAlpha, friendlyLowHealthIndicatorAlphaNumeric);
             });
 
+        // --- Teammate HP ---
+        var teammateHpTab = new TabPage("Teammate HP");
+        AddDescription(teammateHpTab,
+            "Shows each teammate's current HP next to their name in the team panel while you are alive.");
+        teammateHpEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        teammateHpTab.Controls.Add(teammateHpEnabledCheckBox);
+        AddPresetBar<TeammateHpSettings>(teammateHpTab, "teammateHp",
+            readFields: () => new TeammateHpSettings { Enabled = teammateHpEnabledCheckBox.Checked },
+            applyFields: s => { teammateHpEnabledCheckBox.Checked = s.Enabled; });
+
         // --- Misc ---
         var miscTab = new TabPage("Misc");
         AddDescription(miscTab,
@@ -590,7 +602,7 @@ public sealed class FeatureSettingsForm : Form
         disableMainMenuFrameCapCheckBox = NewCheckBox("Disable frame cap on main menu (uncaps FPS while on the main menu screen)", 14, EnabledY + 30);
         miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox]);
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, miscTab]);
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, miscTab]);
 
         var saveButton = new Button
         {
@@ -853,6 +865,9 @@ public sealed class FeatureSettingsForm : Form
         friendlyLowHealthIndicatorSizeNumeric.Value     = ToDecimal(friendlyLowHealth.IndicatorSize, friendlyLowHealthIndicatorSizeNumeric);
         friendlyLowHealthIndicatorAlphaNumeric.Value    = ToDecimal(friendlyLowHealth.IndicatorAlpha, friendlyLowHealthIndicatorAlphaNumeric);
 
+        var teammateHp = featureSettingsService.LoadTeammateHpSettings();
+        teammateHpEnabledCheckBox.Checked = teammateHp.Enabled;
+
         skipIntroCheckBox.Checked = LoadDebugMenuBool("skip_intro");
         disableMainMenuFrameCapCheckBox.Checked = LoadDebugMenuBool("disable_main_menu_frame_cap");
     }
@@ -1039,6 +1054,11 @@ public sealed class FeatureSettingsForm : Form
             ShowDirectionIndicator = friendlyLowHealthIndicatorCheckBox.Checked,
             IndicatorSize          = (double)friendlyLowHealthIndicatorSizeNumeric.Value,
             IndicatorAlpha         = (double)friendlyLowHealthIndicatorAlphaNumeric.Value
+        });
+
+        featureSettingsService.SaveTeammateHpSettings(new TeammateHpSettings
+        {
+            Enabled = teammateHpEnabledCheckBox.Checked
         });
 
         SaveDebugMenuBool("skip_intro", skipIntroCheckBox.Checked);

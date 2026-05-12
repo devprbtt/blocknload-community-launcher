@@ -335,6 +335,49 @@ public sealed class RuntimeMenuSyncService
         }
     }
 
+    public TeammateHpSettings ReadTeammateHpSettings(string runtimeConfigPath, TeammateHpSettings current)
+    {
+        if (!File.Exists(runtimeConfigPath))
+            return current;
+
+        try
+        {
+            var lines = File.ReadAllLines(runtimeConfigPath);
+            foreach (var line in lines)
+            {
+                var sep = line.IndexOf('=');
+                if (sep <= 0) continue;
+                var key = line[..sep].Trim();
+                var val = line[(sep + 1)..].Trim();
+                if (key == "teammate_hp_enabled" && bool.TryParse(val, out var b))
+                    current.Enabled = b;
+            }
+        }
+        catch { }
+
+        return current;
+    }
+
+    public void WriteTeammateHpSettings(string runtimeConfigPath, TeammateHpSettings settings)
+    {
+        try
+        {
+            var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(runtimeConfigPath))
+            {
+                foreach (var line in File.ReadAllLines(runtimeConfigPath))
+                {
+                    var sep = line.IndexOf('=');
+                    if (sep <= 0) continue;
+                    existing[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+                }
+            }
+            existing["teammate_hp_enabled"] = settings.Enabled.ToString();
+            File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
+        }
+        catch { }
+    }
+
     private static bool TryParseDouble(string val, out double result) =>
         double.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
 }

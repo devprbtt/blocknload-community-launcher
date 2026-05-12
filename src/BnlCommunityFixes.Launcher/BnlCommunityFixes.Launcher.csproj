@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>2.3.7</Version>
+    <Version>2.3.8</Version>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Launcher</RootNamespace>
@@ -31,6 +31,7 @@
     <EmbeddedResource Include="..\..\assets\patching\experimental-match-replay-recorder-config.json" LogicalName="Patching.experimental-match-replay-recorder-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-auto-casual-queue-config.json" LogicalName="Patching.experimental-auto-casual-queue-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\friendly-low-health-config.json" LogicalName="Patching.friendly-low-health-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\teammate-hp-config.json" LogicalName="Patching.teammate-hp-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\Mono.Cecil.dll" LogicalName="Patching.Mono.Cecil.dll" />
   </ItemGroup>
 

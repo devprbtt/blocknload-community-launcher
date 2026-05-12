@@ -160,6 +160,26 @@ public sealed class FeatureSettingsService
     public FriendlyLowHealthSettings LoadFriendlyLowHealthSettings() => Load("friendly-low-health-config.json", new FriendlyLowHealthSettings());
     public void SaveFriendlyLowHealthSettings(FriendlyLowHealthSettings settings) => Save("friendly-low-health-config.json", settings);
 
+    public TeammateHpSettings LoadTeammateHpSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "teammate-hp-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("teammate-hp-config.json", new TeammateHpSettings());
+            settings = runtimeSync.ReadTeammateHpSettings(runtimeConfigPath, settings);
+            Save("teammate-hp-config.json", settings);
+            return settings;
+        }
+        return Load("teammate-hp-config.json", new TeammateHpSettings());
+    }
+
+    public void SaveTeammateHpSettings(TeammateHpSettings settings)
+    {
+        Save("teammate-hp-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteTeammateHpSettings(runtimeConfigPath, settings);
+    }
+
     public bool EnsureAutoCasualQueueTestDefaultEnabled()
     {
         var migrationMarkerPath = Path.Combine(paths.DataDir, "auto-casual-queue-2.3-default-enabled.migrated");

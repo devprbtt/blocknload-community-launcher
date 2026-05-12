@@ -23,6 +23,7 @@ $MatchReplayRecorderConfigPath = Join-Path $PSScriptRoot "experimental-match-rep
 $AimHealthbarConfigPath = Join-Path $PSScriptRoot "aim-healthbar-config.json"
 $DeathCamHealthbarConfigPath = Join-Path $PSScriptRoot "deathcam-healthbar-config.json"
 $FriendlyLowHealthConfigPath = Join-Path $PSScriptRoot "friendly-low-health-config.json"
+$TeammateHpConfigPath = Join-Path $PSScriptRoot "teammate-hp-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
 $SavedCopyPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.font-configured.dll"
 $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
@@ -193,6 +194,9 @@ $FriendlyLowHealthConfig = Get-JsonConfig -Path $FriendlyLowHealthConfigPath -De
     threshold = 0.3
     color = "#FF4444"
 }
+$TeammateHpConfig = Get-JsonConfig -Path $TeammateHpConfigPath -Default @{
+    enabled = $false
+}
 
 $AnyEnabled = @(
     [bool]$Config.enabled,
@@ -215,6 +219,7 @@ $AnyEnabled = @(
     [bool]$DeathCamHealthbarConfig.enabled,
     [bool]$AutoCasualQueueConfig.enabled,
     [bool]$FriendlyLowHealthConfig.enabled,
+    [bool]$TeammateHpConfig.enabled,
     $SkipIntroEnabled,
     $DisableMainMenuFrameCapEnabled
 ) -contains $true
@@ -388,6 +393,7 @@ $FriendlyLowHealthColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrWh
 [bool]$FriendlyLowHealthIndicatorEnabled = if ($null -ne $FriendlyLowHealthConfig.show_direction_indicator) { [bool]$FriendlyLowHealthConfig.show_direction_indicator } else { $true }
 [double]$FriendlyLowHealthIndicatorSize = if ($null -ne $FriendlyLowHealthConfig.indicator_size) { [double]$FriendlyLowHealthConfig.indicator_size } else { 1.0 }
 [double]$FriendlyLowHealthIndicatorAlpha = if ($null -ne $FriendlyLowHealthConfig.indicator_alpha) { [double]$FriendlyLowHealthConfig.indicator_alpha } else { 1.0 }
+[bool]$TeammateHpEnabled = if ($null -ne $TeammateHpConfig.enabled) { [bool]$TeammateHpConfig.enabled } else { $false }
 [bool]$SkipIntroEnabled = if ($null -ne $DebugMenuConfig.skip_intro) { [bool]$DebugMenuConfig.skip_intro } else { $false }
 [bool]$DisableMainMenuFrameCapEnabled = if ($null -ne $DebugMenuConfig.disable_main_menu_frame_cap) { [bool]$DebugMenuConfig.disable_main_menu_frame_cap } else { $false }
 [string]$DebugMenuKeyName = if ($null -ne $DebugMenuConfig.debug_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.debug_menu_key)) { [string]$DebugMenuConfig.debug_menu_key } else { "F9" }
@@ -2855,6 +2861,44 @@ namespace BnlCommunityFixes
 "@
 }
 
+if ($TeammateHpEnabled) {
+$HelperSource += @"
+
+namespace BnlCommunityFixes
+{
+    public static class TeammateHpRuntime
+    {
+        static TeammateHpRuntime()
+        {
+            RuntimeFeatureState.ConfigureTeammateHp(true, $(Format-BoolLiteral $TeammateHpEnabled));
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
+
+        public static void UpdateTeammateHpText(GuiTeammate gui)
+        {
+            if (gui == null) return;
+            if (!RuntimeFeatureState.TeammateHpEnabled) return;
+            try
+            {
+                Unit unit = Singleton<UnitsRegistry>.Instance.GetByPlayerId(gui.PlayerId);
+                if (unit == null || unit.IsDeath) return;
+                float health = unit.Health;
+                float maxHealth = unit.MaxHealth;
+                if (maxHealth <= 0f) return;
+                int pct = Mathf.RoundToInt((health / maxHealth) * 100f);
+                string hpText = pct + "%";
+                if (gui.PlayerName != null)
+                    gui.PlayerName.text = Singleton<ZonePlayersCache>.Instance.GetPlayerName(gui.PlayerId) + " " + hpText;
+                if (gui.RespawnTime != null)
+                    gui.RespawnTime.text = hpText;
+            }
+            catch { }
+        }
+    }
+}
+"@
+}
+
 if (Test-Path $HelperOutputPath) {
     Remove-Item -LiteralPath $HelperOutputPath -Force
 }
@@ -4406,6 +4450,27 @@ if ($FriendlyLowHealthConfig.enabled) {
     }
 }
 
+if ($TeammateHpEnabled) {
+    $TeammateHpRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.TeammateHpRuntime" | Select-Object -First 1
+    if (-not $TeammateHpRuntimeType) { throw "TeammateHpRuntime type not found in helper assembly." }
+    $UpdateTeammateHpTextMethod = $TeammateHpRuntimeType.Methods | Where-Object Name -eq "UpdateTeammateHpText" | Select-Object -First 1
+    if (-not $UpdateTeammateHpTextMethod) { throw "TeammateHpRuntime.UpdateTeammateHpText not found." }
+    $ImportedUpdateTeammateHpText = $Module.ImportReference($UpdateTeammateHpTextMethod)
+
+    $GuiTeammateType = $Module.Types | Where-Object Name -eq "GuiTeammate" | Select-Object -First 1
+    if (-not $GuiTeammateType) { throw "GuiTeammate type not found." }
+    $GuiTeammateUpdateMethod = $GuiTeammateType.Methods | Where-Object { $_.Name -eq "Update" -and -not $_.IsStatic } | Select-Object -First 1
+    if (-not $GuiTeammateUpdateMethod -or -not $GuiTeammateUpdateMethod.HasBody) { throw "GuiTeammate.Update not found." }
+
+    $TeammateIl = $GuiTeammateUpdateMethod.Body.GetILProcessor()
+    $TeammateRet = @($GuiTeammateUpdateMethod.Body.Instructions) | Where-Object { $_.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Ret } | Select-Object -Last 1
+    if (-not $TeammateRet) { throw "GuiTeammate.Update Ret not found." }
+
+    # Inject before last ret: ldarg.0 / call TeammateHpRuntime::UpdateTeammateHpText(GuiTeammate)
+    $TeammateIl.InsertBefore($TeammateRet, $TeammateIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+    $TeammateIl.InsertBefore($TeammateRet, $TeammateIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedUpdateTeammateHpText))
+}
+
 if ($AutoCasualQueueConfig.enabled) {
     $AutoCasualQueueRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.AutoCasualQueueRuntime" | Select-Object -First 1
     if (-not $AutoCasualQueueRuntimeType) { throw "AutoCasualQueueRuntime type not found in helper assembly." }
@@ -4488,5 +4553,6 @@ if ($AimHealthbarConfig.enabled) { $Features.Add("aim-healthbar") | Out-Null }
 if ($DeathCamHealthbarConfig.enabled) { $Features.Add("deathcam-healthbar") | Out-Null }
 if ($AutoCasualQueueConfig.enabled) { $Features.Add("auto-casual-queue") | Out-Null }
 if ($MatchReplayRecorderConfig.enabled) { $Features.Add("match-replay-recorder") | Out-Null }
+if ($TeammateHpEnabled) { $Features.Add("teammate-hp") | Out-Null }
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash
 Write-Output "Experimental all-in-one DLL built. SHA1=$Hash features=$([string]::Join(',', $Features))"
