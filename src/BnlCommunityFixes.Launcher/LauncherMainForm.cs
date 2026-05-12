@@ -26,6 +26,7 @@ public sealed class LauncherMainForm : Form
     private readonly Button openReplayFolderButton;
     private readonly Button analyzeReplayButton;
     private readonly Button openReplayViewerButton;
+    private readonly Button openMapStateViewerButton;
     private readonly TextBox statusTextBox;
 
     private LauncherConfig? launcherConfig;
@@ -196,6 +197,14 @@ public sealed class LauncherMainForm : Form
         };
         openReplayViewerButton.Click += (_, _) => OpenReplayViewer();
 
+        openMapStateViewerButton = new Button
+        {
+            Text = "Map Viewer",
+            Location = new System.Drawing.Point(378, 278),
+            Size = new System.Drawing.Size(112, 28)
+        };
+        openMapStateViewerButton.Click += (_, _) => OpenMapStateViewer();
+
         statusTextBox = new TextBox
         {
             Multiline = true,
@@ -223,6 +232,7 @@ public sealed class LauncherMainForm : Form
             openReplayFolderButton,
             analyzeReplayButton,
             openReplayViewerButton,
+            openMapStateViewerButton,
             statusTextBox
         ]);
 
@@ -337,6 +347,7 @@ public sealed class LauncherMainForm : Form
         openReplayFolderButton.Enabled = replayControlsEnabled;
         analyzeReplayButton.Enabled = replayControlsEnabled;
         openReplayViewerButton.Enabled = replayControlsEnabled && File.Exists(replayLauncherService.LatestViewerPath);
+        openMapStateViewerButton.Enabled = replayControlsEnabled && File.Exists(replayLauncherService.LatestMapStateViewerPath);
     }
 
     private void LaunchSelectedServer()
@@ -506,6 +517,23 @@ public sealed class LauncherMainForm : Form
         catch (Exception exception)
         {
             logger.Exception(exception, "Failed to open replay viewer");
+            MessageBox.Show(
+                exception.Message,
+                "Block N Load Community Fixes V2",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+    }
+
+    private void OpenMapStateViewer()
+    {
+        try
+        {
+            replayLauncherService.OpenLatestMapStateViewer();
+        }
+        catch (Exception exception)
+        {
+            logger.Exception(exception, "Failed to open map-state viewer");
             MessageBox.Show(
                 exception.Message,
                 "Block N Load Community Fixes V2",

@@ -29,6 +29,8 @@ public sealed class ReplayLauncherService
 
     public string LatestViewerPath => Path.Combine(LatestAnalysisDirectory, "viewer.html");
 
+    public string LatestMapStateViewerPath => Path.Combine(LatestAnalysisDirectory, "map_state_viewer.html");
+
     public IReadOnlyList<ReplayCaptureInfo> ListCaptures(GameInstallInfo installInfo)
     {
         var replayDirectory = GetReplayDirectory(installInfo);
@@ -76,11 +78,24 @@ public sealed class ReplayLauncherService
         OpenPath(LatestViewerPath);
     }
 
+    public void OpenLatestMapStateViewer()
+    {
+        if (!File.Exists(LatestMapStateViewerPath))
+        {
+            throw new FileNotFoundException("No analyzed map-state viewer exists yet. Analyze the latest replay first.", LatestMapStateViewerPath);
+        }
+
+        OpenPath(LatestMapStateViewerPath);
+    }
+
     public string GetAnalysisDirectory(FileInfo capture) =>
         Path.Combine(paths.DataDir, "replay-analysis", Path.GetFileNameWithoutExtension(capture.Name));
 
     public string GetViewerPath(FileInfo capture) =>
         Path.Combine(GetAnalysisDirectory(capture), "viewer.html");
+
+    public string GetMapStateViewerPath(FileInfo capture) =>
+        Path.Combine(GetAnalysisDirectory(capture), "map_state_viewer.html");
 
     public string GetValidationReportPath(FileInfo capture) =>
         Path.Combine(GetAnalysisDirectory(capture), "validation.txt");
@@ -91,6 +106,17 @@ public sealed class ReplayLauncherService
         if (!File.Exists(viewerPath))
         {
             throw new FileNotFoundException("No analyzed replay viewer exists for this capture yet. Analyze it first.", viewerPath);
+        }
+
+        OpenPath(viewerPath);
+    }
+
+    public void OpenMapStateViewer(FileInfo capture)
+    {
+        var viewerPath = GetMapStateViewerPath(capture);
+        if (!File.Exists(viewerPath))
+        {
+            throw new FileNotFoundException("No analyzed map-state viewer exists for this capture yet. Analyze it first.", viewerPath);
         }
 
         OpenPath(viewerPath);
@@ -271,6 +297,7 @@ public sealed class ReplayLauncherService
     private ReplayCaptureInfo CreateCaptureInfo(FileInfo capture)
     {
         var viewerPath = GetViewerPath(capture);
+        var mapStateViewerPath = GetMapStateViewerPath(capture);
         var normalizedPath = Path.Combine(GetAnalysisDirectory(capture), "replay.normalized.json");
         var metadata = TryReadMetadata(normalizedPath);
         return new ReplayCaptureInfo(
@@ -278,6 +305,7 @@ public sealed class ReplayLauncherService
             capture.LastWriteTime,
             capture.Length,
             File.Exists(viewerPath),
+            File.Exists(mapStateViewerPath),
             File.Exists(GetValidationReportPath(capture)),
             metadata.MapName,
             metadata.DurationSeconds,
@@ -347,6 +375,7 @@ public sealed record ReplayCaptureInfo(
     DateTime LastWriteTime,
     long SizeBytes,
     bool HasViewer,
+    bool HasMapStateViewer,
     bool HasValidationReport,
     string? MapName,
     double? DurationSeconds,

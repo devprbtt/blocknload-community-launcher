@@ -11,6 +11,7 @@ public sealed class ReplayBrowserForm : Form
     private readonly DataGridView replayGrid;
     private readonly Button analyzeButton;
     private readonly Button openViewerButton;
+    private readonly Button openMapViewerButton;
     private readonly Button openValidationButton;
     private readonly Button openLocationButton;
     private readonly Button deleteButton;
@@ -80,10 +81,19 @@ public sealed class ReplayBrowserForm : Form
         };
         openViewerButton.Click += (_, _) => OpenSelectedViewer();
 
+        openMapViewerButton = new Button
+        {
+            Text = "Map Viewer",
+            Location = new System.Drawing.Point(234, 432),
+            Size = new System.Drawing.Size(104, 30),
+            Anchor = AnchorStyles.Bottom | AnchorStyles.Left
+        };
+        openMapViewerButton.Click += (_, _) => OpenSelectedMapViewer();
+
         openValidationButton = new Button
         {
             Text = "Validation",
-            Location = new System.Drawing.Point(234, 432),
+            Location = new System.Drawing.Point(344, 432),
             Size = new System.Drawing.Size(98, 30),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left
         };
@@ -92,7 +102,7 @@ public sealed class ReplayBrowserForm : Form
         openLocationButton = new Button
         {
             Text = "Open Location",
-            Location = new System.Drawing.Point(338, 432),
+            Location = new System.Drawing.Point(448, 432),
             Size = new System.Drawing.Size(112, 30),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left
         };
@@ -101,7 +111,7 @@ public sealed class ReplayBrowserForm : Form
         deleteButton = new Button
         {
             Text = "Delete",
-            Location = new System.Drawing.Point(456, 432),
+            Location = new System.Drawing.Point(566, 432),
             Size = new System.Drawing.Size(86, 30),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left
         };
@@ -110,7 +120,7 @@ public sealed class ReplayBrowserForm : Form
         refreshButton = new Button
         {
             Text = "Refresh",
-            Location = new System.Drawing.Point(548, 432),
+            Location = new System.Drawing.Point(658, 432),
             Size = new System.Drawing.Size(86, 30),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left
         };
@@ -125,7 +135,7 @@ public sealed class ReplayBrowserForm : Form
             ForeColor = System.Drawing.SystemColors.GrayText
         };
 
-        Controls.AddRange([replayGrid, analyzeButton, openViewerButton, openValidationButton, openLocationButton, deleteButton, refreshButton, statusLabel]);
+        Controls.AddRange([replayGrid, analyzeButton, openViewerButton, openMapViewerButton, openValidationButton, openLocationButton, deleteButton, refreshButton, statusLabel]);
         ReloadCaptures();
     }
 
@@ -163,6 +173,7 @@ public sealed class ReplayBrowserForm : Form
         var selected = GetSelectedCapture();
         analyzeButton.Enabled = selected is not null;
         openViewerButton.Enabled = selected is not null && selected.HasViewer;
+        openMapViewerButton.Enabled = selected is not null && selected.HasMapStateViewer;
         openValidationButton.Enabled = selected is not null && selected.HasValidationReport;
         openLocationButton.Enabled = selected is not null;
         deleteButton.Enabled = selected is not null;
@@ -211,6 +222,24 @@ public sealed class ReplayBrowserForm : Form
         try
         {
             replayService.OpenViewer(selected.File);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(exception.Message, "Match Replays", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void OpenSelectedMapViewer()
+    {
+        var selected = GetSelectedCapture();
+        if (selected is null)
+        {
+            return;
+        }
+
+        try
+        {
+            replayService.OpenMapStateViewer(selected.File);
         }
         catch (Exception exception)
         {
@@ -292,6 +321,7 @@ public sealed class ReplayBrowserForm : Form
         {
             analyzeButton.Enabled = false;
             openViewerButton.Enabled = false;
+            openMapViewerButton.Enabled = false;
             openValidationButton.Enabled = false;
             openLocationButton.Enabled = false;
             deleteButton.Enabled = false;

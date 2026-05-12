@@ -18,7 +18,9 @@ param(
 
     [string]$Notes = "",
 
-    [string]$NotesFile = ""
+    [string]$NotesFile = "",
+
+    [switch]$Portable
 )
 
 $ErrorActionPreference = "Stop"
@@ -53,6 +55,10 @@ New-Item -ItemType Directory -Force -Path $LauncherOutput, $UpdaterOutput | Out-
 dotnet publish $LauncherProject @PublishArgs -o $LauncherOutput | Out-Null
 dotnet publish $UpdaterProject @PublishArgs -o $UpdaterOutput | Out-Null
 dotnet publish $ReplayAnalyzerProject @PublishArgs -o $LauncherOutput | Out-Null
+
+if ($Portable -or $OutputRoot -like "*replay-launcher-test*") {
+    Set-Content -LiteralPath (Join-Path $LauncherOutput "portable-launcher.flag") -Value "portable" -Encoding ASCII
+}
 
 $LauncherExe = Join-Path $LauncherOutput "BnlCommunityFixes.exe"
 $UpdaterExe = Join-Path $UpdaterOutput "BnlUpdater.exe"

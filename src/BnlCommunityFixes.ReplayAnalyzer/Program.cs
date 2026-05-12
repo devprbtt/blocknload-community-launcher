@@ -867,18 +867,21 @@ internal sealed class ReplayAnalyzer
     private static BlockUpdatesEvent ReadBlockUpdates(BinaryReader reader, ReplayPacket packet)
     {
         var count = ReadSize(reader);
+        var updates = new List<BlockUpdateSample>(count);
         var samples = new List<BlockUpdateSample>();
         for (var i = 0; i < count; i++)
         {
             var pos = ReadVector3s(reader);
             var block = ReadBlockUpdate(reader);
+            var update = new BlockUpdateSample(pos, block.Id, block.Damage, block.Vdata, block.Ldata);
+            updates.Add(update);
             if (samples.Count < 20)
             {
-                samples.Add(new BlockUpdateSample(pos, block.Id, block.Damage, block.Vdata, block.Ldata));
+                samples.Add(update);
             }
         }
 
-        return new BlockUpdatesEvent(packet.Time, count, samples);
+        return new BlockUpdatesEvent(packet.Time, count, samples, updates);
     }
 
     private static BarrierUpdateEvent ReadBarrierUpdate(BinaryReader reader, ReplayPacket packet)
@@ -1656,18 +1659,23 @@ internal sealed class ReplayAnalyzer
 
 internal static class ReplayReportWriter
 {
+    private static readonly string[] SlopeCornerNames = ["C000", "C100", "C010", "C001", "C110", "C011", "C101", "C111"];
+
     public static void Write(string outputDir, ReplayAnalysis analysis)
     {
+        var buildPlacements = BuildBuildPlacements(analysis);
+        var mapTimeline = BuildMapStateTimeline(analysis, buildPlacements);
+        var mapVerification = VerifyMapStateTimeline(analysis, mapTimeline);
         WriteMapBinaryAssets(outputDir, analysis);
-        WriteSummary(outputDir, analysis);
+        WriteSummary(outputDir, analysis, mapVerification);
         WriteValidation(outputDir, analysis);
         WriteCsv(Path.Combine(outputDir, "packets.csv"), ["time", "event", "remaining", "payload_bytes"], analysis.Packets, static p => [p.TimeText, p.Event, p.Remaining.ToString(CultureInfo.InvariantCulture), p.PayloadBytes.ToString(CultureInfo.InvariantCulture)]);
         WriteCsv(Path.Combine(outputDir, "map_spawn_points.csv"), ["team", "label", "direction", "x", "y", "z"], analysis.InitZone?.Map?.SpawnPoints ?? [], static item => [item.Team ?? "", item.Label ?? "", item.Direction ?? "", item.Position?.XText ?? "", item.Position?.YText ?? "", item.Position?.ZText ?? ""]);
         WriteCsv(Path.Combine(outputDir, "map_units.csv"), ["unit_key_hash", "unit_name", "team", "x", "y", "z", "rot_x", "rot_y", "rot_z"], analysis.InitZone?.Map?.Units ?? [], item => [item.UnitKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", ResolveKeyName(analysis, item.UnitKeyHash), item.Team ?? "", item.Position?.XText ?? "", item.Position?.YText ?? "", item.Position?.ZText ?? "", item.Rotation?.XText ?? "", item.Rotation?.YText ?? "", item.Rotation?.ZText ?? ""]);
         WriteCsv(Path.Combine(outputDir, "map_cameras.csv"), ["team", "labels", "x", "y", "z", "dir_x", "dir_y", "dir_z"], analysis.InitZone?.Map?.Cameras ?? [], static item => [item.Team ?? "", string.Join("|", item.Labels), item.Position?.XText ?? "", item.Position?.YText ?? "", item.Position?.ZText ?? "", item.Direction?.XText ?? "", item.Direction?.YText ?? "", item.Direction?.ZText ?? ""]);
         WriteCsv(Path.Combine(outputDir, "map_triggers.csv"), ["type", "tag", "labels", "x", "y", "z", "size_x", "size_y", "size_z", "radius"], analysis.InitZone?.Map?.Triggers ?? [], static item => [item.Type, item.Tag ?? "", string.Join("|", item.Labels), item.Position?.XText ?? "", item.Position?.YText ?? "", item.Position?.ZText ?? "", item.Size?.XText ?? "", item.Size?.YText ?? "", item.Size?.ZText ?? "", item.Radius?.ToString("0.###", CultureInfo.InvariantCulture) ?? ""]);
-        WriteCsv(Path.Combine(outputDir, "init_block_updates.csv"), ["x", "y", "z", "id", "damage", "vdata", "ldata"], analysis.InitZone?.Updates ?? [], static item => [item.Position.XText, item.Position.YText, item.Position.ZText, item.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.Damage?.ToString(CultureInfo.InvariantCulture) ?? "", item.Vdata?.ToString(CultureInfo.InvariantCulture) ?? "", item.Ldata?.ToString(CultureInfo.InvariantCulture) ?? ""]);
-        WriteCsv(Path.Combine(outputDir, "map_blocks.csv"), ["x", "y", "z", "id", "name", "damage", "vdata", "ldata", "color"], analysis.DecodedMap?.NonEmptyBlocks ?? [], item => [item.Position.XText, item.Position.YText, item.Position.ZText, item.Id.ToString(CultureInfo.InvariantCulture), ResolveBlockName(analysis, item.Id), item.Damage.ToString(CultureInfo.InvariantCulture), item.Vdata.ToString(CultureInfo.InvariantCulture), item.Ldata.ToString(CultureInfo.InvariantCulture), item.Color?.ToString(CultureInfo.InvariantCulture) ?? ""]);
+        WriteCsv(Path.Combine(outputDir, "init_block_updates.csv"), ["x", "y", "z", "id", "damage", "vdata", "vdata_low_byte", "vdata_high_byte", "slope_existing_corner_count", "slope_existing_corners", "slope_missing_corners", "ldata", "team_bits", "team", "ldata_flags"], analysis.InitZone?.Updates ?? [], static item => [item.Position.XText, item.Position.YText, item.Position.ZText, item.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.Damage?.ToString(CultureInfo.InvariantCulture) ?? "", item.Vdata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatVdataLowByte(item.Vdata), FormatVdataHighByte(item.Vdata), FormatSlopeExistingCornerCount(item.Vdata), FormatSlopeExistingCorners(item.Vdata), FormatSlopeMissingCorners(item.Vdata), item.Ldata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatTeamBits(item.Ldata), FormatBlockTeam(item.Ldata), FormatLdataFlags(item.Ldata)]);
+        WriteCsv(Path.Combine(outputDir, "map_blocks.csv"), ["x", "y", "z", "id", "name", "damage", "vdata", "vdata_low_byte", "vdata_high_byte", "slope_existing_corner_count", "slope_existing_corners", "slope_missing_corners", "ldata", "team_bits", "team", "ldata_flags", "color"], analysis.DecodedMap?.NonEmptyBlocks ?? [], item => [item.Position.XText, item.Position.YText, item.Position.ZText, item.Id.ToString(CultureInfo.InvariantCulture), ResolveBlockName(analysis, item.Id), item.Damage.ToString(CultureInfo.InvariantCulture), item.Vdata.ToString(CultureInfo.InvariantCulture), FormatVdataLowByte(item.Vdata), FormatVdataHighByte(item.Vdata), FormatSlopeExistingCornerCount(item.Vdata), FormatSlopeExistingCorners(item.Vdata), FormatSlopeMissingCorners(item.Vdata), item.Ldata.ToString(CultureInfo.InvariantCulture), FormatTeamBits(item.Ldata), FormatBlockTeam(item.Ldata), FormatLdataFlags(item.Ldata), item.Color?.ToString(CultureInfo.InvariantCulture) ?? ""]);
         WriteCsv(Path.Combine(outputDir, "map_block_counts.csv"), ["id", "name", "count"], analysis.DecodedMap?.BlockCounts ?? [], item => [item.Id.ToString(CultureInfo.InvariantCulture), ResolveBlockName(analysis, item.Id), item.Count.ToString(CultureInfo.InvariantCulture)]);
         WriteCsv(Path.Combine(outputDir, "unit_moves.csv"), ["time", "unit_id", "server_time", "x", "y", "z", "rot_x", "rot_y", "rot_z"], analysis.UnitMoves, static item => [item.TimeText, item.UnitIdText, item.ServerTime.ToString(CultureInfo.InvariantCulture), item.Transform.Position?.XText ?? "", item.Transform.Position?.YText ?? "", item.Transform.Position?.ZText ?? "", item.Transform.Rotation?.XText ?? "", item.Transform.Rotation?.YText ?? "", item.Transform.Rotation?.ZText ?? ""]);
         WriteCsv(Path.Combine(outputDir, "unit_creates.csv"), ["time", "unit_id", "key_hash", "key_name", "team", "player_id", "owner_id", "controlled", "skin_key_hash", "skin_name", "gear_key_hashes", "gear_names", "x", "y", "z"], analysis.UnitCreates, item => [item.TimeText, item.UnitIdText, item.KeyHashText, ResolveKeyName(analysis, item.KeyHash), item.Team, item.PlayerId?.ToString(CultureInfo.InvariantCulture) ?? "", item.OwnerId?.ToString(CultureInfo.InvariantCulture) ?? "", item.Controlled ? "true" : "false", item.SkinKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", ResolveKeyName(analysis, item.SkinKeyHash), FormatKeyHashes(item.GearKeyHashes), FormatKeyNames(analysis, item.GearKeyHashes), item.Transform?.Position?.XText ?? "", item.Transform?.Position?.YText ?? "", item.Transform?.Position?.ZText ?? ""]);
@@ -1686,6 +1694,8 @@ internal static class ReplayReportWriter
         WriteCsv(Path.Combine(outputDir, "build_starts.csv"), ["time", "unit_id", "tool_index", "device_key_hash", "device_name", "inside_x", "inside_y", "inside_z", "outside_x", "outside_y", "outside_z", "direction", "show_ghost"], analysis.BuildStarts, item => [item.TimeText, item.UnitIdText, item.ToolIndex?.ToString(CultureInfo.InvariantCulture) ?? "", item.DeviceKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", ResolveKeyName(analysis, item.DeviceKeyHash), item.InsidePosition?.XText ?? "", item.InsidePosition?.YText ?? "", item.InsidePosition?.ZText ?? "", item.OutsidePosition?.XText ?? "", item.OutsidePosition?.YText ?? "", item.OutsidePosition?.ZText ?? "", item.Direction ?? "", item.ShowGhost?.ToString() ?? ""]);
         WriteCsv(Path.Combine(outputDir, "build_cancels.csv"), ["time", "unit_id"], analysis.BuildCancels, static item => [item.TimeText, item.UnitIdText]);
         WriteCsv(Path.Combine(outputDir, "devices_built.csv"), ["time", "unit_id", "device_key_hash", "device_name", "x", "y", "z"], analysis.DevicesBuilt, item => [item.TimeText, item.UnitIdText, item.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.DeviceKeyHash), item.Position.XText, item.Position.YText, item.Position.ZText]);
+        WriteCsv(Path.Combine(outputDir, "build_placements.csv"), ["device_time", "build_start_time", "build_to_device_seconds", "builder_unit_id", "built_unit_id", "device_key_hash", "device_name", "cell_x", "cell_y", "cell_z", "x", "y", "z", "inside_x", "inside_y", "inside_z", "outside_x", "outside_y", "outside_z", "direction", "show_ghost", "block_time", "block_id", "block_name", "damage", "vdata", "vdata_low_byte", "vdata_high_byte", "slope_existing_corner_count", "slope_existing_corners", "slope_missing_corners", "ldata", "team_bits", "team", "ldata_flags", "footprint_updates"], buildPlacements, item => [item.DeviceBuilt.TimeText, item.BuildStart?.TimeText ?? "", item.BuildStart is null ? "" : (item.DeviceBuilt.Time - item.BuildStart.Time).ToString("0.000", CultureInfo.InvariantCulture), item.BuildStart?.UnitId.ToString(CultureInfo.InvariantCulture) ?? "", item.DeviceBuilt.UnitIdText, item.DeviceBuilt.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.DeviceBuilt.DeviceKeyHash), item.Cell.XText, item.Cell.YText, item.Cell.ZText, item.DeviceBuilt.Position.XText, item.DeviceBuilt.Position.YText, item.DeviceBuilt.Position.ZText, item.BuildStart?.InsidePosition?.XText ?? "", item.BuildStart?.InsidePosition?.YText ?? "", item.BuildStart?.InsidePosition?.ZText ?? "", item.BuildStart?.OutsidePosition?.XText ?? "", item.BuildStart?.OutsidePosition?.YText ?? "", item.BuildStart?.OutsidePosition?.ZText ?? "", item.BuildStart?.Direction ?? "", item.BuildStart?.ShowGhost?.ToString() ?? "", item.BlockUpdateTime?.ToString("0.000", CultureInfo.InvariantCulture) ?? "", item.BlockUpdate?.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.BlockUpdate?.Id is ushort id ? ResolveBlockName(analysis, id) : "", item.BlockUpdate?.Damage?.ToString(CultureInfo.InvariantCulture) ?? "", item.BlockUpdate?.Vdata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatVdataLowByte(item.BlockUpdate?.Vdata), FormatVdataHighByte(item.BlockUpdate?.Vdata), FormatSlopeExistingCornerCount(item.BlockUpdate?.Vdata), FormatSlopeExistingCorners(item.BlockUpdate?.Vdata), FormatSlopeMissingCorners(item.BlockUpdate?.Vdata), item.BlockUpdate?.Ldata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatTeamBits(item.BlockUpdate?.Ldata), FormatBlockTeam(item.BlockUpdate?.Ldata), FormatLdataFlags(item.BlockUpdate?.Ldata), item.FootprintUpdates.Count.ToString(CultureInfo.InvariantCulture)]);
+        WriteCsv(Path.Combine(outputDir, "build_placement_footprints.csv"), ["device_time", "footprint_index", "block_time", "dt", "distance", "dx", "dy", "dz", "device_key_hash", "device_name", "cell_x", "cell_y", "cell_z", "block_x", "block_y", "block_z", "block_id", "block_name", "damage", "vdata", "vdata_low_byte", "vdata_high_byte", "slope_existing_corner_count", "slope_existing_corners", "slope_missing_corners", "ldata", "team_bits", "team", "ldata_flags"], buildPlacements.SelectMany(static placement => placement.FootprintUpdates.Select((update, index) => (placement, update, index))), item => [item.placement.DeviceBuilt.TimeText, item.index.ToString(CultureInfo.InvariantCulture), item.update.Time.ToString("0.000", CultureInfo.InvariantCulture), (item.update.Time - item.placement.DeviceBuilt.Time).ToString("0.000", CultureInfo.InvariantCulture), item.update.Distance.ToString(CultureInfo.InvariantCulture), item.update.Dx.ToString(CultureInfo.InvariantCulture), item.update.Dy.ToString(CultureInfo.InvariantCulture), item.update.Dz.ToString(CultureInfo.InvariantCulture), item.placement.DeviceBuilt.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.placement.DeviceBuilt.DeviceKeyHash), item.placement.Cell.XText, item.placement.Cell.YText, item.placement.Cell.ZText, item.update.Sample.Position.XText, item.update.Sample.Position.YText, item.update.Sample.Position.ZText, item.update.Sample.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.update.Sample.Id is ushort id ? ResolveBlockName(analysis, id) : "", item.update.Sample.Damage?.ToString(CultureInfo.InvariantCulture) ?? "", item.update.Sample.Vdata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatVdataLowByte(item.update.Sample.Vdata), FormatVdataHighByte(item.update.Sample.Vdata), FormatSlopeExistingCornerCount(item.update.Sample.Vdata), FormatSlopeExistingCorners(item.update.Sample.Vdata), FormatSlopeMissingCorners(item.update.Sample.Vdata), item.update.Sample.Ldata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatTeamBits(item.update.Sample.Ldata), FormatBlockTeam(item.update.Sample.Ldata), FormatLdataFlags(item.update.Sample.Ldata)]);
         WriteCsv(Path.Combine(outputDir, "block_mined.csv"), ["time", "unit_id", "block_key_hash", "block_name"], analysis.BlockMined, item => [item.TimeText, item.UnitIdText, item.BlockKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.BlockKeyHash)]);
         WriteCsv(Path.Combine(outputDir, "barrier_updates.csv"), ["time", "labels"], analysis.BarrierUpdates, static item => [item.TimeText, string.Join("|", item.Labels)]);
         WriteCsv(Path.Combine(outputDir, "reloads.csv"), ["time", "phase", "unit_id"], analysis.ReloadEvents, static item => [item.TimeText, item.Phase, item.UnitIdText]);
@@ -1698,13 +1708,22 @@ internal static class ReplayReportWriter
         WriteCsv(Path.Combine(outputDir, "player_units.csv"), ["player_id", "nickname", "steam_id", "team", "unit_id", "unit_key_hash", "unit_name", "skin_key_hash", "skin_name", "gear_key_hashes", "gear_names", "controlled"], ReplayIdentityBuilder.BuildPlayerUnitIdentities(analysis), static item => [item.PlayerId.ToString(CultureInfo.InvariantCulture), item.Nickname ?? "", item.SteamId?.ToString(CultureInfo.InvariantCulture) ?? "", item.Team ?? "", item.UnitId?.ToString(CultureInfo.InvariantCulture) ?? "", item.UnitKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", item.UnitName ?? "", item.SkinKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", item.SkinName ?? "", string.Join("|", item.GearKeyHashes.Select(static key => key.ToString("X8", CultureInfo.InvariantCulture))), string.Join("|", item.GearNames), item.Controlled?.ToString() ?? ""]);
         WriteCsv(Path.Combine(outputDir, "objectives.csv"), ["time", "team", "id", "counter", "required_counter"], analysis.ZoneUpdates.SelectMany(static update => update.Objectives.Select(objective => (update, objective))), static item => [item.update.TimeText, item.objective.Team ?? "", item.objective.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.objective.Counter?.ToString(CultureInfo.InvariantCulture) ?? "", item.objective.RequiredCounter?.ToString(CultureInfo.InvariantCulture) ?? ""]);
         WriteCsv(Path.Combine(outputDir, "block_updates.csv"), ["time", "count", "samples"], analysis.BlockUpdates, static item => [item.TimeText, item.Count.ToString(CultureInfo.InvariantCulture), string.Join(";", item.Samples.Select(static sample => $"{sample.Position.X},{sample.Position.Y},{sample.Position.Z}:{sample.Id}/{sample.Damage}/{sample.Vdata}/{sample.Ldata}"))]);
+        WriteCsv(Path.Combine(outputDir, "block_update_items.csv"), ["time", "index", "x", "y", "z", "id", "name", "damage", "vdata", "vdata_low_byte", "vdata_high_byte", "slope_existing_corner_count", "slope_existing_corners", "slope_missing_corners", "ldata", "team_bits", "team", "ldata_flags"], analysis.BlockUpdates.SelectMany(static update => update.Updates.Select((sample, index) => (update, sample, index))), item => [item.update.TimeText, item.index.ToString(CultureInfo.InvariantCulture), item.sample.Position.XText, item.sample.Position.YText, item.sample.Position.ZText, item.sample.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.sample.Id is ushort id ? ResolveBlockName(analysis, id) : "", item.sample.Damage?.ToString(CultureInfo.InvariantCulture) ?? "", item.sample.Vdata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatVdataLowByte(item.sample.Vdata), FormatVdataHighByte(item.sample.Vdata), FormatSlopeExistingCornerCount(item.sample.Vdata), FormatSlopeExistingCorners(item.sample.Vdata), FormatSlopeMissingCorners(item.sample.Vdata), item.sample.Ldata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatTeamBits(item.sample.Ldata), FormatBlockTeam(item.sample.Ldata), FormatLdataFlags(item.sample.Ldata)]);
+        WriteCsv(Path.Combine(outputDir, "map_state_timeline.csv"), ["sequence", "time", "source", "placement_device_time", "device_key_hash", "device_name", "builder_unit_id", "built_unit_id", "direction", "x", "y", "z", "id", "name", "damage", "vdata", "vdata_low_byte", "vdata_high_byte", "slope_existing_corner_count", "slope_existing_corners", "slope_missing_corners", "ldata", "team_bits", "team", "ldata_flags"], mapTimeline, item => [item.Sequence.ToString(CultureInfo.InvariantCulture), item.TimeText, item.Source, item.Placement?.DeviceBuilt.TimeText ?? "", item.Placement?.DeviceBuilt.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture) ?? "", item.Placement is null ? "" : ResolveKeyName(analysis, item.Placement.DeviceBuilt.DeviceKeyHash), item.Placement?.BuildStart?.UnitId.ToString(CultureInfo.InvariantCulture) ?? "", item.Placement?.DeviceBuilt.UnitIdText ?? "", item.Placement?.BuildStart?.Direction ?? "", item.Update.Position.XText, item.Update.Position.YText, item.Update.Position.ZText, item.Update.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.Update.Id is ushort id ? ResolveBlockName(analysis, id) : "", item.Update.Damage?.ToString(CultureInfo.InvariantCulture) ?? "", item.Update.Vdata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatVdataLowByte(item.Update.Vdata), FormatVdataHighByte(item.Update.Vdata), FormatSlopeExistingCornerCount(item.Update.Vdata), FormatSlopeExistingCorners(item.Update.Vdata), FormatSlopeMissingCorners(item.Update.Vdata), item.Update.Ldata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatTeamBits(item.Update.Ldata), FormatBlockTeam(item.Update.Ldata), FormatLdataFlags(item.Update.Ldata)]);
+        WriteMapStateVerification(Path.Combine(outputDir, "map_state_verification.txt"), analysis, mapVerification);
+        WriteCsv(Path.Combine(outputDir, "map_state_final_counts.csv"), ["id", "name", "count"], mapVerification.FinalBlockCounts, item => [item.Id.ToString(CultureInfo.InvariantCulture), ResolveBlockName(analysis, item.Id), item.Count.ToString(CultureInfo.InvariantCulture)]);
+        WriteCsv(Path.Combine(outputDir, "map_state_changed_cells.csv"), ["x", "y", "z", "updates", "initial_id", "initial_name", "final_id", "final_name", "final_damage", "final_vdata", "final_ldata", "final_team"], mapVerification.ChangedCells, item => [item.Position.XText, item.Position.YText, item.Position.ZText, item.UpdateCount.ToString(CultureInfo.InvariantCulture), item.Initial.Id.ToString(CultureInfo.InvariantCulture), ResolveBlockName(analysis, item.Initial.Id), item.Final.Id.ToString(CultureInfo.InvariantCulture), ResolveBlockName(analysis, item.Final.Id), item.Final.Damage.ToString(CultureInfo.InvariantCulture), item.Final.Vdata.ToString(CultureInfo.InvariantCulture), item.Final.Ldata.ToString(CultureInfo.InvariantCulture), FormatBlockTeam(item.Final.Ldata)]);
         WriteNormalizedJson(Path.Combine(outputDir, "replay.normalized.json"), analysis);
         WriteViewer(Path.Combine(outputDir, "viewer.html"), analysis);
+        WriteMapStateViewer(Path.Combine(outputDir, "map_state_viewer.html"), analysis, mapTimeline, mapVerification);
     }
 
-    private static void WriteSummary(string outputDir, ReplayAnalysis analysis)
+    private static void WriteSummary(string outputDir, ReplayAnalysis analysis, MapStateVerificationData? mapVerification = null)
     {
         var validation = ReplayValidation.Evaluate(analysis);
+        var buildPlacements = BuildBuildPlacements(analysis);
+        var mapTimeline = BuildMapStateTimeline(analysis, buildPlacements);
+        mapVerification ??= VerifyMapStateTimeline(analysis, mapTimeline);
         var lines = new List<string>
         {
             $"Source: {analysis.SourcePath}",
@@ -1764,11 +1783,23 @@ internal static class ReplayReportWriter
             $"Build starts: {analysis.BuildStarts.Count}",
             $"Build cancels: {analysis.BuildCancels.Count}",
             $"Devices built: {analysis.DevicesBuilt.Count}",
+            $"Build placements: {buildPlacements.Count}",
+            $"Build placements with build start: {buildPlacements.Count(static item => item.BuildStart is not null)}",
+            $"Build placements with block update: {buildPlacements.Count(static item => item.BlockUpdate is not null)}",
+            $"Build placement footprint updates: {buildPlacements.Sum(static item => item.FootprintUpdates.Count)}",
+            $"Build placements with footprint updates: {buildPlacements.Count(static item => item.FootprintUpdates.Count > 0)}",
             $"Zone updates: {analysis.ZoneUpdates.Count}",
             $"Player info records: {analysis.ZoneUpdates.Sum(static item => item.PlayerInfo.Count)}",
             $"Objective records: {analysis.ZoneUpdates.Sum(static item => item.Objectives.Count)}",
             $"Block update packets: {analysis.BlockUpdates.Count}",
             $"Block updates total: {analysis.BlockUpdates.Sum(static item => item.Count)}",
+            $"Map state timeline updates: {mapTimeline.Count}",
+            $"Map state timeline placement updates: {mapTimeline.Count(static item => item.Placement is not null)}",
+            $"Map state final non-empty blocks: {mapVerification.FinalNonEmptyBlockCount}",
+            $"Map state changed cells: {mapVerification.ChangedCells.Count}",
+            $"Map state repeated cells: {mapVerification.RepeatedCellCount}",
+            $"Map state duplicate no-op updates: {mapVerification.DuplicateNoOpUpdates}",
+            $"Map state out-of-order updates: {mapVerification.OutOfOrderUpdates}",
             $"Blocks mined: {analysis.BlockMined.Count}",
             $"Barrier updates: {analysis.BarrierUpdates.Count}",
             $"Reload events: {analysis.ReloadEvents.Count}",
@@ -2185,6 +2216,160 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
         File.WriteAllText(path, html, new UTF8Encoding(false));
     }
 
+    private static void WriteMapStateViewer(string path, ReplayAnalysis analysis, IReadOnlyList<MapStateTimelineItem> timeline, MapStateVerificationData verification)
+    {
+        var initialBlocks = analysis.DecodedMap?.NonEmptyBlocks
+            .Select(item => new
+            {
+                x = item.Position.X,
+                y = item.Position.Y,
+                z = item.Position.Z,
+                id = item.Id,
+                name = ResolveBlockName(analysis, item.Id),
+                damage = item.Damage,
+                vdata = item.Vdata,
+                ldata = item.Ldata,
+                team = FormatBlockTeam(item.Ldata),
+                color = item.Color
+            })
+            .ToArray() ?? [];
+
+        var changes = timeline
+            .Select(item => new
+            {
+                seq = item.Sequence,
+                t = Math.Round(item.Time, 3),
+                source = item.Source,
+                x = item.Update.Position.X,
+                y = item.Update.Position.Y,
+                z = item.Update.Position.Z,
+                id = item.Update.Id,
+                name = item.Update.Id is ushort id ? ResolveBlockName(analysis, id) : "",
+                damage = item.Update.Damage,
+                vdata = item.Update.Vdata,
+                ldata = item.Update.Ldata,
+                team = FormatBlockTeam(item.Update.Ldata),
+                device = item.Placement is null ? "" : ResolveKeyName(analysis, item.Placement.DeviceBuilt.DeviceKeyHash),
+                direction = item.Placement?.BuildStart?.Direction ?? ""
+            })
+            .ToArray();
+
+        var data = JsonSerializer.Serialize(new
+        {
+            source = Path.GetFileName(analysis.SourcePath),
+            start = analysis.StartTime,
+            end = analysis.EndTime,
+            duration = analysis.DurationSeconds,
+            mapKey = analysis.MapKeyHash?.ToString("X8", CultureInfo.InvariantCulture),
+            mapName = ResolveKeyName(analysis, analysis.MapKeyHash),
+            size = analysis.DecodedMap?.Size,
+            verification = new
+            {
+                verification.InitialNonEmptyBlockCount,
+                verification.FinalNonEmptyBlockCount,
+                changedCellCount = verification.ChangedCells.Count,
+                verification.RepeatedCellCount,
+                verification.DuplicateNoOpUpdates,
+                verification.OutOfOrderUpdates
+            },
+            initialBlocks,
+            changes
+        });
+
+        var html = """
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BNL Map State Viewer</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#121414;color:#ece9df;font-family:Segoe UI,Arial,sans-serif;overflow:hidden}
+header{height:60px;display:flex;align-items:center;gap:12px;padding:10px 14px;background:#1b1d1c;border-bottom:1px solid #343735}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:calc(100vh - 60px)}
+canvas{display:block;width:100%;height:100%;background:#080b0a}
+aside{border-left:1px solid #343735;background:#171918;overflow:auto}
+section{padding:12px 14px;border-bottom:1px solid #2c302d}
+h2{font-size:13px;margin:0 0 9px;color:#f0eadf}
+button{height:36px;min-width:72px;border:0;border-radius:5px;background:#3d7a68;color:white}
+select{height:36px;background:#222624;color:#eee;border:1px solid #3c423e;border-radius:5px;padding:0 8px}
+input[type=range]{width:min(460px,36vw)}
+.stat{font-size:13px;color:#bcb8ae;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.metric{background:#202321;border:1px solid #303531;border-radius:6px;padding:8px}
+.metric strong{display:block;font-size:18px}.metric span{font-size:12px;color:#aaa69c}
+.row{display:grid;grid-template-columns:74px 1fr 52px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #2b2e2c;font-size:12px}
+.row:last-child{border-bottom:0}
+.swatch{width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,.25)}
+.events{max-height:420px;overflow:auto}
+.event{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #2b2e2c;font-size:12px}
+.event small{color:#aaa69c}
+</style>
+</head>
+<body>
+<header>
+<button id="play">Play</button>
+<input id="scrub" type="range" min="0" max="1000" value="0">
+<strong id="time">0.000s</strong>
+<select id="speed"><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option></select>
+<select id="mode"><option value="top" selected>Top Surface</option><option value="changes">Changed Cells</option></select>
+<span class="stat" id="meta"></span>
+</header>
+<main>
+<canvas id="view"></canvas>
+<aside>
+<section><h2>Map State</h2><div class="metrics" id="metrics"></div></section>
+<section><h2>Visible Blocks</h2><div id="legend"></div></section>
+<section><h2>Recent Changes</h2><div class="events" id="events"></div></section>
+</aside>
+</main>
+<script>
+const replay=__DATA__;
+const canvas=document.getElementById('view');
+const ctx=canvas.getContext('2d');
+const scrub=document.getElementById('scrub');
+const play=document.getElementById('play');
+const speed=document.getElementById('speed');
+const mode=document.getElementById('mode');
+const timeLabel=document.getElementById('time');
+const size=replay.size||{X:1,Y:1,Z:1};
+document.getElementById('meta').textContent=`${replay.source} | ${replay.mapName||replay.mapKey||'unknown'} | ${replay.initialBlocks.length} initial blocks | ${replay.changes.length} changes`;
+let current=replay.start, applied=-1, playing=false, last=performance.now();
+let state=new Map();
+const changed=new Set();
+const key=(x,y,z)=>`${x},${y},${z}`;
+const splitKey=k=>k.split(',').map(Number);
+function cloneBlock(b){return {x:b.x,y:b.y,z:b.z,id:b.id||0,name:b.name||'',damage:b.damage||0,vdata:b.vdata||0,ldata:b.ldata||0,team:b.team||'Neutral',color:b.color}}
+function resetState(){state=new Map(); changed.clear(); for(const b of replay.initialBlocks){state.set(key(b.x,b.y,b.z), cloneBlock(b));} applied=-1}
+function applyChange(c){const k=key(c.x,c.y,c.z); const prev=state.get(k)||{x:c.x,y:c.y,z:c.z,id:0,name:'block_air',damage:0,vdata:0,ldata:0,team:'Neutral'}; const next={x:c.x,y:c.y,z:c.z,id:c.id??prev.id,name:c.name||prev.name,damage:c.damage??prev.damage,vdata:c.vdata??prev.vdata,ldata:c.ldata??prev.ldata,team:c.team||prev.team,source:c.source,device:c.device,direction:c.direction,t:c.t}; if(next.id===0){state.delete(k)}else{state.set(k,next)} changed.add(k)}
+function seek(t){if(t<current) resetState(); while(applied+1<replay.changes.length && replay.changes[applied+1].t<=t){applied++; applyChange(replay.changes[applied]);} current=t}
+function colorFor(block){if(!block||block.id===0)return '#080b0a'; if(block.team==='Team1')return '#3c8dcc'; if(block.team==='Team2')return '#c94d4d'; const id=Number(block.id); const hue=(id*47)%360; const sat=block.name&&block.name.includes('air')?12:42; const light=block.name&&block.name.includes('stone')?48:38+((id*13)%18); return `hsl(${hue} ${sat}% ${light}%)`}
+function resize(){canvas.width=canvas.clientWidth*devicePixelRatio; canvas.height=canvas.clientHeight*devicePixelRatio}
+function topSurface(){const top=new Map(); for(const b of state.values()){if(b.id===0)continue; const k=`${b.x},${b.z}`; const old=top.get(k); if(!old||b.y>old.y)top.set(k,b)} return top}
+function draw(){ctx.clearRect(0,0,canvas.width,canvas.height); const pad=36*devicePixelRatio; const w=canvas.width-pad*2; const h=canvas.height-pad*2; const sx=w/Math.max(1,size.X); const sz=h/Math.max(1,size.Z); ctx.fillStyle='#0d1110'; ctx.fillRect(pad,pad,w,h); const top=topSurface(); const visible=[...top.values()]; const drawSet=mode.value==='changes'?visible.filter(b=>changed.has(key(b.x,b.y,b.z))):visible; for(const b of drawSet){ctx.fillStyle=colorFor(b); ctx.fillRect(pad+b.x*sx,pad+b.z*sz,Math.max(1,sx+0.4),Math.max(1,sz+0.4));} ctx.strokeStyle='#46504a'; ctx.lineWidth=1; ctx.strokeRect(pad,pad,w,h); for(const c of replay.changes.slice(Math.max(0,applied-80),applied+1)){const age=current-c.t; if(age>2)continue; ctx.strokeStyle=c.source==='block_update'?'rgba(255,255,255,.45)':'rgba(255,214,102,.9)'; ctx.lineWidth=Math.max(1,2*devicePixelRatio); ctx.strokeRect(pad+c.x*sx,pad+c.z*sz,Math.max(3,sx),Math.max(3,sz));} timeLabel.textContent=`${(current-replay.start).toFixed(3)}s`; renderSide(top)}
+function renderSide(top){const counts=new Map(); for(const b of top.values()){const k=`${b.id}|${b.name}`; counts.set(k,(counts.get(k)||0)+1)} const rows=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,18); document.getElementById('legend').innerHTML=rows.map(([k,count])=>{const [id,name]=k.split('|'); return `<div class="row"><span><span class="swatch" style="display:inline-block;background:${colorFor({id:Number(id),name})}"></span> ${id}</span><span>${name||'unknown'}</span><span>${count}</span></div>`}).join(''); const recent=replay.changes.slice(Math.max(0,applied-50),applied+1).reverse(); document.getElementById('events').innerHTML=recent.map(c=>`<div class="event"><span>${(c.t-replay.start).toFixed(2)}</span><span><strong>${c.source}</strong> ${c.name||c.id||''}<br><small>${c.x},${c.y},${c.z} ${c.device||''} ${c.direction||''}</small></span></div>`).join('')}
+document.getElementById('metrics').innerHTML=[
+ ['Initial',replay.verification.InitialNonEmptyBlockCount],
+ ['Final',replay.verification.FinalNonEmptyBlockCount],
+ ['Changed',replay.verification.changedCellCount],
+ ['Repeated',replay.verification.RepeatedCellCount],
+ ['No-op',replay.verification.DuplicateNoOpUpdates],
+ ['Out of order',replay.verification.OutOfOrderUpdates]
+].map(([k,v])=>`<div class="metric"><strong>${v}</strong><span>${k}</span></div>`).join('');
+function tick(now){if(playing){let t=current+((now-last)/1000)*Number(speed.value); if(t>replay.end){t=replay.end;playing=false;play.textContent='Play'} seek(t); scrub.value=String(Math.round((current-replay.start)/Math.max(.001,replay.duration)*1000));} last=now; draw(); requestAnimationFrame(tick)}
+scrub.addEventListener('input',()=>seek(replay.start+(Number(scrub.value)/1000)*replay.duration));
+play.addEventListener('click',()=>{playing=!playing; play.textContent=playing?'Pause':'Play'; last=performance.now()});
+mode.addEventListener('change',draw);
+addEventListener('resize',resize); resize(); resetState(); requestAnimationFrame(tick);
+</script>
+</body>
+</html>
+""".Replace("__DATA__", data, StringComparison.Ordinal);
+
+        File.WriteAllText(path, html, new UTF8Encoding(false));
+    }
+
     private static void WriteNormalizedJson(string path, ReplayAnalysis analysis)
     {
         var validation = ReplayValidation.Evaluate(analysis);
@@ -2485,6 +2670,67 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
             })
             .ToArray();
 
+        var buildPlacements = BuildBuildPlacements(analysis)
+            .OrderBy(static item => item.DeviceBuilt.Time)
+            .Select(item => new
+            {
+                t = Math.Round(item.DeviceBuilt.Time, 3),
+                buildStartTime = item.BuildStart is null ? (double?)null : Math.Round(item.BuildStart.Time, 3),
+                buildToDeviceSeconds = item.BuildStart is null ? (double?)null : Math.Round(item.DeviceBuilt.Time - item.BuildStart.Time, 3),
+                builderUnitId = item.BuildStart?.UnitId,
+                builtUnitId = item.DeviceBuilt.UnitId,
+                deviceKeyHash = item.DeviceBuilt.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture),
+                deviceName = ResolveKeyName(analysis, item.DeviceBuilt.DeviceKeyHash),
+                cell = ToNormalizedVector(item.Cell),
+                position = ToNormalizedVector(item.DeviceBuilt.Position),
+                insidePosition = ToNormalizedVector(item.BuildStart?.InsidePosition),
+                outsidePosition = ToNormalizedVector(item.BuildStart?.OutsidePosition),
+                direction = item.BuildStart?.Direction,
+                showGhost = item.BuildStart?.ShowGhost,
+                blockUpdateTime = item.BlockUpdateTime is null ? (double?)null : Math.Round(item.BlockUpdateTime.Value, 3),
+                footprintUpdates = item.FootprintUpdates.Select(update => new
+                {
+                    t = Math.Round(update.Time, 3),
+                    dt = Math.Round(update.Time - item.DeviceBuilt.Time, 3),
+                    update.Distance,
+                    update.Dx,
+                    update.Dy,
+                    update.Dz,
+                    position = ToNormalizedVector(update.Sample.Position),
+                    id = update.Sample.Id,
+                    name = update.Sample.Id is ushort id ? ResolveBlockName(analysis, id) : "",
+                    damage = update.Sample.Damage,
+                    vdata = update.Sample.Vdata,
+                    vdataLowByte = update.Sample.Vdata.HasValue ? (byte)(update.Sample.Vdata.Value & 0xFF) : (byte?)null,
+                    vdataHighByte = update.Sample.Vdata.HasValue ? (byte)(update.Sample.Vdata.Value >> 8) : (byte?)null,
+                    slopeExistingCornerCount = CountSlopeExistingCorners(update.Sample.Vdata),
+                    slopeExistingCorners = GetSlopeExistingCorners(update.Sample.Vdata),
+                    slopeMissingCorners = GetSlopeMissingCorners(update.Sample.Vdata),
+                    ldata = update.Sample.Ldata,
+                    teamBits = update.Sample.Ldata.HasValue ? update.Sample.Ldata.Value & 0x03 : (int?)null,
+                    team = FormatBlockTeam(update.Sample.Ldata),
+                    ldataFlags = update.Sample.Ldata.HasValue ? update.Sample.Ldata.Value & ~0x03 : (int?)null
+                }),
+                block = item.BlockUpdate is null ? null : new
+                {
+                    position = ToNormalizedVector(item.BlockUpdate.Position),
+                    id = item.BlockUpdate.Id,
+                    name = item.BlockUpdate.Id is ushort id ? ResolveBlockName(analysis, id) : "",
+                    damage = item.BlockUpdate.Damage,
+                    vdata = item.BlockUpdate.Vdata,
+                    vdataLowByte = item.BlockUpdate.Vdata.HasValue ? (byte)(item.BlockUpdate.Vdata.Value & 0xFF) : (byte?)null,
+                    vdataHighByte = item.BlockUpdate.Vdata.HasValue ? (byte)(item.BlockUpdate.Vdata.Value >> 8) : (byte?)null,
+                    slopeExistingCornerCount = CountSlopeExistingCorners(item.BlockUpdate.Vdata),
+                    slopeExistingCorners = GetSlopeExistingCorners(item.BlockUpdate.Vdata),
+                    slopeMissingCorners = GetSlopeMissingCorners(item.BlockUpdate.Vdata),
+                    ldata = item.BlockUpdate.Ldata,
+                    teamBits = item.BlockUpdate.Ldata.HasValue ? item.BlockUpdate.Ldata.Value & 0x03 : (int?)null,
+                    team = FormatBlockTeam(item.BlockUpdate.Ldata),
+                    ldataFlags = item.BlockUpdate.Ldata.HasValue ? item.BlockUpdate.Ldata.Value & ~0x03 : (int?)null
+                }
+            })
+            .ToArray();
+
         var blockMined = analysis.BlockMined
             .OrderBy(static item => item.Time)
             .Select(item => new
@@ -2498,7 +2744,7 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
 
         var blockUpdates = analysis.BlockUpdates
             .OrderBy(static item => item.Time)
-            .Select(static item => new
+            .Select(item => new
             {
                 t = Math.Round(item.Time, 3),
                 item.Count,
@@ -2509,9 +2755,75 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
                     damage = sample.Damage,
                     vdata = sample.Vdata,
                     ldata = sample.Ldata
+                }),
+                updates = item.Updates.Select(sample => new
+                {
+                    position = ToNormalizedVector(sample.Position),
+                    id = sample.Id,
+                    damage = sample.Damage,
+                    vdata = sample.Vdata,
+                    vdataLowByte = sample.Vdata.HasValue ? (byte)(sample.Vdata.Value & 0xFF) : (byte?)null,
+                    vdataHighByte = sample.Vdata.HasValue ? (byte)(sample.Vdata.Value >> 8) : (byte?)null,
+                    slopeExistingCornerCount = CountSlopeExistingCorners(sample.Vdata),
+                    slopeExistingCorners = GetSlopeExistingCorners(sample.Vdata),
+                    slopeMissingCorners = GetSlopeMissingCorners(sample.Vdata),
+                    ldata = sample.Ldata,
+                    teamBits = sample.Ldata.HasValue ? sample.Ldata.Value & 0x03 : (int?)null,
+                    team = FormatBlockTeam(sample.Ldata),
+                    ldataFlags = sample.Ldata.HasValue ? sample.Ldata.Value & ~0x03 : (int?)null
                 })
             })
             .ToArray();
+
+        var mapStateTimeline = BuildMapStateTimeline(analysis, BuildBuildPlacements(analysis));
+        var mapStateVerification = VerifyMapStateTimeline(analysis, mapStateTimeline);
+        var mapState = new
+        {
+            initialState = new
+            {
+                blocksCsv = "map_blocks.csv",
+                nonEmptyBlockCount = analysis.DecodedMap?.NonEmptyBlocks.Count ?? 0,
+                size = ToNormalizedVector(analysis.DecodedMap?.Size)
+            },
+            timelineCsv = "map_state_timeline.csv",
+            timelineUpdateCount = mapStateTimeline.Count,
+            placementLinkedUpdateCount = mapStateTimeline.Count(static item => item.Placement is not null),
+            verification = new
+            {
+                report = "map_state_verification.txt",
+                finalCountsCsv = "map_state_final_counts.csv",
+                changedCellsCsv = "map_state_changed_cells.csv",
+                mapStateVerification.InitialNonEmptyBlockCount,
+                mapStateVerification.FinalNonEmptyBlockCount,
+                changedCellCount = mapStateVerification.ChangedCells.Count,
+                mapStateVerification.RepeatedCellCount,
+                mapStateVerification.DuplicateNoOpUpdates,
+                mapStateVerification.OutOfOrderUpdates,
+                finalBlockCounts = mapStateVerification.FinalBlockCounts.Take(64).Select(item => new
+                {
+                    item.Id,
+                    name = ResolveBlockName(analysis, item.Id),
+                    item.Count
+                })
+            },
+            samples = mapStateTimeline.Take(200).Select(item => new
+            {
+                item.Sequence,
+                t = Math.Round(item.Time, 3),
+                item.Source,
+                placementDeviceTime = item.Placement is null ? (double?)null : Math.Round(item.Placement.DeviceBuilt.Time, 3),
+                deviceKeyHash = item.Placement?.DeviceBuilt.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture),
+                deviceName = item.Placement is null ? "" : ResolveKeyName(analysis, item.Placement.DeviceBuilt.DeviceKeyHash),
+                direction = item.Placement?.BuildStart?.Direction,
+                position = ToNormalizedVector(item.Update.Position),
+                id = item.Update.Id,
+                name = item.Update.Id is ushort id ? ResolveBlockName(analysis, id) : "",
+                damage = item.Update.Damage,
+                vdata = item.Update.Vdata,
+                ldata = item.Update.Ldata,
+                team = FormatBlockTeam(item.Update.Ldata)
+            })
+        };
 
         var barrierUpdates = analysis.BarrierUpdates
             .OrderBy(static item => item.Time)
@@ -2608,14 +2920,22 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
             initMapDataAsset = analysis.InitZone.MapData is { Length: > 0 } ? "init_map_data.bin" : null,
             initColorDataAsset = analysis.InitZone.ColorData is { Length: > 0 } ? "init_color_data.bin" : null,
             initialBlockUpdateCount = analysis.InitZone.Updates.Count,
-            initialBlockUpdateSamples = analysis.InitZone.Updates.Take(200).Select(static item => new
-            {
-                position = ToNormalizedVector(item.Position),
-                item.Id,
-                item.Damage,
-                item.Vdata,
-                item.Ldata
-            }),
+                initialBlockUpdateSamples = analysis.InitZone.Updates.Take(200).Select(static item => new
+                {
+                    position = ToNormalizedVector(item.Position),
+                    item.Id,
+                    item.Damage,
+                    item.Vdata,
+                    vdataLowByte = item.Vdata.HasValue ? (byte)(item.Vdata.Value & 0xFF) : (byte?)null,
+                    vdataHighByte = item.Vdata.HasValue ? (byte)(item.Vdata.Value >> 8) : (byte?)null,
+                    slopeExistingCornerCount = CountSlopeExistingCorners(item.Vdata),
+                    slopeExistingCorners = GetSlopeExistingCorners(item.Vdata),
+                    slopeMissingCorners = GetSlopeMissingCorners(item.Vdata),
+                    item.Ldata,
+                    teamBits = item.Ldata.HasValue ? item.Ldata.Value & 0x03 : (int?)null,
+                    team = FormatBlockTeam(item.Ldata),
+                    ldataFlags = item.Ldata.HasValue ? item.Ldata.Value & ~0x03 : (int?)null
+                }),
             map = analysis.InitZone.Map is null ? null : new
             {
                 flags = analysis.InitZone.Map.Flags,
@@ -2683,7 +3003,15 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
                     name = ResolveBlockName(analysis, item.Id),
                     item.Damage,
                     item.Vdata,
+                    vdataLowByte = (byte)(item.Vdata & 0xFF),
+                    vdataHighByte = (byte)(item.Vdata >> 8),
+                    slopeExistingCornerCount = CountSlopeExistingCorners(item.Vdata),
+                    slopeExistingCorners = GetSlopeExistingCorners(item.Vdata),
+                    slopeMissingCorners = GetSlopeMissingCorners(item.Vdata),
                     item.Ldata,
+                    teamBits = item.Ldata & 0x03,
+                    team = FormatBlockTeam(item.Ldata),
+                    ldataFlags = item.Ldata & ~0x03,
                     item.Color
                 })
             }
@@ -2785,6 +3113,10 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
                 buildStarts = analysis.BuildStarts.Count,
                 buildCancels = analysis.BuildCancels.Count,
                 devicesBuilt = analysis.DevicesBuilt.Count,
+                buildPlacements = buildPlacements.Length,
+                buildPlacementFootprintUpdates = buildPlacements.Sum(static item => item.footprintUpdates.Count()),
+                mapStateTimelineUpdates = mapState.timelineUpdateCount,
+                mapStateTimelinePlacementUpdates = mapState.placementLinkedUpdateCount,
                 blockMined = analysis.BlockMined.Count,
                 zoneUpdates = analysis.ZoneUpdates.Count,
                 playerInfoRecords = analysis.ZoneUpdates.Sum(static item => item.PlayerInfo.Count),
@@ -2819,6 +3151,8 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
             buildStarts,
             buildCancels,
             devicesBuilt,
+            buildPlacements,
+            mapState,
             blockMined,
             zoneUpdates,
             blockUpdates,
@@ -3048,6 +3382,396 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
 
     private static string ResolveBlockName(ReplayAnalysis analysis, ushort blockId, string fallback = "") =>
         analysis.BlockNames.TryGetValue(blockId, out var name) ? name : fallback;
+
+    private static IReadOnlyList<BuildPlacementData> BuildBuildPlacements(ReplayAnalysis analysis)
+    {
+        var starts = analysis.BuildStarts.OrderBy(static item => item.Time).ToList();
+        var usedStarts = new HashSet<int>();
+        var blockUpdates = analysis.BlockUpdates
+            .SelectMany(static update => update.Updates.Select(sample => (time: update.Time, sample)))
+            .ToList();
+        var placements = new List<BuildPlacementData>(analysis.DevicesBuilt.Count);
+
+        foreach (var device in analysis.DevicesBuilt.OrderBy(static item => item.Time))
+        {
+            var cell = ToBlockCell(device.Position);
+            var matchedStartIndex = FindMatchingBuildStart(starts, usedStarts, device, cell);
+            BuildStartEvent? start = null;
+            if (matchedStartIndex.HasValue)
+            {
+                usedStarts.Add(matchedStartIndex.Value);
+                start = starts[matchedStartIndex.Value];
+            }
+
+            var blockUpdate = FindMatchingBlockUpdate(blockUpdates, device.Time, cell);
+            var footprintUpdates = FindFootprintBlockUpdates(blockUpdates, device.Time, cell);
+            placements.Add(new BuildPlacementData(device, start, cell, blockUpdate?.time, blockUpdate?.sample, footprintUpdates));
+        }
+
+        return placements;
+    }
+
+    private static IReadOnlyList<MapStateTimelineItem> BuildMapStateTimeline(ReplayAnalysis analysis, IReadOnlyList<BuildPlacementData> buildPlacements)
+    {
+        var placementByUpdate = new Dictionary<BlockUpdateKey, (string source, BuildPlacementData placement)>();
+        foreach (var placement in buildPlacements)
+        {
+            if (placement.BlockUpdateTime.HasValue && placement.BlockUpdate is not null)
+            {
+                placementByUpdate[new BlockUpdateKey(placement.BlockUpdateTime.Value, placement.BlockUpdate.Position)] = ("placement_center", placement);
+            }
+
+            foreach (var footprint in placement.FootprintUpdates)
+            {
+                var key = new BlockUpdateKey(footprint.Time, footprint.Sample.Position);
+                if (!placementByUpdate.ContainsKey(key))
+                {
+                    placementByUpdate[key] = ("placement_footprint", placement);
+                }
+            }
+        }
+
+        var items = new List<MapStateTimelineItem>();
+        var sequence = 0;
+        foreach (var update in analysis.BlockUpdates.OrderBy(static item => item.Time))
+        {
+            foreach (var sample in update.Updates)
+            {
+                var key = new BlockUpdateKey(update.Time, sample.Position);
+                if (placementByUpdate.TryGetValue(key, out var placement))
+                {
+                    items.Add(new MapStateTimelineItem(sequence++, update.Time, placement.source, sample, placement.placement));
+                }
+                else
+                {
+                    items.Add(new MapStateTimelineItem(sequence++, update.Time, "block_update", sample, null));
+                }
+            }
+        }
+
+        return items;
+    }
+
+    private static MapStateVerificationData VerifyMapStateTimeline(ReplayAnalysis analysis, IReadOnlyList<MapStateTimelineItem> timeline)
+    {
+        var initial = new Dictionary<Vector3s, MapBlockState>();
+        if (analysis.DecodedMap is not null)
+        {
+            foreach (var block in analysis.DecodedMap.NonEmptyBlocks)
+            {
+                initial[block.Position] = new MapBlockState(block.Id, block.Damage, block.Vdata, block.Ldata);
+            }
+        }
+
+        var current = new Dictionary<Vector3s, MapBlockState>(initial);
+        var updateCounts = new Dictionary<Vector3s, int>();
+        var duplicateNoOps = 0;
+        var outOfOrder = 0;
+        var previousTime = double.MinValue;
+        var expectedSequence = 0;
+
+        foreach (var item in timeline)
+        {
+            if (item.Sequence != expectedSequence || item.Time < previousTime)
+            {
+                outOfOrder++;
+            }
+
+            expectedSequence++;
+            previousTime = item.Time;
+
+            var position = item.Update.Position;
+            updateCounts[position] = updateCounts.GetValueOrDefault(position) + 1;
+            current.TryGetValue(position, out var previous);
+            var next = ApplyBlockUpdate(previous, item.Update);
+            if (next == previous)
+            {
+                duplicateNoOps++;
+            }
+
+            if (next.Id == 0)
+            {
+                current.Remove(position);
+            }
+            else
+            {
+                current[position] = next;
+            }
+        }
+
+        var changedCells = updateCounts
+            .Select(item =>
+            {
+                initial.TryGetValue(item.Key, out var initialState);
+                current.TryGetValue(item.Key, out var finalState);
+                return new MapStateChangedCell(item.Key, item.Value, initialState, finalState);
+            })
+            .Where(static item => item.Initial != item.Final)
+            .OrderByDescending(static item => item.UpdateCount)
+            .ThenBy(static item => item.Position.X)
+            .ThenBy(static item => item.Position.Y)
+            .ThenBy(static item => item.Position.Z)
+            .ToArray();
+
+        var finalCounts = current.Values
+            .GroupBy(static item => item.Id)
+            .Select(static group => new DecodedMapBlockCount(group.Key, group.Count()))
+            .OrderByDescending(static item => item.Count)
+            .ThenBy(static item => item.Id)
+            .ToArray();
+
+        return new MapStateVerificationData(
+            initial.Values.Count(static item => item.Id != 0),
+            current.Values.Count(static item => item.Id != 0),
+            initial.Count,
+            current.Count,
+            updateCounts.Count(static item => item.Value > 1),
+            duplicateNoOps,
+            outOfOrder,
+            finalCounts,
+            changedCells);
+    }
+
+    private static MapBlockState ApplyBlockUpdate(MapBlockState previous, BlockUpdateSample update) => new(
+        update.Id ?? previous.Id,
+        update.Damage ?? previous.Damage,
+        update.Vdata ?? previous.Vdata,
+        update.Ldata ?? previous.Ldata);
+
+    private static void WriteMapStateVerification(string path, ReplayAnalysis analysis, MapStateVerificationData verification)
+    {
+        var lines = new[]
+        {
+            "Map state timeline verification",
+            $"Initial renderable non-air blocks: {verification.InitialNonEmptyBlockCount}",
+            $"Final renderable non-air blocks: {verification.FinalNonEmptyBlockCount}",
+            $"Initial tracked cells: {verification.InitialTrackedCellCount}",
+            $"Final tracked cells: {verification.FinalTrackedCellCount}",
+            $"Changed cells: {verification.ChangedCells.Count}",
+            $"Repeated cells: {verification.RepeatedCellCount}",
+            $"Duplicate no-op updates: {verification.DuplicateNoOpUpdates}",
+            $"Out-of-order updates: {verification.OutOfOrderUpdates}",
+            $"Final block types: {verification.FinalBlockCounts.Count}",
+            "",
+            "Top final block counts:",
+            string.Join(Environment.NewLine, verification.FinalBlockCounts.Take(25).Select(item => $"{item.Id} {ResolveBlockName(analysis, item.Id)}: {item.Count}")),
+            "",
+            "Notes:",
+            "A duplicate no-op means the timeline wrote the same final state already present at that cell.",
+            "Repeated cells are expected during combat, repairs, trap effects, and mining.",
+            "Out-of-order updates should be 0; non-zero means sequence/time ordering needs investigation."
+        };
+
+        File.WriteAllLines(path, lines, new UTF8Encoding(false));
+    }
+
+    private static int? FindMatchingBuildStart(IReadOnlyList<BuildStartEvent> starts, HashSet<int> usedStarts, DeviceBuiltEvent device, Vector3s cell)
+    {
+        int? bestIndex = null;
+        var bestScore = double.MaxValue;
+
+        for (var i = 0; i < starts.Count; i++)
+        {
+            if (usedStarts.Contains(i))
+            {
+                continue;
+            }
+
+            var start = starts[i];
+            if (start.DeviceKeyHash != device.DeviceKeyHash)
+            {
+                continue;
+            }
+
+            var delta = device.Time - start.Time;
+            if (delta < -0.05 || delta > 8)
+            {
+                continue;
+            }
+
+            var hasPosition = IsNonZero(start.InsidePosition) || IsNonZero(start.OutsidePosition);
+            var positionMatches = PositionsMatch(start.InsidePosition, cell) || PositionsMatch(start.OutsidePosition, cell);
+            if (hasPosition && !positionMatches)
+            {
+                continue;
+            }
+
+            var score = delta + (positionMatches ? 0 : 4);
+            if (score < bestScore)
+            {
+                bestScore = score;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    private static (double time, BlockUpdateSample sample)? FindMatchingBlockUpdate(IReadOnlyList<(double time, BlockUpdateSample sample)> updates, double deviceTime, Vector3s cell)
+    {
+        (double time, BlockUpdateSample sample)? best = null;
+        var bestDelta = double.MaxValue;
+        foreach (var update in updates)
+        {
+            if (update.sample.Position != cell)
+            {
+                continue;
+            }
+
+            var delta = Math.Abs(update.time - deviceTime);
+            if (delta > 1)
+            {
+                continue;
+            }
+
+            if (delta < bestDelta)
+            {
+                bestDelta = delta;
+                best = update;
+            }
+        }
+
+        return best;
+    }
+
+    private static IReadOnlyList<BuildPlacementFootprintUpdate> FindFootprintBlockUpdates(IReadOnlyList<(double time, BlockUpdateSample sample)> updates, double deviceTime, Vector3s cell)
+    {
+        var results = new List<BuildPlacementFootprintUpdate>();
+        foreach (var update in updates)
+        {
+            var dt = update.time - deviceTime;
+            if (dt < -0.5 || dt > 1)
+            {
+                continue;
+            }
+
+            var dx = update.sample.Position.X - cell.X;
+            var dy = update.sample.Position.Y - cell.Y;
+            var dz = update.sample.Position.Z - cell.Z;
+            var distance = Math.Max(Math.Abs(dx), Math.Max(Math.Abs(dy), Math.Abs(dz)));
+            if (distance > 2)
+            {
+                continue;
+            }
+
+            results.Add(new BuildPlacementFootprintUpdate(update.time, update.sample, dx, dy, dz, distance));
+        }
+
+        return results
+            .OrderBy(static item => item.Distance)
+            .ThenBy(static item => item.Time)
+            .ThenBy(static item => item.Sample.Position.X)
+            .ThenBy(static item => item.Sample.Position.Y)
+            .ThenBy(static item => item.Sample.Position.Z)
+            .ToList();
+    }
+
+    private static Vector3s ToBlockCell(Vector3f position) => new(
+        (short)Math.Floor(position.X),
+        (short)Math.Floor(position.Y),
+        (short)Math.Floor(position.Z));
+
+    private static bool PositionsMatch(Vector3s? position, Vector3s cell) =>
+        position.HasValue && position.Value == cell;
+
+    private static bool IsNonZero(Vector3s? position) =>
+        position.HasValue && position.Value != default;
+
+    private static string FormatVdataLowByte(ushort? vdata) =>
+        vdata.HasValue ? ((byte)(vdata.Value & 0xFF)).ToString(CultureInfo.InvariantCulture) : "";
+
+    private static string FormatVdataHighByte(ushort? vdata) =>
+        vdata.HasValue ? ((byte)(vdata.Value >> 8)).ToString(CultureInfo.InvariantCulture) : "";
+
+    private static string FormatSlopeExistingCornerCount(ushort? vdata) =>
+        CountSlopeExistingCorners(vdata)?.ToString(CultureInfo.InvariantCulture) ?? "";
+
+    private static int? CountSlopeExistingCorners(ushort? vdata)
+    {
+        if (!vdata.HasValue)
+        {
+            return null;
+        }
+
+        var lowByte = (byte)(vdata.Value & 0xFF);
+        var count = 0;
+        for (var i = 0; i < SlopeCornerNames.Length; i++)
+        {
+            if ((lowByte & (1 << i)) == 0)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private static string FormatSlopeExistingCorners(ushort? vdata) =>
+        string.Join("|", GetSlopeExistingCorners(vdata));
+
+    private static string FormatSlopeMissingCorners(ushort? vdata) =>
+        string.Join("|", GetSlopeMissingCorners(vdata));
+
+    private static IReadOnlyList<string> GetSlopeExistingCorners(ushort? vdata)
+    {
+        if (!vdata.HasValue)
+        {
+            return [];
+        }
+
+        var lowByte = (byte)(vdata.Value & 0xFF);
+        var corners = new List<string>(SlopeCornerNames.Length);
+        for (var i = 0; i < SlopeCornerNames.Length; i++)
+        {
+            if ((lowByte & (1 << i)) == 0)
+            {
+                corners.Add(SlopeCornerNames[i]);
+            }
+        }
+
+        return corners;
+    }
+
+    private static IReadOnlyList<string> GetSlopeMissingCorners(ushort? vdata)
+    {
+        if (!vdata.HasValue)
+        {
+            return [];
+        }
+
+        var lowByte = (byte)(vdata.Value & 0xFF);
+        var corners = new List<string>(SlopeCornerNames.Length);
+        for (var i = 0; i < SlopeCornerNames.Length; i++)
+        {
+            if ((lowByte & (1 << i)) != 0)
+            {
+                corners.Add(SlopeCornerNames[i]);
+            }
+        }
+
+        return corners;
+    }
+
+    private static string FormatTeamBits(byte? ldata) =>
+        ldata.HasValue ? (ldata.Value & 0x03).ToString(CultureInfo.InvariantCulture) : "";
+
+    private static string FormatBlockTeam(byte? ldata)
+    {
+        if (!ldata.HasValue)
+        {
+            return "";
+        }
+
+        return (ldata.Value & 0x03) switch
+        {
+            1 => "Team1",
+            2 => "Team2",
+            _ => "Neutral"
+        };
+    }
+
+    private static string FormatLdataFlags(byte? ldata) =>
+        ldata.HasValue ? (ldata.Value & ~0x03).ToString(CultureInfo.InvariantCulture) : "";
 
     private static string FormatKeyHashes(IReadOnlyList<uint> keyHashes) =>
         string.Join("|", keyHashes.Select(static key => key.ToString("X8", CultureInfo.InvariantCulture)));
@@ -3783,6 +4507,26 @@ internal sealed record DeviceBuiltEvent(double Time, uint UnitId, uint DeviceKey
     public string UnitIdText => UnitId.ToString(CultureInfo.InvariantCulture);
 }
 
+internal sealed record BuildPlacementData(DeviceBuiltEvent DeviceBuilt, BuildStartEvent? BuildStart, Vector3s Cell, double? BlockUpdateTime, BlockUpdateSample? BlockUpdate, IReadOnlyList<BuildPlacementFootprintUpdate> FootprintUpdates);
+internal sealed record BuildPlacementFootprintUpdate(double Time, BlockUpdateSample Sample, int Dx, int Dy, int Dz, int Distance);
+internal readonly record struct BlockUpdateKey(double Time, Vector3s Position);
+internal sealed record MapStateTimelineItem(int Sequence, double Time, string Source, BlockUpdateSample Update, BuildPlacementData? Placement)
+{
+    public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
+}
+internal readonly record struct MapBlockState(ushort Id, byte Damage, ushort Vdata, byte Ldata);
+internal sealed record MapStateChangedCell(Vector3s Position, int UpdateCount, MapBlockState Initial, MapBlockState Final);
+internal sealed record MapStateVerificationData(
+    int InitialNonEmptyBlockCount,
+    int FinalNonEmptyBlockCount,
+    int InitialTrackedCellCount,
+    int FinalTrackedCellCount,
+    int RepeatedCellCount,
+    int DuplicateNoOpUpdates,
+    int OutOfOrderUpdates,
+    IReadOnlyList<DecodedMapBlockCount> FinalBlockCounts,
+    IReadOnlyList<MapStateChangedCell> ChangedCells);
+
 internal sealed record ZoneUpdateEvent(double Time, string Flags, ZonePhaseData? Phase, MatchStatsData? Stats, IReadOnlyList<SpawnPointData> SpawnPoints, IReadOnlyList<PlayerSpawnPointData> PlayerSpawnPoints, IReadOnlyList<RespawnInfoData> RespawnInfo, IReadOnlyList<ZonePlayerInfoData> PlayerInfo, SupplyInfoData? SupplyInfo, IReadOnlyList<ZoneObjectiveData> Objectives, float? ResourceCap)
 {
     public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
@@ -3799,7 +4543,7 @@ internal sealed record ZonePlayerInfoData(uint PlayerId, string? Nickname, ulong
 internal sealed record SupplyInfoData(uint? NextSupplyDropKeyHash, ulong? NextSupplyDropTime, Vector3f? Position);
 internal sealed record ZoneObjectiveData(string? Team, int? Id, int? Counter, int? RequiredCounter);
 
-internal sealed record BlockUpdatesEvent(double Time, int Count, IReadOnlyList<BlockUpdateSample> Samples)
+internal sealed record BlockUpdatesEvent(double Time, int Count, IReadOnlyList<BlockUpdateSample> Samples, IReadOnlyList<BlockUpdateSample> Updates)
 {
     public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
 }

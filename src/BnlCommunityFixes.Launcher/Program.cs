@@ -19,10 +19,17 @@ internal static class Program
 
         try
         {
-            var bootstrapper = new AppBootstrapper(paths, logger);
-            if (await bootstrapper.EnsureInstalledAsync(args))
+            if (runtimeOptions.PortableMode)
             {
-                return;
+                logger.Info("Portable launcher mode enabled; skipping bootstrap install/redirect.");
+            }
+            else
+            {
+                var bootstrapper = new AppBootstrapper(paths, logger);
+                if (await bootstrapper.EnsureInstalledAsync(args))
+                {
+                    return;
+                }
             }
 
             var bundledAssetService = new BundledPatchingAssetService(paths, logger);
@@ -41,13 +48,20 @@ internal static class Program
             logger.Info($"Using manifest source '{settings.ManifestUrl}'.");
 
             using var httpClient = new HttpClient();
-            var updateCoordinator = new UpdateCoordinator(paths, logger, settings, runtimeOptions, httpClient);
-            var updateResult = await updateCoordinator.CheckAndApplyIfAcceptedAsync();
-            if (updateResult.ShouldExitForUpdate)
+            if (runtimeOptions.PortableMode)
             {
-                logger.Info("Exiting for update.");
-                Environment.Exit(0);
-                return;
+                logger.Info("Portable launcher mode enabled; skipping update check.");
+            }
+            else
+            {
+                var updateCoordinator = new UpdateCoordinator(paths, logger, settings, runtimeOptions, httpClient);
+                var updateResult = await updateCoordinator.CheckAndApplyIfAcceptedAsync();
+                if (updateResult.ShouldExitForUpdate)
+                {
+                    logger.Info("Exiting for update.");
+                    Environment.Exit(0);
+                    return;
+                }
             }
 
             if (runtimeOptions.HeadlessSmokeTest)

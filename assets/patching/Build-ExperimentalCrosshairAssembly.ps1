@@ -1022,13 +1022,6 @@ namespace BnlCommunityFixes
                 return false;
             }
 
-            // Respect camera visibility — don't show bars for units behind the camera
-            GuiFollow follow = ReferenceEquals(FollowField, null) ? null : FollowField.GetValue(healthbar) as GuiFollow;
-            if (follow == null || !follow.IsInFrontOfCamera)
-            {
-                return false;
-            }
-
             Unit unit = ReferenceEquals(UnitFieldStatic, null) ? null : UnitFieldStatic.GetValue(healthbar) as Unit;
             if (unit == null || unit.IsMyPlayer || !unit.PlayerId.HasValue || unit.IsDeath)
             {
@@ -1046,6 +1039,20 @@ namespace BnlCommunityFixes
                 return false;
             }
 
+            GuiFollow follow = ReferenceEquals(FollowField, null) ? null : FollowField.GetValue(healthbar) as GuiFollow;
+            if (follow == null || !follow.IsInFrontOfCamera)
+            {
+                return false;
+            }
+
+            // During deathcam (CameraDeath singleton is active) show bar for all in-camera friendlies.
+            CameraDeath deathCamInst = Singleton<CameraDeath>.Instance;
+            if (deathCamInst != null && deathCamInst.Target != null)
+            {
+                return true;
+            }
+
+            // Alive: only show when below threshold.
             float maxHp = unit.MaxHealth;
             if (maxHp <= 0f)
             {
@@ -2291,6 +2298,15 @@ namespace BnlCommunityFixes
             return healthbarUnit.Team == player.Team;
         }
 
+        public static void AttachDeathCamController(GuiHealthbar healthbar)
+        {
+            if (healthbar == null) return;
+            DeathCamHealthbarController ctrl = healthbar.gameObject.GetComponent<DeathCamHealthbarController>();
+            if (ctrl == null)
+                ctrl = healthbar.gameObject.AddComponent<DeathCamHealthbarController>();
+            ctrl.Init(healthbar);
+        }
+
         public static void UpdateDeathCamHpText(UnityEngine.UI.Text nicknameText)
         {
             if (!RuntimeFeatureState.DeathCamHealthbarEnabled) return;
@@ -2323,6 +2339,43 @@ namespace BnlCommunityFixes
                 nicknameText.text = playerName + hpInfo;
             }
             catch { }
+        }
+    }
+
+    public sealed class DeathCamHealthbarController : MonoBehaviour
+    {
+        private static readonly float LowThreshold = $(Format-FloatLiteral $FriendlyLowHealthThreshold);
+        private static readonly Color AlertColor = new Color($(Format-FloatLiteral $FriendlyLowHealthColor.R), $(Format-FloatLiteral $FriendlyLowHealthColor.G), $(Format-FloatLiteral $FriendlyLowHealthColor.B), 1f);
+        private static readonly FieldInfo UnitField = typeof(GuiHealthbar).GetField("unit", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private GuiHealthbar healthbar;
+
+        public void Init(GuiHealthbar source)
+        {
+            healthbar = source;
+        }
+
+        private void LateUpdate()
+        {
+            if (!RuntimeFeatureState.DeathCamHealthbarEnabled) return;
+            if (healthbar == null || healthbar.HealthBar == null) return;
+
+            Unit unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(healthbar) as Unit;
+            if (unit == null || unit.IsMyPlayer || !unit.PlayerId.HasValue || unit.IsDeath) return;
+
+            UnitsRegistry registry = Singleton<UnitsRegistry>.Instance;
+            Unit myPlayer = registry != null ? registry.GetPlayer() : null;
+            if (myPlayer == null || !myPlayer.IsDeath) return;
+            if (unit.Team != myPlayer.Team) return;
+
+            float maxHp = unit.MaxHealth;
+            bool isLow = maxHp > 0f && (unit.Health / maxHp) <= LowThreshold;
+            if (isLow)
+            {
+                healthbar.HealthBar.color = AlertColor;
+                if (healthbar.Title != null)
+                    healthbar.Title.color = AlertColor;
+            }
         }
     }
 }
@@ -4403,6 +4456,27 @@ if ($DeathCamHealthbarConfig.enabled) {
                 $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
                 $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, [single]1.0))
                 $AlphaIlDeathCam.InsertBefore($AlphaFirstInstrDeathCam, $AlphaIlDeathCam.Create([Mono.Cecil.Cil.OpCodes]::Stfld, ($GuiHealthbarType.Fields | Where-Object Name -eq "showTime" | Select-Object -First 1)))
+            }
+        }
+    }
+
+    # Attach DeathCamHealthbarController to every GuiHealthbar via Start()
+    $DeathCamCtrlType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.DeathCamHealthbarController" | Select-Object -First 1
+    if ($DeathCamCtrlType) {
+        $AttachDeathCamMethod = ($DeathCamRuntimeType.Methods | Where-Object Name -eq "AttachDeathCamController" | Select-Object -First 1)
+        if ($AttachDeathCamMethod) {
+            $ImportedAttachDeathCam = $Module.ImportReference($AttachDeathCamMethod)
+            $GuiHealthbarTypeForCtrl = $Module.Types | Where-Object Name -eq "GuiHealthbar" | Select-Object -First 1
+            if ($GuiHealthbarTypeForCtrl) {
+                $GuiHealthbarStartForCtrl = $GuiHealthbarTypeForCtrl.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+                if ($GuiHealthbarStartForCtrl -and $GuiHealthbarStartForCtrl.HasBody) {
+                    $StartIlCtrl = $GuiHealthbarStartForCtrl.Body.GetILProcessor()
+                    $StartRetCtrl = @($GuiHealthbarStartForCtrl.Body.Instructions) | Where-Object { $_.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Ret } | Select-Object -Last 1
+                    if ($StartRetCtrl) {
+                        $StartIlCtrl.InsertBefore($StartRetCtrl, $StartIlCtrl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+                        $StartIlCtrl.InsertBefore($StartRetCtrl, $StartIlCtrl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedAttachDeathCam))
+                    }
+                }
             }
         }
     }
