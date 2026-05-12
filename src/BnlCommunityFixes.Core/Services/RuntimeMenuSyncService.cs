@@ -246,6 +246,55 @@ public sealed class RuntimeMenuSyncService
         catch { }
     }
 
+    public LocalBuildPreviewSettings ReadLocalBuildPreviewSettings(string runtimeConfigPath, LocalBuildPreviewSettings current)
+    {
+        if (!File.Exists(runtimeConfigPath))
+            return current;
+
+        try
+        {
+            var lines = File.ReadAllLines(runtimeConfigPath);
+            foreach (var line in lines)
+            {
+                var sep = line.IndexOf('=');
+                if (sep <= 0) continue;
+                var key = line[..sep].Trim();
+                var val = line[(sep + 1)..].Trim();
+                switch (key)
+                {
+                    case "local_build_preview_enabled":
+                        if (bool.TryParse(val, out var b)) current.Enabled = b; break;
+                    case "local_build_preview_timeout_seconds":
+                        if (TryParseDouble(val, out var d)) current.PredictionTimeoutSeconds = d; break;
+                }
+            }
+        }
+        catch { }
+
+        return current;
+    }
+
+    public void WriteLocalBuildPreviewSettings(string runtimeConfigPath, LocalBuildPreviewSettings settings)
+    {
+        try
+        {
+            var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(runtimeConfigPath))
+            {
+                foreach (var line in File.ReadAllLines(runtimeConfigPath))
+                {
+                    var sep = line.IndexOf('=');
+                    if (sep <= 0) continue;
+                    existing[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+                }
+            }
+            existing["local_build_preview_enabled"] = settings.Enabled.ToString();
+            existing["local_build_preview_timeout_seconds"] = settings.PredictionTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
+            File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
+        }
+        catch { }
+    }
+
     private static void ApplyKeyValue(DamageHealingSettings s, string key, string val)
     {
         switch (key)

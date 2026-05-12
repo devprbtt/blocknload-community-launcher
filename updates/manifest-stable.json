@@ -1,21 +1,21 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.3.6",
+  "version": "2.3.7",
   "minimum_supported_version": "2.3.0",
-  "published_at": "2026-05-12T02:00:00.0000000+00:00",
-  "notes": "# v2.3.6\n\n## Fixes\n- Crosshair forced shape, size, spread, alpha, and ADS visibility now sync correctly with the runtime save file — changes made in the launcher were being overridden by the in-game saved state on the next launch.\n",
+  "published_at": "2026-05-12T02:30:00.0000000+00:00",
+  "notes": "# v2.3.7\n\n## Fixes\n- Local Build Preview: the enabled/disabled toggle in the launcher now stays in sync with the F8 in-game menu. Previously the launcher could show it as ON while the F8 menu (which is the live authority) showed it as OFF.\n",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.6/BnlCommunityFixes.exe",
-      "sha256": "125DCD199A9F5C8505A11A4808EAD1ED35AD55B247551E260BEDB38050FEA6F0",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.7/BnlCommunityFixes.exe",
+      "sha256": "01029DF5AE95D59B387819462A8925BE137E4A406E4D765D673DCCB05E7E4755",
       "size": 162872519
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.6/BnlUpdater.exe",
-      "sha256": "01232C0C907B614EB479AF838B6281F0A7A755C42CA4D98C4EC10E4438BFC39F",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.7/BnlUpdater.exe",
+      "sha256": "1B99FE4736710F76ADCBEE3565114EA93C07F8B8AA71C778F1CB88876864B631",
       "size": 67618546
     }
   }

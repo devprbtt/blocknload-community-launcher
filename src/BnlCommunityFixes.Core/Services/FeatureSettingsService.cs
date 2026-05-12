@@ -127,8 +127,26 @@ public sealed class FeatureSettingsService
     public ShieldBuffBarSettings LoadShieldBuffBarSettings() => Load("experimental-enemy-shield-buffbar-config.json", new ShieldBuffBarSettings());
     public void SaveShieldBuffBarSettings(ShieldBuffBarSettings settings) => Save("experimental-enemy-shield-buffbar-config.json", settings);
 
-    public LocalBuildPreviewSettings LoadLocalBuildPreviewSettings() => Load("experimental-local-build-preview-config.json", new LocalBuildPreviewSettings());
-    public void SaveLocalBuildPreviewSettings(LocalBuildPreviewSettings settings) => Save("experimental-local-build-preview-config.json", settings);
+    public LocalBuildPreviewSettings LoadLocalBuildPreviewSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "experimental-local-build-preview-config.json");
+        var settings = Load("experimental-local-build-preview-config.json", new LocalBuildPreviewSettings());
+        // Only sync the runtime toggle when the feature is baked in (Enabled=true).
+        // If it's disabled in the launcher the F8 entry doesn't exist, nothing to sync.
+        if (settings.Enabled && runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            settings = runtimeSync.ReadLocalBuildPreviewSettings(runtimeConfigPath, settings);
+            Save("experimental-local-build-preview-config.json", settings);
+        }
+        return settings;
+    }
+
+    public void SaveLocalBuildPreviewSettings(LocalBuildPreviewSettings settings)
+    {
+        Save("experimental-local-build-preview-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteLocalBuildPreviewSettings(runtimeConfigPath, settings);
+    }
 
     public AimHealthbarSettings LoadAimHealthbarSettings() => Load("aim-healthbar-config.json", new AimHealthbarSettings());
     public void SaveAimHealthbarSettings(AimHealthbarSettings settings) => Save("aim-healthbar-config.json", settings);
