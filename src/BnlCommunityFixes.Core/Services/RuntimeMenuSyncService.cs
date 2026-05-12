@@ -133,6 +133,58 @@ public sealed class RuntimeMenuSyncService
         catch { }
     }
 
+    public FovSettings ReadFovSettings(string runtimeConfigPath, FovSettings current)
+    {
+        if (!File.Exists(runtimeConfigPath))
+            return current;
+
+        try
+        {
+            var lines = File.ReadAllLines(runtimeConfigPath);
+            foreach (var line in lines)
+            {
+                var sep = line.IndexOf('=');
+                if (sep <= 0) continue;
+                var key = line[..sep].Trim();
+                var val = line[(sep + 1)..].Trim();
+                switch (key)
+                {
+                    case "fov":
+                        if (TryParseDouble(val, out var d)) current.Fov = d; break;
+                    case "ads_sensitivity_multiplier":
+                        if (TryParseDouble(val, out d)) current.AdsSensitivityMultiplier = d; break;
+                    case "weapon_model_fov":
+                        if (TryParseDouble(val, out d)) current.WeaponModelFov = d; break;
+                }
+            }
+        }
+        catch { }
+
+        return current;
+    }
+
+    public void WriteFovSettings(string runtimeConfigPath, FovSettings settings)
+    {
+        try
+        {
+            var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(runtimeConfigPath))
+            {
+                foreach (var line in File.ReadAllLines(runtimeConfigPath))
+                {
+                    var sep = line.IndexOf('=');
+                    if (sep <= 0) continue;
+                    existing[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+                }
+            }
+            existing["fov"] = settings.Fov.ToString(CultureInfo.InvariantCulture);
+            existing["ads_sensitivity_multiplier"] = settings.AdsSensitivityMultiplier.ToString(CultureInfo.InvariantCulture);
+            existing["weapon_model_fov"] = settings.WeaponModelFov.ToString(CultureInfo.InvariantCulture);
+            File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
+        }
+        catch { }
+    }
+
     private static void ApplyKeyValue(DamageHealingSettings s, string key, string val)
     {
         switch (key)

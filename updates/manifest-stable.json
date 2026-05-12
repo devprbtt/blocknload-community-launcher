@@ -1,22 +1,22 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "minimum_supported_version": "2.3.0",
-  "published_at": "2026-05-11T21:00:00.0000000+00:00",
-  "notes": "# v2.3.4\n\n## Fixes\n- Local Build Preview: ghost crate placements are now less frequent — server rejection is detected immediately and the local block rolls back without waiting for the timeout.\n- Local Build Preview: bounce pads and speed pads no longer show an incorrect upside-down preview when placed; they now wait for server confirmation like normal.\n",
+  "published_at": "2026-05-12T01:08:11.0221796+00:00",
+  "notes": "# v2.3.5\n\n## Fixes\n- FOV / ADS sensitivity: settings in the launcher now correctly take effect after the game rewrites them at startup (same sync fix previously applied to team colors).\n\n## Features\n- Skip intro: new option in Feature Settings > Misc tab to bypass the warning screen and intro video on game start. Enabled by default.\n- Disable main menu frame cap: new option in Feature Settings > Misc tab to uncap FPS while on the main menu screen. Enabled by default.\n- Import / Export configs: new Import / Export button in the main window — share your full config or individual features with others via a zip bundle.\n",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.4/BnlCommunityFixes.exe",
-      "sha256": "E49D71ACE62A654273307CE98E873504B96138A7E12866E73E4429EE4678D76D",
-      "size": 162851015
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.5/BnlCommunityFixes.exe",
+      "sha256": "36405F92FBC79ABD8C1EB7ADE5E73B55CE8CA0068C40E869116A28402951BDFC",
+      "size": 162868423
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.4/BnlUpdater.exe",
-      "sha256": "ED4B9548DC263C4E7B44816295AC07929704455DAD9C31F783DFA63B5EB16F1A",
-      "size": 67617522
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.5/BnlUpdater.exe",
+      "sha256": "5CC0F7E7454756CE6A6902AAA32682DC5BE14F8A7F03447F1C1406955679DD08",
+      "size": 67618546
     }
   }
 }

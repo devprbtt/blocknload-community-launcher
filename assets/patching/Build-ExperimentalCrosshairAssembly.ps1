@@ -214,7 +214,9 @@ $AnyEnabled = @(
     [bool]$AimHealthbarConfig.enabled,
     [bool]$DeathCamHealthbarConfig.enabled,
     [bool]$AutoCasualQueueConfig.enabled,
-    [bool]$FriendlyLowHealthConfig.enabled
+    [bool]$FriendlyLowHealthConfig.enabled,
+    $SkipIntroEnabled,
+    $DisableMainMenuFrameCapEnabled
 ) -contains $true
 
 if (-not $AnyEnabled) {
@@ -386,6 +388,8 @@ $FriendlyLowHealthColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrWh
 [bool]$FriendlyLowHealthIndicatorEnabled = if ($null -ne $FriendlyLowHealthConfig.show_direction_indicator) { [bool]$FriendlyLowHealthConfig.show_direction_indicator } else { $true }
 [double]$FriendlyLowHealthIndicatorSize = if ($null -ne $FriendlyLowHealthConfig.indicator_size) { [double]$FriendlyLowHealthConfig.indicator_size } else { 1.0 }
 [double]$FriendlyLowHealthIndicatorAlpha = if ($null -ne $FriendlyLowHealthConfig.indicator_alpha) { [double]$FriendlyLowHealthConfig.indicator_alpha } else { 1.0 }
+[bool]$SkipIntroEnabled = if ($null -ne $DebugMenuConfig.skip_intro) { [bool]$DebugMenuConfig.skip_intro } else { $false }
+[bool]$DisableMainMenuFrameCapEnabled = if ($null -ne $DebugMenuConfig.disable_main_menu_frame_cap) { [bool]$DebugMenuConfig.disable_main_menu_frame_cap } else { $false }
 [string]$DebugMenuKeyName = if ($null -ne $DebugMenuConfig.debug_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.debug_menu_key)) { [string]$DebugMenuConfig.debug_menu_key } else { "F9" }
 [string]$DebugMainMenuKeyName = if ($null -ne $DebugMenuConfig.main_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.main_menu_key)) { [string]$DebugMenuConfig.main_menu_key } else { "F10" }
 [string]$DebugLobbyMenuKeyName = if ($null -ne $DebugMenuConfig.lobby_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.lobby_menu_key)) { [string]$DebugMenuConfig.lobby_menu_key } else { "F11" }
@@ -4414,6 +4418,49 @@ if ($AutoCasualQueueConfig.enabled) {
     $MainMenuStartIl2 = $MainMenuStartMethod2.Body.GetILProcessor()
     $MainMenuStartFirst2 = $MainMenuStartMethod2.Body.Instructions | Select-Object -First 1
     $MainMenuStartIl2.InsertBefore($MainMenuStartFirst2, $MainMenuStartIl2.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedEnsureAutoCasualQueue))
+}
+
+# Disable frame cap on main menu — patch SceneManager::ServerLoadMainMenu and ServerLoadLobby
+# to pass -1 instead of 60 to SetTargetFramerate::.ctor so the cap is never applied.
+if ($DisableMainMenuFrameCapEnabled) {
+    $FcSceneManagerType = $Module.Types | Where-Object Name -eq "SceneManager" | Select-Object -First 1
+    if (-not $FcSceneManagerType) { throw "SceneManager type not found." }
+
+    foreach ($FcMethodName in @("ServerLoadMainMenu", "ServerLoadLobby")) {
+        $FcMethod = $FcSceneManagerType.Methods | Where-Object Name -eq $FcMethodName | Select-Object -First 1
+        if (-not $FcMethod -or -not $FcMethod.HasBody) { throw "$FcMethodName not found." }
+        # Find the ldc.i4.s 60 immediately before the SetTargetFramerate newobj call
+        # and mutate it in-place to ldc.i4.m1 (-1)
+        $FcInstructions = $FcMethod.Body.Instructions
+        for ($i = 1; $i -lt $FcInstructions.Count; $i++) {
+            $instr = $FcInstructions[$i]
+            if ($instr.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Newobj -and
+                $instr.Operand -and $instr.Operand.ToString() -match "SetTargetFramerate") {
+                $prev = $FcInstructions[$i - 1]
+                $prev.OpCode = [Mono.Cecil.Cil.OpCodes]::Ldc_I4_M1
+                $prev.Operand = $null
+                break
+            }
+        }
+    }
+}
+
+# Skip intro — patch GuiLoginIntro.Start() to immediately call FinishWarning() + FinishIntro()
+if ($SkipIntroEnabled) {
+    $GuiLoginIntroType = $Module.Types | Where-Object Name -eq "GuiLoginIntro" | Select-Object -First 1
+    if (-not $GuiLoginIntroType) { throw "GuiLoginIntro type not found." }
+    $IntroStartMethod     = $GuiLoginIntroType.Methods | Where-Object Name -eq "Start"         | Select-Object -First 1
+    $FinishWarningMethod  = $GuiLoginIntroType.Methods | Where-Object Name -eq "FinishWarning"  | Select-Object -First 1
+    $FinishIntroMethod    = $GuiLoginIntroType.Methods | Where-Object Name -eq "FinishIntro"    | Select-Object -First 1
+    if (-not $IntroStartMethod -or -not $FinishWarningMethod -or -not $FinishIntroMethod) { throw "GuiLoginIntro methods not found." }
+    $IntroStartIl  = $IntroStartMethod.Body.GetILProcessor()
+    $IntroStartRet = $IntroStartMethod.Body.Instructions | Where-Object { $_.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Ret } | Select-Object -First 1
+    Insert-Before -Il $IntroStartIl -Target $IntroStartRet -Instructions @(
+        $IntroStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0),
+        $IntroStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $FinishWarningMethod),
+        $IntroStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0),
+        $IntroStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $FinishIntroMethod)
+    )
 }
 
 $Assembly.Write($OutputPath)

@@ -21,6 +21,7 @@ public sealed class LauncherMainForm : Form
     private readonly ComboBox serverComboBox;
     private readonly Button launchButton;
     private readonly Button featureSettingsButton;
+    private readonly Button importExportButton;
     private readonly Button moreOptionsButton;
     private readonly Button openReplayFolderButton;
     private readonly Button analyzeReplayButton;
@@ -147,10 +148,18 @@ public sealed class LauncherMainForm : Form
         };
         featureSettingsButton.Click += (_, _) => OpenFeatureSettings();
 
+        importExportButton = new Button
+        {
+            Text = "Import / Export...",
+            Location = new System.Drawing.Point(150, 212),
+            Size = new System.Drawing.Size(120, 28)
+        };
+        importExportButton.Click += (_, _) => OpenConfigTransfer();
+
         moreOptionsButton = new Button
         {
             Text = "More options...",
-            Location = new System.Drawing.Point(150, 212),
+            Location = new System.Drawing.Point(276, 212),
             Size = new System.Drawing.Size(110, 28)
         };
         moreOptionsButton.Click += (_, _) => OpenMoreOptions();
@@ -208,6 +217,7 @@ public sealed class LauncherMainForm : Form
             serverComboBox,
             launchButton,
             featureSettingsButton,
+            importExportButton,
             moreOptionsButton,
             replayLabel,
             openReplayFolderButton,
@@ -380,6 +390,12 @@ public sealed class LauncherMainForm : Form
         using var form = new FeatureSettingsForm(paths, installInfo);
         form.ShowDialog(this);
         UpdateStatusSummary();
+    }
+
+    private void OpenConfigTransfer()
+    {
+        using var form = new ConfigTransferForm(paths);
+        form.ShowDialog(this);
     }
 
     private void VerifyGameFiles()

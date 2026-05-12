@@ -11,6 +11,7 @@ public sealed class FeatureSettingsForm : Form
 {
     private readonly FeatureSettingsService featureSettingsService;
     private readonly FeaturePresetsService presetsService;
+    private readonly AppPaths appPaths;
 
     private readonly CheckBox crosshairEnabledCheckBox;
     private readonly TextBox crosshairIdleColorTextBox;
@@ -90,6 +91,9 @@ public sealed class FeatureSettingsForm : Form
     private readonly NumericUpDown friendlyLowHealthIndicatorSizeNumeric;
     private readonly NumericUpDown friendlyLowHealthIndicatorAlphaNumeric;
 
+    private readonly CheckBox skipIntroCheckBox;
+    private readonly CheckBox disableMainMenuFrameCapCheckBox;
+
     // Color field columns: each block is label+textbox(130)+gap(4)+button(44)+gap(4)+swatch(22) = 204px; 26px between columns
     private const int ColA = 14;
     private const int ColB = 244;
@@ -118,6 +122,7 @@ public sealed class FeatureSettingsForm : Form
 
     public FeatureSettingsForm(AppPaths paths, GameInstallInfo? installInfo = null)
     {
+        appPaths = paths;
         featureSettingsService = new FeatureSettingsService(paths);
         presetsService = new FeaturePresetsService(paths);
 
@@ -577,7 +582,15 @@ public sealed class FeatureSettingsForm : Form
                 friendlyLowHealthIndicatorAlphaNumeric.Value    = ToDecimal(s.IndicatorAlpha, friendlyLowHealthIndicatorAlphaNumeric);
             });
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab]);
+        // --- Misc ---
+        var miscTab = new TabPage("Misc");
+        AddDescription(miscTab,
+            "Miscellaneous gameplay tweaks. Skip intro bypasses the warning screen and video that play each time the game starts.");
+        skipIntroCheckBox = NewCheckBox("Skip intro screen on game start", 14, EnabledY);
+        disableMainMenuFrameCapCheckBox = NewCheckBox("Disable frame cap on main menu (uncaps FPS while on the main menu screen)", 14, EnabledY + 30);
+        miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox]);
+
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, miscTab]);
 
         var saveButton = new Button
         {
@@ -839,6 +852,50 @@ public sealed class FeatureSettingsForm : Form
         friendlyLowHealthIndicatorCheckBox.Checked      = friendlyLowHealth.ShowDirectionIndicator;
         friendlyLowHealthIndicatorSizeNumeric.Value     = ToDecimal(friendlyLowHealth.IndicatorSize, friendlyLowHealthIndicatorSizeNumeric);
         friendlyLowHealthIndicatorAlphaNumeric.Value    = ToDecimal(friendlyLowHealth.IndicatorAlpha, friendlyLowHealthIndicatorAlphaNumeric);
+
+        skipIntroCheckBox.Checked = LoadDebugMenuBool("skip_intro");
+        disableMainMenuFrameCapCheckBox.Checked = LoadDebugMenuBool("disable_main_menu_frame_cap");
+    }
+
+    private bool LoadDebugMenuBool(string key)
+    {
+        try
+        {
+            var path = Path.Combine(appPaths.PatchingDir, "experimental-debug-menu-config.json");
+            if (!File.Exists(path)) return false;
+            var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path, System.Text.Encoding.UTF8));
+            return doc.RootElement.TryGetProperty(key, out var el) && el.GetBoolean();
+        }
+        catch { return false; }
+    }
+
+    private void SaveDebugMenuBool(string key, bool value)
+    {
+        try
+        {
+            var path = Path.Combine(appPaths.PatchingDir, "experimental-debug-menu-config.json");
+            var existing = new Dictionary<string, System.Text.Json.JsonElement>();
+            if (File.Exists(path))
+            {
+                var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path, System.Text.Encoding.UTF8));
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                    existing[prop.Name] = prop.Value.Clone();
+            }
+            using var ms = new System.IO.MemoryStream();
+            using var writer = new System.Text.Json.Utf8JsonWriter(ms, new System.Text.Json.JsonWriterOptions { Indented = true });
+            writer.WriteStartObject();
+            foreach (var kvp in existing)
+            {
+                if (kvp.Key == key) continue;
+                writer.WritePropertyName(kvp.Key);
+                kvp.Value.WriteTo(writer);
+            }
+            writer.WriteBoolean(key, value);
+            writer.WriteEndObject();
+            writer.Flush();
+            File.WriteAllBytes(path, ms.ToArray());
+        }
+        catch { }
     }
 
     private void SaveAndClose()
@@ -983,6 +1040,9 @@ public sealed class FeatureSettingsForm : Form
             IndicatorSize          = (double)friendlyLowHealthIndicatorSizeNumeric.Value,
             IndicatorAlpha         = (double)friendlyLowHealthIndicatorAlphaNumeric.Value
         });
+
+        SaveDebugMenuBool("skip_intro", skipIntroCheckBox.Checked);
+        SaveDebugMenuBool("disable_main_menu_frame_cap", disableMainMenuFrameCapCheckBox.Checked);
 
         DialogResult = DialogResult.OK;
     }

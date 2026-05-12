@@ -1,5 +1,7 @@
 {
   "enabled": false,
+  "skip_intro": true,
+  "disable_main_menu_frame_cap": true,
   "debug_menu_key": "F9",
   "main_menu_key": "F10",
   "lobby_menu_key": "F11",

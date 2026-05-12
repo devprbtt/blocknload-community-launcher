@@ -33,8 +33,25 @@ public sealed class FeatureSettingsService
     public CrosshairSettings LoadCrosshairSettings() => Load("crosshair-config.json", new CrosshairSettings());
     public void SaveCrosshairSettings(CrosshairSettings settings) => Save("crosshair-config.json", settings);
 
-    public FovSettings LoadFovSettings() => Load("fov-config.json", new FovSettings());
-    public void SaveFovSettings(FovSettings settings) => Save("fov-config.json", settings);
+    public FovSettings LoadFovSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "fov-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("fov-config.json", new FovSettings());
+            settings = runtimeSync.ReadFovSettings(runtimeConfigPath, settings);
+            Save("fov-config.json", settings);
+            return settings;
+        }
+        return Load("fov-config.json", new FovSettings());
+    }
+
+    public void SaveFovSettings(FovSettings settings)
+    {
+        Save("fov-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteFovSettings(runtimeConfigPath, settings);
+    }
 
     public TeamColorSettings LoadTeamColorSettings()
     {
