@@ -1,22 +1,22 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.3.7",
+  "version": "2.3.9",
   "minimum_supported_version": "2.3.0",
-  "published_at": "2026-05-12T02:30:00.0000000+00:00",
-  "notes": "# v2.3.7\n\n## Fixes\n- Local Build Preview: the enabled/disabled toggle in the launcher now stays in sync with the F8 in-game menu. Previously the launcher could show it as ON while the F8 menu (which is the live authority) showed it as OFF.\n",
+  "published_at": "2026-05-12T21:00:00.0000000+00:00",
+  "notes": "# v2.3.9\n\n## Features\n- Deathcam: world-space healthbar now shows above all living teammates (not just those below the low-health threshold). Uses the normal team color at full health, switches to the alert color when below threshold.\n- Teammate HP: added HP display in the alive team panel, with F8 runtime toggle.\n",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.7/BnlCommunityFixes.exe",
-      "sha256": "01029DF5AE95D59B387819462A8925BE137E4A406E4D765D673DCCB05E7E4755",
-      "size": 162872519
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.9/BnlCommunityFixes.exe",
+      "sha256": "261003D9750AC6E6B263B91701D783D98A7AB9F1807A5337E37BE4C4794920E3",
+      "size": 162884807
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.7/BnlUpdater.exe",
-      "sha256": "1B99FE4736710F76ADCBEE3565114EA93C07F8B8AA71C778F1CB88876864B631",
-      "size": 67618546
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.9/BnlUpdater.exe",
+      "sha256": "78512D8994E667F9E83E229B8D398732E313C402F320CBD3BD7733D2FDB7D390",
+      "size": 67622642
     }
   }
 }
