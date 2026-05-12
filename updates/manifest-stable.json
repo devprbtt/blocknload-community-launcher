@@ -1,21 +1,21 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "minimum_supported_version": "2.3.0",
-  "published_at": "2026-05-11T18:30:00.0000000+00:00",
-  "notes": "# v2.3.3\n\n## New Features\n- Friendly Low Health Alert: directional screen-edge arrow indicator pointing toward off-screen low-health friendly players. Configurable size and alpha. Configure via Feature Settings → Low HP Alert.\n",
+  "published_at": "2026-05-11T21:00:00.0000000+00:00",
+  "notes": "# v2.3.4\n\n## Fixes\n- Local Build Preview: ghost crate placements are now less frequent — server rejection is detected immediately and the local block rolls back without waiting for the timeout.\n- Local Build Preview: bounce pads and speed pads no longer show an incorrect upside-down preview when placed; they now wait for server confirmation like normal.\n",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.3/BnlCommunityFixes.exe",
-      "sha256": "B8DDC33B9CACCFF5C2B9C01B0FC34D1769A3751105C77849F330FD0AFDA0AD5A",
-      "size": 162846919
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.4/BnlCommunityFixes.exe",
+      "sha256": "E49D71ACE62A654273307CE98E873504B96138A7E12866E73E4429EE4678D76D",
+      "size": 162851015
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.3/BnlUpdater.exe",
-      "sha256": "AC48B28ACCD4EF724CC699F0FFFB107393004DFEBD5DD0AE4D489DABDBFE4C47",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.4/BnlUpdater.exe",
+      "sha256": "ED4B9548DC263C4E7B44816295AC07929704455DAD9C31F783DFA63B5EB16F1A",
       "size": 67617522
     }
   }

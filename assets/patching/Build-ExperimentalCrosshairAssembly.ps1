@@ -2492,7 +2492,13 @@ namespace BnlCommunityFixes
             CardDevice deviceCard = Singleton<Catalogue>.Instance.GetCard<CardDevice>(deviceKey);
             if (deviceCard == null) return false;
             CardBlock blockCard = Singleton<Catalogue>.Instance.GetCard<CardBlock>(deviceCard.DeviceKey);
-            return blockCard != null && blockCard.BlockId != 0 && deviceCard.BuildTime.GetValueOrDefault(0f) <= 0f;
+            if (blockCard == null || blockCard.BlockId == 0) return false;
+            if (deviceCard.BuildTime.GetValueOrDefault(0f) > 0f) return false;
+            // Bounce/speed pads have server-side placement validation that clients can't replicate —
+            // skip instant placement for them to avoid ghost blocks the server rejects.
+            if (blockCard.Special is BlockSpecialBounce) return false;
+            if (blockCard.Special is BlockSpecialFastMovement) return false;
+            return true;
         }
 
         private static bool IsCratePlacementDeviceKey(Key deviceKey)
@@ -2551,6 +2557,10 @@ namespace BnlCommunityFixes
             return false;
         }
 
+        // Maps RPC ID → block position so OnStartBuildResult can roll back the right prediction.
+        private static readonly System.Collections.Generic.Dictionary<ushort, Vector3s> pendingRpcBlockPos
+            = new System.Collections.Generic.Dictionary<ushort, Vector3s>();
+
         public static void TryInstantAcceptStartBuild(BuildInfo info, ServiceZone.Rpc_StartBuild rpc)
         {
             if (info == null || rpc == null) return;
@@ -2558,8 +2568,21 @@ namespace BnlCommunityFixes
                 (IsCratePlacementDeviceKey(info.DeviceKey) && IsInstantCrateChainWindowActive()))
             {
                 if (IsCratePlacementDeviceKey(info.DeviceKey)) ActivateInstantCrateChainWindow();
+                // Record which block position this RPC corresponds to before optimistically accepting.
+                pendingRpcBlockPos[rpc._Id] = info.BuildInsidePosition;
                 rpc._Success(true);
             }
+        }
+
+        public static void OnStartBuildResult(ServiceZone.Rpc_StartBuild rpc, bool accepted)
+        {
+            if (accepted) { pendingRpcBlockPos.Remove(rpc._Id); return; }
+            Vector3s blockPos;
+            if (!pendingRpcBlockPos.TryGetValue(rpc._Id, out blockPos)) return;
+            pendingRpcBlockPos.Remove(rpc._Id);
+            PredictionManager predictionManager = Manager;
+            if (predictionManager == null) return;
+            predictionManager.RollbackBlock(blockPos);
         }
 
         public static void TryInstantAcceptSwitchGear(Unit unit, ServiceZone.Rpc_SwitchGear rpc)
@@ -2584,6 +2607,10 @@ namespace BnlCommunityFixes
                 if (deviceCard == null) return;
                 Card objectCard = Singleton<Catalogue>.Instance.GetCard<Card>(deviceCard.DeviceKey);
                 if (objectCard == null) return;
+                CardBlock blockCard = objectCard as CardBlock;
+                // Don't create a local preview for bounce/speed pads — orientation is server-determined
+                // and optimistic placement renders them wrong.
+                if (blockCard != null && (blockCard.Special is BlockSpecialBounce || blockCard.Special is BlockSpecialFastMovement)) return;
                 BuildGhostObject preview = BuildGhostObject.Create(unit.CurrentDevice.DeviceKey, false, unit.Team);
                 PredictionEntry entry = new PredictionEntry
                 {
@@ -2595,7 +2622,6 @@ namespace BnlCommunityFixes
                     IsUnit = objectCard.Category == CardCategory.Unit,
                     ExpireTime = UnityEngine.Time.time + UnityEngine.Mathf.Max(0.25f, PredictionTimeoutSeconds)
                 };
-                CardBlock blockCard = objectCard as CardBlock;
                 if (blockCard != null && blockCard.BlockId != 0)
                 {
                     if (blockCard.BlockId == 58) ActivateInstantCrateChainWindow();
@@ -2686,6 +2712,14 @@ namespace BnlCommunityFixes
             for (int i = this.entries.Count - 1; i >= 0; i--)
                 if (!this.entries[i].IsUnit && this.entries[i].BlockPos.Equals(blockPos))
                     this.RemoveAt(i, false);
+        }
+
+        // Server explicitly rejected the build — roll back the local block.
+        public void RollbackBlock(Vector3s blockPos)
+        {
+            for (int i = this.entries.Count - 1; i >= 0; i--)
+                if (!this.entries[i].IsUnit && this.entries[i].BlockPos.Equals(blockPos))
+                    this.RemoveAt(i, true);
         }
 
         public void ResolveDevice(Key deviceKey, UnityEngine.Vector3 position)
@@ -4038,6 +4072,7 @@ if ($LocalBuildPreviewConfig.enabled) {
     $ImpShouldSkipWait            = $Module.ImportReference(($LbpRuntimeType.Methods | Where-Object Name -eq "ShouldSkipBuildCompletionWait" | Select-Object -First 1))
     $ImpTryInstantAcceptStartBuild = $Module.ImportReference(($LbpRuntimeType.Methods | Where-Object Name -eq "TryInstantAcceptStartBuild" | Select-Object -First 1))
     $ImpTryInstantAcceptSwitchGear = $Module.ImportReference(($LbpRuntimeType.Methods | Where-Object Name -eq "TryInstantAcceptSwitchGear" | Select-Object -First 1))
+    $ImpOnStartBuildResult         = $Module.ImportReference(($LbpRuntimeType.Methods | Where-Object Name -eq "OnStartBuildResult"         | Select-Object -First 1))
 
     # BuildGhostController.Place � call OnLocalPlace after ServiceZone.Hit
     $BuildGhostControllerType = $Module.Types | Where-Object Name -eq "BuildGhostController" | Select-Object -First 1
@@ -4094,6 +4129,18 @@ if ($LocalBuildPreviewConfig.enabled) {
         $StartBuildIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1),
         $StartBuildIl.Create([Mono.Cecil.Cil.OpCodes]::Ldloc_0),
         $StartBuildIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImpTryInstantAcceptStartBuild)
+    )
+
+    # Rpc_StartBuild._Success — notify OnStartBuildResult so server rejection rolls back the local block
+    $RpcStartBuildType = $ServiceZoneType.NestedTypes | Where-Object Name -eq "Rpc_StartBuild" | Select-Object -First 1
+    if (-not $RpcStartBuildType) { throw "ServiceZone.Rpc_StartBuild nested type not found." }
+    $RpcSuccessMethod = $RpcStartBuildType.Methods | Where-Object Name -eq "_Success" | Select-Object -First 1
+    if (-not $RpcSuccessMethod -or -not $RpcSuccessMethod.HasBody) { throw "Rpc_StartBuild._Success not found." }
+    $RpcSuccessIl = $RpcSuccessMethod.Body.GetILProcessor()
+    Insert-Before -Il $RpcSuccessIl -Target $RpcSuccessMethod.Body.Instructions[0] -Instructions @(
+        $RpcSuccessIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0),
+        $RpcSuccessIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1),
+        $RpcSuccessIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImpOnStartBuildResult)
     )
 
     # BuffHelper.BuildTime � zero build time for instant-placement devices
