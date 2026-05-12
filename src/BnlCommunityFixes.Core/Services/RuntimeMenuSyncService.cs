@@ -133,6 +133,67 @@ public sealed class RuntimeMenuSyncService
         catch { }
     }
 
+    public CrosshairSettings ReadCrosshairSettings(string runtimeConfigPath, CrosshairSettings current)
+    {
+        if (!File.Exists(runtimeConfigPath))
+            return current;
+
+        try
+        {
+            var lines = File.ReadAllLines(runtimeConfigPath);
+            foreach (var line in lines)
+            {
+                var sep = line.IndexOf('=');
+                if (sep <= 0) continue;
+                var key = line[..sep].Trim();
+                var val = line[(sep + 1)..].Trim();
+                switch (key)
+                {
+                    case "crosshair_size_multiplier":
+                        if (TryParseDouble(val, out var d)) current.SizeMultiplier = d; break;
+                    case "crosshair_spread_multiplier":
+                        if (TryParseDouble(val, out d)) current.SpreadMultiplier = d; break;
+                    case "crosshair_alpha":
+                        if (TryParseDouble(val, out d)) current.Alpha = d; break;
+                    case "crosshair_force_show_in_ads":
+                        if (bool.TryParse(val, out var b)) current.ForceShowInAds = b; break;
+                    case "crosshair_hide_entirely":
+                        if (bool.TryParse(val, out b)) current.HideCrosshair = b; break;
+                    case "crosshair_force_shape":
+                        current.ForceShape = string.IsNullOrEmpty(val) ? "__DEFAULT__" : val; break;
+                }
+            }
+        }
+        catch { }
+
+        return current;
+    }
+
+    public void WriteCrosshairSettings(string runtimeConfigPath, CrosshairSettings settings)
+    {
+        try
+        {
+            var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(runtimeConfigPath))
+            {
+                foreach (var line in File.ReadAllLines(runtimeConfigPath))
+                {
+                    var sep = line.IndexOf('=');
+                    if (sep <= 0) continue;
+                    existing[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+                }
+            }
+            existing["crosshair_size_multiplier"] = settings.SizeMultiplier.ToString(CultureInfo.InvariantCulture);
+            existing["crosshair_spread_multiplier"] = settings.SpreadMultiplier.ToString(CultureInfo.InvariantCulture);
+            existing["crosshair_alpha"] = settings.Alpha.ToString(CultureInfo.InvariantCulture);
+            existing["crosshair_force_show_in_ads"] = settings.ForceShowInAds.ToString();
+            existing["crosshair_hide_entirely"] = settings.HideCrosshair.ToString();
+            existing["crosshair_force_shape"] = string.IsNullOrEmpty(settings.ForceShape) ? "__DEFAULT__" : settings.ForceShape;
+            File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
+        }
+        catch { }
+    }
+
     public FovSettings ReadFovSettings(string runtimeConfigPath, FovSettings current)
     {
         if (!File.Exists(runtimeConfigPath))

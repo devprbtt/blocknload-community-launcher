@@ -18,7 +18,10 @@ public sealed class ExperimentalAssemblyBuildService
         "experimental-match-replay-recorder-config.json",
         "aim-healthbar-config.json",
         "experimental-debug-menu-config.json",
-        "experimental-auto-casual-queue-config.json"
+        "experimental-auto-casual-queue-config.json",
+        "experimental-local-build-preview-config.json",
+        "deathcam-healthbar-config.json",
+        "friendly-low-health-config.json"
     ];
 
     private readonly AppPaths paths;

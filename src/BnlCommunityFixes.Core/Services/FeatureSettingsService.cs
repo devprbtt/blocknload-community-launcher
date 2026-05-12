@@ -30,8 +30,25 @@ public sealed class FeatureSettingsService
         runtimeConfigPath = path;
     }
 
-    public CrosshairSettings LoadCrosshairSettings() => Load("crosshair-config.json", new CrosshairSettings());
-    public void SaveCrosshairSettings(CrosshairSettings settings) => Save("crosshair-config.json", settings);
+    public CrosshairSettings LoadCrosshairSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "crosshair-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("crosshair-config.json", new CrosshairSettings());
+            settings = runtimeSync.ReadCrosshairSettings(runtimeConfigPath, settings);
+            Save("crosshair-config.json", settings);
+            return settings;
+        }
+        return Load("crosshair-config.json", new CrosshairSettings());
+    }
+
+    public void SaveCrosshairSettings(CrosshairSettings settings)
+    {
+        Save("crosshair-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteCrosshairSettings(runtimeConfigPath, settings);
+    }
 
     public FovSettings LoadFovSettings()
     {
