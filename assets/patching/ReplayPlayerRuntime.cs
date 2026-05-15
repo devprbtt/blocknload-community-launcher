@@ -81,6 +81,33 @@ namespace BnlCommunityFixes
         private bool showDiagnosticPlayerHud;
         private bool showDebugWorldLabels;
         private bool replayModeLaunchChecked;
+        private bool fpCameraActive;
+        private Camera fpCamera;
+        private int fpMainCamOrigCullingMask;
+        private MonoBehaviour[] fpMainCamDisabledEffects;
+        private bool fpMainCamWasActive;
+        private Camera fpMainCamRef;
+        private int fpDiagFrames;
+        private Vector3 fpSmoothedPos;
+        private Quaternion fpSmoothedRot;
+        private UnitMarker fpFollowMarker;
+        private string fpBoneName;
+        private Camera fpArmsCamera;              // hijacked ArmsCamera for weapon rendering
+        private Transform fpArmsCameraOrigParent;  // original parent to restore
+        private int[] fpWeaponRendererOrigLayers;  // original layers of weapon renderers we moved
+        private GameObject[] fpWeaponRenderers;    // weapon renderer GameObjects we moved
+        private Transform[] fpWeaponOrigParents;   // original parents to restore on disable
+        private string fpWeaponUnitId;             // which unit's weapon renderers we moved (for retarget)
+        private List<Renderer> fpDisabledBodyRenderers; // body/skin renderers we disabled
+        private MonoBehaviour[] fpArmsCamDisabledComponents; // ArmsCamera MonoBehaviours disabled during FP mode
+        private bool weaponCamActive;
+        private Camera weaponCamera;
+        private UnitMarker weaponCamMarker;
+        private string weaponCamBoneName;
+
+        // Weapon attachment node prefix — BNL uses AttachmentNode_<Weapon> (and one typo: AttachementNode_<Weapon>).
+        private const string AttachmentNodePrefix = "AttachmentNode_";
+        private const string AttachmentNodePrefixTypo = "AttachementNode_";
 
         public static void EnsureInstance()
         {
@@ -147,7 +174,28 @@ namespace BnlCommunityFixes
                 CycleDisplayMode();
             }
 
+            if (Input.GetKeyDown(KeyCode.F4))
+            {
+                ToggleWeaponCamera();
+            }
+
+            if (Input.GetKeyDown(KeyCode.F3))
+            {
+                Debug.Log("[BNL Replay] F3 pressed, loaded=" + loaded + " followPlayerIndex=" + followPlayerIndex);
+                ToggleFirstPersonCamera();
+            }
+
             HandlePlayerFollowKeys();
+
+            if (weaponCamActive)
+            {
+                UpdateWeaponCamera();
+            }
+
+            if (fpCameraActive)
+            {
+                UpdateFirstPersonCamera();
+            }
 
             if (realZoneLoadPending)
             {
@@ -230,14 +278,17 @@ namespace BnlCommunityFixes
                 return;
             }
 
-            GUI.Box(new Rect(12f, 12f, 420f, loaded ? 128f : 48f), "");
+            float mainBoxHeight = loaded ? 128f : 48f;
+            if (fpCameraActive && !string.IsNullOrEmpty(fpBoneName)) mainBoxHeight += 22f;
+            if (weaponCamActive && !string.IsNullOrEmpty(weaponCamBoneName)) mainBoxHeight += 22f;
+            GUI.Box(new Rect(12f, 12f, 420f, mainBoxHeight), "");
             GUI.Label(new Rect(22f, 20f, 400f, 22f), "BNL Replay Prototype");
                 GUI.Label(new Rect(22f, 42f, 400f, 22f), status);
             if (loaded)
             {
                 float relative = replayTime - startTime;
                 float duration = Mathf.Max(0f, endTime - startTime);
-                GUI.Label(new Rect(22f, 64f, 400f, 22f), "F7 play/pause  F8 reset  F9 cam  F10 map  F12 filter  PgUp/Dn ±30s  [/] ±5s");
+                GUI.Label(new Rect(22f, 64f, 400f, 22f), "F7 play/pause  F8 reset  F9 cam  F10 map  F12 filter  PgUp/Dn ±30s  [/] ±5s  F4 wpn  F3 FP");
                 GUI.Label(new Rect(22f, 82f, 400f, 22f), "Time " + relative.ToString("0.0", CultureInfo.InvariantCulture) + " / " + duration.ToString("0.0", CultureInfo.InvariantCulture) + "s, mode " + DisplayModeName() + ", units " + markers.Count + ", map blocks " + mapBlocks.Count);
                 if (GUI.Button(new Rect(22f, 108f, 62f, 24f), "-30s"))
                 {
@@ -259,6 +310,15 @@ namespace BnlCommunityFixes
                 if (GUI.Button(new Rect(288f, 108f, 62f, 24f), "+30s"))
                 {
                     SkipReplaySeconds(30f);
+                }
+
+                if (weaponCamActive && !string.IsNullOrEmpty(weaponCamBoneName))
+                {
+                    GUI.Label(new Rect(22f, mainBoxHeight - (fpCameraActive && !string.IsNullOrEmpty(fpBoneName) ? 36f : 14f), 400f, 22f), "Wpn cam: " + weaponCamBoneName);
+                }
+                if (fpCameraActive && !string.IsNullOrEmpty(fpBoneName))
+                {
+                    GUI.Label(new Rect(22f, mainBoxHeight - 14f, 400f, 22f), "FP bone: " + fpBoneName);
                 }
 
                 if (showDiagnosticPlayerHud)
@@ -376,6 +436,8 @@ namespace BnlCommunityFixes
             if (Input.GetKeyDown(KeyCode.Alpha0) || Input.GetKeyDown(KeyCode.Keypad0))
             {
                 followPlayerIndex = -1;
+                if (fpCameraActive) { fpFollowMarker = null; fpBoneName = null; }
+                if (weaponCamActive) { weaponCamMarker = null; weaponCamBoneName = null; }
                 ShowStatus("Replay camera follow disabled");
                 return;
             }
@@ -387,8 +449,28 @@ namespace BnlCommunityFixes
                 if (Input.GetKeyDown(alpha) || Input.GetKeyDown(keypad))
                 {
                     followPlayerIndex = i;
-                    TrySpectateReplayPlayer(replayPlayers[i]);
-                    ShowStatus("Following " + replayPlayers[i].Nickname + " with game spectator camera");
+                    PlayerReplayInfo player = replayPlayers[i];
+
+                    // If FP or weapon cam is active, re-target it instead of switching to spectator.
+                    if (fpCameraActive || weaponCamActive)
+                    {
+                        UnitMarker marker = FindMarkerByUnitId(player.UnitId);
+                        if (fpCameraActive)
+                        {
+                            fpFollowMarker = marker;
+                            fpBoneName = null;
+                        }
+                        if (weaponCamActive)
+                        {
+                            weaponCamMarker = marker;
+                            weaponCamBoneName = null;
+                        }
+                        ShowStatus("Camera retargeted to " + player.Nickname);
+                        return;
+                    }
+
+                    TrySpectateReplayPlayer(player);
+                    ShowStatus("Following " + player.Nickname + " with game spectator camera");
                     return;
                 }
             }
@@ -426,6 +508,617 @@ namespace BnlCommunityFixes
         private void UpdateFollowCamera()
         {
             // Native CameraSpectatorView handles follow/orbit/zoom when a replay player is selected.
+        }
+
+        // Tries to resolve a stale marker after scrub/reset/respawn.
+        // First tries the stored UnitId; if that unit is dead/missing, scans all markers
+        // for one whose PlayerId matches the followed player (handles respawn new unit IDs).
+        private UnitMarker TryReattachMarker(UnitMarker current)
+        {
+            if (current != null && current.RealUnit != null) return current;
+            if (followPlayerIndex < 0 || followPlayerIndex >= replayPlayers.Count) return current;
+
+            PlayerReplayInfo player = replayPlayers[followPlayerIndex];
+
+            // Try the known UnitId first.
+            UnitMarker byId = FindMarkerByUnitId(player.UnitId);
+            if (byId != null && byId.RealUnit != null) return byId;
+
+            // Fall back to PlayerId scan — covers respawn where UnitId changes.
+            if (!string.IsNullOrEmpty(player.PlayerId))
+            {
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    UnitMarker m = markers[i];
+                    if (m.RealUnit == null || m.Metadata == null) continue;
+                    if (string.Equals(m.Metadata.PlayerId, player.PlayerId, StringComparison.Ordinal))
+                        return m;
+                }
+            }
+
+            return current;
+        }
+
+        private void ToggleWeaponCamera()
+        {
+            if (followPlayerIndex < 0 || followPlayerIndex >= replayPlayers.Count)
+            {
+                ShowStatus("Weapon cam: follow a player first (press 1-9)");
+                return;
+            }
+
+            if (weaponCamActive)
+            {
+                weaponCamActive = false;
+                if (weaponCamera != null) weaponCamera.gameObject.SetActive(false);
+                weaponCamMarker = null;
+                weaponCamBoneName = null;
+                ShowStatus("Weapon camera disabled");
+                return;
+            }
+
+            PlayerReplayInfo player = replayPlayers[followPlayerIndex];
+            UnitMarker marker = FindMarkerByUnitId(player.UnitId);
+            if (marker == null || marker.RealUnit == null)
+            {
+                ShowStatus("Weapon cam: unit not spawned yet");
+                return;
+            }
+
+            // Disable other camera modes.
+            if (spectatorCameraActive && spectatorCamera != null)
+            {
+                spectatorCameraActive = false;
+                spectatorCamera.gameObject.SetActive(false);
+            }
+            if (fpCameraActive)
+            {
+                DisableFirstPersonCamera();
+            }
+
+            try
+            {
+                CameraSpectatorView spectatorView = Singleton<CameraSpectatorView>.Instance;
+                if (spectatorView != null) spectatorView.Locked = true;
+            }
+            catch (Exception) { }
+
+            if (weaponCamera == null)
+            {
+                GameObject camGo = new GameObject("BNL_ReplayWeaponCamera");
+                DontDestroyOnLoad(camGo);
+                weaponCamera = camGo.AddComponent<Camera>();
+                weaponCamera.depth = 101f;
+                weaponCamera.fieldOfView = 65f;
+                weaponCamera.nearClipPlane = 0.05f;
+            }
+
+            weaponCamMarker = marker;
+            weaponCamActive = true;
+            weaponCamera.gameObject.SetActive(true);
+            weaponCamBoneName = null;
+            ShowStatus("Weapon camera enabled — F4 to disable");
+        }
+
+        private void UpdateWeaponCamera()
+        {
+            weaponCamMarker = TryReattachMarker(weaponCamMarker);
+            if (weaponCamera == null || weaponCamMarker == null || weaponCamMarker.RealUnit == null)
+            {
+                return;
+            }
+
+            Transform unitRoot = weaponCamMarker.RealUnit.transform;
+            Transform weaponNode = FindActiveWeaponNode(unitRoot);
+
+            if (weaponCamBoneName == null)
+            {
+                weaponCamBoneName = weaponNode != null ? weaponNode.name : "(fallback — no weapon node)";
+                Debug.Log("[BNL Replay] Weapon camera attached to: " + weaponCamBoneName + " on unit " + weaponCamMarker.UnitId);
+            }
+
+            // Derive full pitch+yaw from replay sample.
+            Quaternion facingRotation = unitRoot.rotation;
+            if (weaponCamMarker.Track != null && weaponCamMarker.Track.Points.Count > 0)
+            {
+                ReplaySample wpnSample = SampleReplay(weaponCamMarker.Track, replayTime);
+                if (wpnSample.HasRotation)
+                {
+                    float pitch = wpnSample.Rotation.x / 10f;
+                    float yaw   = wpnSample.Rotation.y / 10f;
+                    facingRotation = Quaternion.Euler(pitch, yaw, 0f);
+                }
+            }
+
+            // Chest position: unit root + fixed vertical offset, independent of weapon node.
+            Vector3 chestPos = unitRoot.position + Vector3.up * 1.3f;
+
+            // Place the camera in front of the player (along their facing) at chest height.
+            Vector3 camPos = chestPos + facingRotation * Vector3.forward * 2.4f + Vector3.up * 0.2f;
+
+            // Face from camera position toward the chest.
+            Quaternion lookAtChest = Quaternion.LookRotation(chestPos - camPos, Vector3.up);
+
+            weaponCamera.transform.position = camPos;
+            weaponCamera.transform.rotation = lookAtChest;
+        }
+
+        private void ToggleFirstPersonCamera()
+        {
+            if (followPlayerIndex < 0 || followPlayerIndex >= replayPlayers.Count)
+            {
+                ShowStatus("FP cam (F3): follow a player first (press 1-9)");
+                Debug.Log("[BNL Replay] FP toggle: no follow player");
+                return;
+            }
+
+            if (fpCameraActive)
+            {
+                Debug.Log("[BNL Replay] FP toggle: disabling");
+                DisableFirstPersonCamera();
+                return;
+            }
+
+            Debug.Log("[BNL Replay] FP toggle: activating");
+
+            PlayerReplayInfo player = replayPlayers[followPlayerIndex];
+            UnitMarker marker = FindMarkerByUnitId(player.UnitId);
+            if (marker == null || marker.RealUnit == null)
+            {
+                marker = TryReattachMarker(null);
+            }
+            if (marker == null || marker.RealUnit == null)
+            {
+                ShowStatus("FP cam: unit not spawned yet");
+                Debug.Log("[BNL Replay] FP toggle: marker null or RealUnit null for unitId=" + player.UnitId);
+                return;
+            }
+            Debug.Log("[BNL Replay] FP toggle: marker found unitId=" + marker.UnitId);
+
+            // Disable other camera modes.
+            if (spectatorCameraActive && spectatorCamera != null)
+            {
+                spectatorCameraActive = false;
+                spectatorCamera.gameObject.SetActive(false);
+            }
+            if (weaponCamActive)
+            {
+                weaponCamActive = false;
+                if (weaponCamera != null) weaponCamera.gameObject.SetActive(false);
+                weaponCamMarker = null;
+                weaponCamBoneName = null;
+            }
+
+            try
+            {
+                CameraSpectatorView spectatorView = Singleton<CameraSpectatorView>.Instance;
+                if (spectatorView != null) spectatorView.Locked = true;
+            }
+            catch (Exception) { }
+
+            fpFollowMarker = marker;
+            fpBoneName = null;
+            fpDiagFrames = 0;
+            fpSmoothedPos = marker.RealUnit.transform.position + Vector3.up * 1.65f;
+            fpSmoothedRot = marker.RealUnit.transform.rotation;
+
+            // Create synthetic FP camera.
+            if (fpCamera == null)
+            {
+                GameObject camGo = new GameObject("BNL_ReplayFPCamera");
+                DontDestroyOnLoad(camGo);
+                fpCamera = camGo.AddComponent<Camera>();
+                fpCamera.depth = 100f;
+                fpCamera.fieldOfView = 120f;
+                fpCamera.nearClipPlane = 0.05f;
+            }
+            // Find ArmsCamera and grab Camera.main rendering path BEFORE deactivating Camera.main —
+            // FindGameObjectsWithTag skips inactive objects, so ArmsCamera (child of Camera.main) would be missed.
+            Camera mainCam = Camera.main;
+            GameObject[] armsCamGos = GameObject.FindGameObjectsWithTag("ArmsCamera");
+            Camera armsSceneCam = null;
+            for (int ai = 0; ai < armsCamGos.Length; ai++)
+            {
+                Camera ac = armsCamGos[ai].GetComponent<Camera>();
+                if (ac != null) { armsSceneCam = ac; break; }
+            }
+            Debug.Log("[BNL Replay] FP: ArmsCamera found=" + (armsSceneCam != null));
+
+            fpCamera.clearFlags = CameraClearFlags.Skybox;
+            fpCamera.cullingMask = -1 & ~(1 << 11); // everything except PlayerModel
+            fpCamera.ResetReplacementShader();
+            if (mainCam != null) fpCamera.renderingPath = mainCam.renderingPath;
+            fpCamera.gameObject.SetActive(true);
+
+            // Disable Camera.main's Camera component and all MonoBehaviours (stops rendering + effects)
+            // but keep the GameObject active so Camera.main still resolves for other game scripts.
+            if (mainCam != null)
+            {
+                fpMainCamRef = mainCam; // store ref before disabling — Camera.main becomes null after
+                fpMainCamOrigCullingMask = mainCam.cullingMask;
+                mainCam.enabled = false;
+                MonoBehaviour[] effects = mainCam.GetComponents<MonoBehaviour>();
+                List<MonoBehaviour> disabled = new List<MonoBehaviour>();
+                for (int ei = 0; ei < effects.Length; ei++)
+                {
+                    if (effects[ei] != null && effects[ei].enabled)
+                    {
+                        effects[ei].enabled = false;
+                        disabled.Add(effects[ei]);
+                    }
+                }
+                fpMainCamDisabledEffects = disabled.ToArray();
+                Debug.Log("[BNL Replay] FP: Camera.main disabled (" + disabled.Count + " components)");
+            }
+
+            Transform unitTransform = marker.RealUnit.transform;
+
+            if (armsSceneCam != null)
+            {
+                // Find weapon renderers: under AttachmentNode_* bones.
+                List<Renderer> weaponRendererList = new List<Renderer>();
+                Renderer[] allUnitRenderers = unitTransform.GetComponentsInChildren<Renderer>(true);
+                for (int ri = 0; ri < allUnitRenderers.Length; ri++)
+                {
+                    Transform t = allUnitRenderers[ri].transform;
+                    while (t != null)
+                    {
+                        if (t.name.StartsWith(AttachmentNodePrefix, StringComparison.OrdinalIgnoreCase)
+                            || t.name.StartsWith(AttachmentNodePrefixTypo, StringComparison.OrdinalIgnoreCase))
+                        {
+                            weaponRendererList.Add(allUnitRenderers[ri]);
+                            break;
+                        }
+                        if (t == unitTransform) break;
+                        t = t.parent;
+                    }
+                }
+
+                if (weaponRendererList.Count > 0)
+                {
+                    fpArmsCamera = armsSceneCam;
+                    fpArmsCameraOrigParent = armsSceneCam.transform.parent;
+
+
+                    fpWeaponRendererOrigLayers = new int[weaponRendererList.Count];
+                    fpWeaponRenderers = new GameObject[weaponRendererList.Count];
+                    for (int wi = 0; wi < weaponRendererList.Count; wi++)
+                    {
+                        fpWeaponRendererOrigLayers[wi] = weaponRendererList[wi].gameObject.layer;
+                        fpWeaponRenderers[wi] = weaponRendererList[wi].gameObject;
+                        // Only change layer — keep original parent so bone animations still drive the weapon.
+                        weaponRendererList[wi].gameObject.layer = 11; // PlayerModel
+                    }
+
+                    // Parent ArmsCamera to fpCamera so it always shares the same position/rotation.
+                    armsSceneCam.transform.SetParent(fpCamera.transform, false);
+                    armsSceneCam.transform.localPosition = Vector3.zero;
+                    armsSceneCam.transform.localRotation = Quaternion.identity;
+                    armsSceneCam.fieldOfView = 120f;
+                    armsSceneCam.nearClipPlane = fpCamera.nearClipPlane;
+                    armsSceneCam.depth = fpCamera.depth + 1f;
+                    fpWeaponUnitId = marker.UnitId;
+                    MonoBehaviour[] armsMbs = armsSceneCam.GetComponents<MonoBehaviour>();
+                    System.Text.StringBuilder armsMbNames = new System.Text.StringBuilder();
+                    List<MonoBehaviour> armsDisabled = new List<MonoBehaviour>();
+                    for (int ami = 0; ami < armsMbs.Length; ami++)
+                    {
+                        if (ami > 0) armsMbNames.Append(", ");
+                        armsMbNames.Append(armsMbs[ami] != null ? armsMbs[ami].GetType().Name : "null");
+                        if (armsMbs[ami] != null && armsMbs[ami].enabled) { armsMbs[ami].enabled = false; armsDisabled.Add(armsMbs[ami]); }
+                    }
+                    fpArmsCamDisabledComponents = armsDisabled.ToArray();
+                    armsSceneCam.enabled = true;
+                    Debug.Log("[BNL Replay] FP weapon: ArmsCamera components disabled: " + armsMbNames);
+                    Debug.Log("[BNL Replay] FP weapon: ArmsCamera hijacked, " + weaponRendererList.Count + " weapon renderers on PlayerModel, parented to fpCamera");
+                }
+                else
+                {
+                    Debug.Log("[BNL Replay] FP weapon: no weapon renderers under AttachmentNode_*");
+                }
+            }
+            else
+            {
+                Debug.Log("[BNL Replay] FP weapon: no ArmsCamera in scene");
+            }
+
+            // Disable ALL non-weapon renderers on the unit (body, skin, head).
+            // Weapon renderers are on PlayerModel layer (rendered by ArmsCamera).
+            // Everything else would block the first-person view.
+            Renderer[] allUnitRenderersFinal = unitTransform.GetComponentsInChildren<Renderer>(true);
+            fpDisabledBodyRenderers = new List<Renderer>();
+            int bodyDisabled = 0;
+            for (int ri = 0; ri < allUnitRenderersFinal.Length; ri++)
+            {
+                Renderer r = allUnitRenderersFinal[ri];
+                // Skip if this renderer is on PlayerModel layer (it's a weapon, rendered by ArmsCamera).
+                if (r.gameObject.layer == 11) continue;
+                if (r.enabled)
+                {
+                    r.enabled = false;
+                    fpDisabledBodyRenderers.Add(r);
+                    bodyDisabled++;
+                }
+            }
+            Debug.Log("[BNL Replay] FP: disabled " + bodyDisabled + " body/skin renderers");
+
+            fpCameraActive = true;
+            ShowStatus("First-person camera — F3 to disable");
+        }
+
+        private void DisableFirstPersonCamera()
+        {
+            fpCameraActive = false;
+            fpBoneName = null;
+
+            if (fpCamera != null) fpCamera.gameObject.SetActive(false);
+
+            // Restore Camera.main using stored ref — Camera.main is null while Camera component is disabled.
+            if (fpMainCamRef != null)
+            {
+                fpMainCamRef.enabled = true;
+                fpMainCamRef.cullingMask = fpMainCamOrigCullingMask;
+                if (fpMainCamDisabledEffects != null)
+                {
+                    for (int ei = 0; ei < fpMainCamDisabledEffects.Length; ei++)
+                        if (fpMainCamDisabledEffects[ei] != null) fpMainCamDisabledEffects[ei].enabled = true;
+                }
+                fpMainCamRef = null;
+            }
+            fpMainCamDisabledEffects = null;
+
+            // Restore weapon renderer layers.
+            if (fpWeaponRenderers != null && fpWeaponRendererOrigLayers != null)
+            {
+                for (int wi = 0; wi < fpWeaponRenderers.Length && wi < fpWeaponRendererOrigLayers.Length; wi++)
+                {
+                    if (fpWeaponRenderers[wi] != null)
+                        fpWeaponRenderers[wi].layer = fpWeaponRendererOrigLayers[wi];
+                }
+            }
+
+            // Re-enable body/skin renderers.
+            if (fpDisabledBodyRenderers != null)
+            {
+                for (int bi = 0; bi < fpDisabledBodyRenderers.Count; bi++)
+                {
+                    if (fpDisabledBodyRenderers[bi] != null)
+                        fpDisabledBodyRenderers[bi].enabled = true;
+                }
+                fpDisabledBodyRenderers = null;
+            }
+
+            // Restore ArmsCamera.
+            if (fpArmsCamera != null)
+            {
+                fpArmsCamera.depth = 0f;
+                if (fpArmsCamDisabledComponents != null)
+                {
+                    for (int ai = 0; ai < fpArmsCamDisabledComponents.Length; ai++)
+                        if (fpArmsCamDisabledComponents[ai] != null) fpArmsCamDisabledComponents[ai].enabled = true;
+                    fpArmsCamDisabledComponents = null;
+                }
+                if (fpArmsCameraOrigParent != null)
+                {
+                    fpArmsCamera.transform.SetParent(fpArmsCameraOrigParent, false);
+                    fpArmsCamera.transform.localPosition = Vector3.zero;
+                    fpArmsCamera.transform.localRotation = Quaternion.identity;
+                }
+            }
+
+            fpArmsCamera = null;
+            fpArmsCameraOrigParent = null;
+            fpWeaponRenderers = null;
+            fpWeaponRendererOrigLayers = null;
+            fpWeaponUnitId = null;
+            fpFollowMarker = null;
+            ShowStatus("First-person camera disabled — F3 to re-enable");
+        }
+
+
+        private void UpdateFirstPersonCamera()
+        {
+            // Log fpCamera components a few frames after activation to catch dynamically added ones.
+            if (fpCamera != null && fpDiagFrames < 5)
+            {
+                fpDiagFrames++;
+                if (fpDiagFrames == 5)
+                {
+                    MonoBehaviour[] comps = fpCamera.GetComponents<MonoBehaviour>();
+                    System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                    for (int i = 0; i < comps.Length; i++) { if (i > 0) sb.Append(", "); sb.Append(comps[i] != null ? comps[i].GetType().Name : "null"); }
+                    Debug.Log("[BNL Replay] FP: fpCamera components @frame5: " + (sb.Length > 0 ? sb.ToString() : "none"));
+                    // Also log replacement shader state.
+                    Debug.Log("[BNL Replay] FP: Camera.main replacementShader=" + (Camera.main != null ? Camera.main.renderingPath.ToString() : "no main"));
+                }
+            }
+
+            fpFollowMarker = TryReattachMarker(fpFollowMarker);
+            if (fpFollowMarker == null || fpFollowMarker.RealUnit == null)
+            {
+                return;
+            }
+
+            Transform unitRoot = fpFollowMarker.RealUnit.transform;
+
+            // Handle retargeting: if followed unit changed, restore old weapon layers + move new ones.
+            if (fpArmsCamera != null && fpWeaponUnitId != null && !string.Equals(fpWeaponUnitId, fpFollowMarker.UnitId, StringComparison.Ordinal))
+            {
+                // Restore weapon layers on the old unit.
+                if (fpWeaponRenderers != null && fpWeaponRendererOrigLayers != null)
+                {
+                    for (int wi = 0; wi < fpWeaponRenderers.Length && wi < fpWeaponRendererOrigLayers.Length; wi++)
+                    {
+                        if (fpWeaponRenderers[wi] != null)
+                            fpWeaponRenderers[wi].layer = fpWeaponRendererOrigLayers[wi];
+                    }
+                }
+                // Re-enable body renderers on the old unit.
+                if (fpDisabledBodyRenderers != null)
+                {
+                    for (int bi = 0; bi < fpDisabledBodyRenderers.Count; bi++)
+                    {
+                        if (fpDisabledBodyRenderers[bi] != null)
+                            fpDisabledBodyRenderers[bi].enabled = true;
+                    }
+                }
+                // Find and move weapon renderers on the new unit.
+                List<Renderer> newWeaponList = new List<Renderer>();
+                Renderer[] newAllRenderers = unitRoot.GetComponentsInChildren<Renderer>(true);
+                for (int ri = 0; ri < newAllRenderers.Length; ri++)
+                {
+                    Transform t = newAllRenderers[ri].transform;
+                    while (t != null)
+                    {
+                        if (t.name.StartsWith(AttachmentNodePrefix, StringComparison.OrdinalIgnoreCase)
+                            || t.name.StartsWith(AttachmentNodePrefixTypo, StringComparison.OrdinalIgnoreCase))
+                        {
+                            newWeaponList.Add(newAllRenderers[ri]);
+                            break;
+                        }
+                        if (t == unitRoot) break;
+                        t = t.parent;
+                    }
+                }
+                fpWeaponRendererOrigLayers = new int[newWeaponList.Count];
+                fpWeaponRenderers = new GameObject[newWeaponList.Count];
+                for (int wi = 0; wi < newWeaponList.Count; wi++)
+                {
+                    fpWeaponRendererOrigLayers[wi] = newWeaponList[wi].gameObject.layer;
+                    fpWeaponRenderers[wi] = newWeaponList[wi].gameObject;
+                    newWeaponList[wi].gameObject.layer = 11;
+                }
+                // Disable body renderers on the new unit.
+                fpDisabledBodyRenderers = new List<Renderer>();
+                for (int ri = 0; ri < newAllRenderers.Length; ri++)
+                {
+                    if (newAllRenderers[ri].gameObject.layer != 11 && newAllRenderers[ri].enabled)
+                    {
+                        newAllRenderers[ri].enabled = false;
+                        fpDisabledBodyRenderers.Add(newAllRenderers[ri]);
+                    }
+                }
+                fpWeaponUnitId = fpFollowMarker.UnitId;
+                Debug.Log("[BNL Replay] FP weapon: retargeted " + newWeaponList.Count + " weapon renderers to unit " + fpFollowMarker.UnitId);
+            }
+
+            Transform headBone = FindHeadBone(unitRoot);
+
+            Vector3 eyePosition;
+
+            // Derive full pitch+yaw from the current replay sample.
+            // The unit root only stores yaw (RotationToYawQuaternion strips pitch),
+            // so we read the raw rotation from the track sample directly.
+            Quaternion eyeRotation = unitRoot.rotation;
+            if (fpFollowMarker.Track != null && fpFollowMarker.Track.Points.Count > 0)
+            {
+                ReplaySample fpSample = SampleReplay(fpFollowMarker.Track, replayTime);
+                if (fpSample.HasRotation)
+                {
+                    float pitch = fpSample.Rotation.x / 10f;
+                    float yaw   = fpSample.Rotation.y / 10f;
+                    // Normalise both axes into -180..180 to prevent Slerp spinning the long
+                    // way around on wraparound (e.g. 179 -> -179 causing a full 360 spin).
+                    while (pitch > 180f)  pitch -= 360f;
+                    while (pitch < -180f) pitch += 360f;
+                    while (yaw > 180f)    yaw   -= 360f;
+                    while (yaw < -180f)   yaw   += 360f;
+                    pitch = Mathf.Clamp(pitch, -89f, 89f);
+                    eyeRotation = Quaternion.Euler(pitch, yaw, 0f);
+                }
+            }
+
+            if (headBone != null)
+            {
+                eyePosition = headBone.position;
+                if (fpBoneName == null)
+                {
+                    Transform weaponNode = FindActiveWeaponNode(unitRoot);
+                    fpBoneName = headBone.name + (weaponNode != null ? " | weapon: " + weaponNode.name : " | no weapon node");
+                    Debug.Log("[BNL Replay] FP camera attached — head: " + headBone.name + (weaponNode != null ? ", weapon node: " + weaponNode.name : ", no weapon node found") + " on unit " + fpFollowMarker.UnitId);
+                }
+            }
+            else
+            {
+                // Fallback: estimate eye position from unit root + approximate head height.
+                eyePosition = unitRoot.position + Vector3.up * 1.65f;
+                if (fpBoneName == null)
+                {
+                    fpBoneName = "(fallback — no _Head bone found)";
+                    Debug.Log("[BNL Replay] FP camera fallback on " + fpFollowMarker.UnitId + " — no bone ending in _Head found");
+                }
+            }
+
+            if (fpCameraActive)
+            {
+                if (fpCamera != null)
+                {
+                    // Position: low speed (6) damps bone shake while still tracking player movement.
+                    // Rotation: higher speed (20) keeps aim responsive.
+                    // Ensure Slerp takes the short arc — negate target quaternion if dot product is negative.
+                    if (Quaternion.Dot(fpSmoothedRot, eyeRotation) < 0f)
+                        eyeRotation = new Quaternion(-eyeRotation.x, -eyeRotation.y, -eyeRotation.z, -eyeRotation.w);
+                    fpSmoothedPos = Vector3.Lerp(fpSmoothedPos, eyePosition, 6f * Time.deltaTime);
+                    fpSmoothedRot = Quaternion.Slerp(fpSmoothedRot, eyeRotation, 20f * Time.deltaTime);
+                    fpCamera.transform.position = fpSmoothedPos;
+                    fpCamera.transform.rotation = fpSmoothedRot;
+                }
+                // ArmsCamera is parented to fpCamera — follows automatically.
+                // Weapon renderers are on PlayerModel layer, rendered by ArmsCamera at a fixed offset.
+            }
+        }
+
+        private Transform FindHeadBone(Transform unitRoot)
+        {
+            // BNL rigs use <HeroName>_Head — match any bone ending with "_Head".
+            return FindTransformBySuffix(unitRoot, "_Head");
+        }
+
+        private Transform FindActiveWeaponNode(Transform unitRoot)
+        {
+            // Prefer the first AttachmentNode that has a child (i.e. a weapon is currently attached).
+            Transform fallback = null;
+            Transform active = null;
+            FindWeaponNodeRecursive(unitRoot, ref fallback, ref active);
+            return active != null ? active : fallback;
+        }
+
+        private void FindWeaponNodeRecursive(Transform t, ref Transform fallback, ref Transform active)
+        {
+            if (active != null) return;
+            string n = t.name;
+            bool isNode = n.StartsWith(AttachmentNodePrefix, StringComparison.OrdinalIgnoreCase)
+                       || n.StartsWith(AttachmentNodePrefixTypo, StringComparison.OrdinalIgnoreCase);
+            if (isNode)
+            {
+                if (fallback == null) fallback = t;
+                if (t.childCount > 0) { active = t; return; }
+            }
+            for (int i = 0; i < t.childCount; i++)
+            {
+                FindWeaponNodeRecursive(t.GetChild(i), ref fallback, ref active);
+                if (active != null) return;
+            }
+        }
+
+        private static Transform FindTransformBySuffix(Transform root, string suffix)
+        {
+            if (root.name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)) return root;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform result = FindTransformBySuffix(root.GetChild(i), suffix);
+                if (result != null) return result;
+            }
+            return null;
+        }
+
+        private static void DumpTransformNames(Transform root, string indent)
+        {
+            Debug.Log("[BNL Replay] bone: " + indent + root.name);
+            for (int i = 0; i < root.childCount; i++)
+            {
+                DumpTransformNames(root.GetChild(i), indent + "  ");
+            }
         }
 
         private UnitMarker FindMarkerByUnitId(string unitId)
@@ -7772,6 +8465,12 @@ namespace BnlCommunityFixes
             lastGlobalEventTime = float.MinValue;
             currentPhaseEvent = null;
             followPlayerIndex = -1;
+            if (fpCameraActive) DisableFirstPersonCamera();
+            fpCameraActive = false;
+            weaponCamActive = false;
+            if (weaponCamera != null) weaponCamera.gameObject.SetActive(false);
+            weaponCamMarker = null;
+            weaponCamBoneName = null;
         }
 
         private void DestroyMarkerObjects()
