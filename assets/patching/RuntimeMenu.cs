@@ -51,6 +51,8 @@ namespace BnlCommunityFixes
         public bool auto_casual_queue_enabled;
         public bool has_auto_casual_queue_enabled;
         public bool teammate_hp_enabled;
+        public bool disable_auto_crouch;
+        public bool has_disable_auto_crouch;
     }
 
     public static class RuntimeFeatureState
@@ -115,6 +117,8 @@ namespace BnlCommunityFixes
         private static bool defaultAutoCasualQueueEnabled;
         private static bool defaultTeammateHpEnabled;
         private static bool teammateHpConfigured;
+        private static bool defaultDisableAutoCrouch;
+        private static bool autoCrouchConfigured;
 
         private static bool loadedFromDisk;
         private static RuntimeMenuSettingsData loadedData;
@@ -130,6 +134,7 @@ namespace BnlCommunityFixes
         public static bool DeathCamHealthbarSupported { get; private set; }
         public static bool AutoCasualQueueSupported { get; private set; }
         public static bool TeammateHpSupported { get; private set; }
+        public static bool AutoCrouchDisableSupported { get; private set; }
 
         public static float CrosshairSizeMultiplier { get; private set; }
         public static float CrosshairSpreadMultiplier { get; private set; }
@@ -173,6 +178,7 @@ namespace BnlCommunityFixes
         public static bool DeathCamHealthbarEnabled { get; private set; }
         public static bool AutoCasualQueueEnabled { get; private set; }
         public static bool TeammateHpEnabled { get; private set; }
+        public static bool AutoCrouchDisabled { get; private set; }
 
         static RuntimeFeatureState()
         {
@@ -417,6 +423,19 @@ namespace BnlCommunityFixes
             }
         }
 
+        public static void ConfigureAutoCrouchDisable(bool supported, bool disabled)
+        {
+            AutoCrouchDisableSupported = AutoCrouchDisableSupported || supported;
+            defaultDisableAutoCrouch = disabled;
+
+            if (!autoCrouchConfigured)
+            {
+                AutoCrouchDisabled = defaultDisableAutoCrouch;
+                autoCrouchConfigured = true;
+                ApplyLoadedAutoCrouch();
+            }
+        }
+
         public static Color GetCrosshairIdleColor()
         {
             return WithAlpha(defaultCrosshairIdleColor, CrosshairAlpha);
@@ -566,6 +585,11 @@ namespace BnlCommunityFixes
             if (teammateHpConfigured)
             {
                 TeammateHpEnabled = defaultTeammateHpEnabled;
+            }
+
+            if (autoCrouchConfigured)
+            {
+                AutoCrouchDisabled = defaultDisableAutoCrouch;
             }
         }
 
@@ -755,6 +779,11 @@ namespace BnlCommunityFixes
             TeammateHpEnabled = value;
         }
 
+        public static void SetAutoCrouchDisabled(bool value)
+        {
+            AutoCrouchDisabled = value;
+        }
+
         private static void EnsureLoadedData()
         {
             if (loadedFromDisk)
@@ -921,6 +950,17 @@ namespace BnlCommunityFixes
             TeammateHpEnabled = loadedData.teammate_hp_enabled;
         }
 
+        private static void ApplyLoadedAutoCrouch()
+        {
+            EnsureLoadedData();
+            if (loadedData == null || !loadedData.has_disable_auto_crouch)
+            {
+                return;
+            }
+
+            AutoCrouchDisabled = loadedData.disable_auto_crouch;
+        }
+
         private static Color WithAlpha(Color value, float alpha)
         {
             return new Color(value.r, value.g, value.b, Mathf.Clamp01(alpha));
@@ -964,6 +1004,7 @@ namespace BnlCommunityFixes
             data.deathcam_healthbar_enabled = DeathCamHealthbarEnabled;
             data.auto_casual_queue_enabled = AutoCasualQueueEnabled;
             data.teammate_hp_enabled = TeammateHpEnabled;
+            data.disable_auto_crouch = AutoCrouchDisabled;
             return data;
         }
 
@@ -1005,6 +1046,7 @@ namespace BnlCommunityFixes
             lines.Add("deathcam_healthbar_enabled=" + data.deathcam_healthbar_enabled);
             lines.Add("auto_casual_queue_enabled=" + data.auto_casual_queue_enabled);
             lines.Add("teammate_hp_enabled=" + data.teammate_hp_enabled);
+            lines.Add("disable_auto_crouch=" + data.disable_auto_crouch);
             return string.Join("\n", lines.ToArray());
         }
 
@@ -1149,6 +1191,13 @@ namespace BnlCommunityFixes
                     break;
                 case "teammate_hp_enabled":
                     if (bool.TryParse(value, out parsedBool)) data.teammate_hp_enabled = parsedBool;
+                    break;
+                case "disable_auto_crouch":
+                    if (bool.TryParse(value, out parsedBool))
+                    {
+                        data.disable_auto_crouch = parsedBool;
+                        data.has_disable_auto_crouch = true;
+                    }
                     break;
             }
         }
@@ -1374,6 +1423,11 @@ namespace BnlCommunityFixes
                 count += 1;
             }
 
+            if (RuntimeFeatureState.AutoCrouchDisableSupported)
+            {
+                count += 1;
+            }
+
             if (DebugMenuRuntime.Enabled)
             {
                 count += 1;
@@ -1484,6 +1538,12 @@ namespace BnlCommunityFixes
                 index -= 1;
             }
 
+            if (RuntimeFeatureState.AutoCrouchDisableSupported)
+            {
+                if (index == 0) return "Disable auto-crouch";
+                index -= 1;
+            }
+
             if (DebugMenuRuntime.Enabled)
             {
                 if (index == 0) return "Debug force start match";
@@ -1591,6 +1651,12 @@ namespace BnlCommunityFixes
             if (RuntimeFeatureState.TeammateHpSupported)
             {
                 if (index == 0) return RuntimeFeatureState.TeammateHpEnabled ? "ON" : "OFF";
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.AutoCrouchDisableSupported)
+            {
+                if (index == 0) return RuntimeFeatureState.AutoCrouchDisabled ? "ON" : "OFF";
                 index -= 1;
             }
 
@@ -1775,6 +1841,17 @@ namespace BnlCommunityFixes
             }
 
             if (RuntimeFeatureState.TeammateHpSupported)
+            {
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.AutoCrouchDisableSupported && index == 0)
+            {
+                RuntimeFeatureState.SetAutoCrouchDisabled(!RuntimeFeatureState.AutoCrouchDisabled);
+                return;
+            }
+
+            if (RuntimeFeatureState.AutoCrouchDisableSupported)
             {
                 index -= 1;
             }

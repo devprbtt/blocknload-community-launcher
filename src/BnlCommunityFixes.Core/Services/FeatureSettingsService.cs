@@ -160,6 +160,9 @@ public sealed class FeatureSettingsService
     public FriendlyLowHealthSettings LoadFriendlyLowHealthSettings() => Load("friendly-low-health-config.json", new FriendlyLowHealthSettings());
     public void SaveFriendlyLowHealthSettings(FriendlyLowHealthSettings settings) => Save("friendly-low-health-config.json", settings);
 
+    public AutoCrouchSettings LoadAutoCrouchSettings() => Load("experimental-auto-crouch-config.json", new AutoCrouchSettings());
+    public void SaveAutoCrouchSettings(AutoCrouchSettings settings) => Save("experimental-auto-crouch-config.json", settings);
+
     public TeammateHpSettings LoadTeammateHpSettings()
     {
         var launcherConfigPath = Path.Combine(paths.PatchingDir, "teammate-hp-config.json");

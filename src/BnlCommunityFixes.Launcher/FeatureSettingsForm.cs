@@ -86,6 +86,8 @@ public sealed class FeatureSettingsForm : Form
 
     private readonly CheckBox teammateHpEnabledCheckBox;
 
+    private readonly CheckBox autoCrouchEnabledCheckBox;
+
     private readonly CheckBox friendlyLowHealthEnabledCheckBox;
     private readonly TextBox friendlyLowHealthColorTextBox;
     private readonly NumericUpDown friendlyLowHealthThresholdNumeric;
@@ -594,6 +596,16 @@ public sealed class FeatureSettingsForm : Form
             readFields: () => new TeammateHpSettings { Enabled = teammateHpEnabledCheckBox.Checked },
             applyFields: s => { teammateHpEnabledCheckBox.Checked = s.Enabled; });
 
+        // --- Disable Auto-Crouch ---
+        var autoCrouchTab = new TabPage("Auto-Crouch");
+        AddDescription(autoCrouchTab,
+            "Disables the forced-crouch behaviour that triggers when the ceiling is too low to stand. Useful for testing. The setting can also be toggled in-game via the runtime menu.");
+        autoCrouchEnabledCheckBox = NewCheckBox("Disable auto-crouch", 14, EnabledY);
+        autoCrouchTab.Controls.Add(autoCrouchEnabledCheckBox);
+        AddPresetBar<AutoCrouchSettings>(autoCrouchTab, "autoCrouch",
+            readFields: () => new AutoCrouchSettings { Enabled = autoCrouchEnabledCheckBox.Checked },
+            applyFields: s => { autoCrouchEnabledCheckBox.Checked = s.Enabled; });
+
         // --- Misc ---
         var miscTab = new TabPage("Misc");
         AddDescription(miscTab,
@@ -602,7 +614,7 @@ public sealed class FeatureSettingsForm : Form
         disableMainMenuFrameCapCheckBox = NewCheckBox("Disable frame cap on main menu (uncaps FPS while on the main menu screen)", 14, EnabledY + 30);
         miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox]);
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, miscTab]);
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, miscTab]);
 
         var saveButton = new Button
         {
@@ -868,6 +880,9 @@ public sealed class FeatureSettingsForm : Form
         var teammateHp = featureSettingsService.LoadTeammateHpSettings();
         teammateHpEnabledCheckBox.Checked = teammateHp.Enabled;
 
+        var autoCrouch = featureSettingsService.LoadAutoCrouchSettings();
+        autoCrouchEnabledCheckBox.Checked = autoCrouch.Enabled;
+
         skipIntroCheckBox.Checked = LoadDebugMenuBool("skip_intro");
         disableMainMenuFrameCapCheckBox.Checked = LoadDebugMenuBool("disable_main_menu_frame_cap");
     }
@@ -1059,6 +1074,11 @@ public sealed class FeatureSettingsForm : Form
         featureSettingsService.SaveTeammateHpSettings(new TeammateHpSettings
         {
             Enabled = teammateHpEnabledCheckBox.Checked
+        });
+
+        featureSettingsService.SaveAutoCrouchSettings(new AutoCrouchSettings
+        {
+            Enabled = autoCrouchEnabledCheckBox.Checked
         });
 
         SaveDebugMenuBool("skip_intro", skipIntroCheckBox.Checked);

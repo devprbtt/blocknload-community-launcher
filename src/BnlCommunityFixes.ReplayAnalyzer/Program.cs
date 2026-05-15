@@ -34,6 +34,7 @@ Console.WriteLine($"InitZone: remaining={result.InitZoneRemainingBytes}, payload
 Console.WriteLine($"Units created: {result.UnitCreates.Count}");
 Console.WriteLine($"Moves: {result.UnitMoves.Count}");
 Console.WriteLine($"Damage events: {result.Damages.Count}");
+Console.WriteLine($"Channel events: {result.ChannelEvents.Count}  dash charges: {result.DashChargeEvents.Count}  pickups: {result.PickupTakenEvents.Count}  recalls: {result.RecallEvents.Count}  portal teleports: {result.PortalTeleports.Count}  kicks: {result.KickPlayerEvents.Count}");
 Console.WriteLine($"Block updates: {result.BlockUpdates.Sum(static item => item.Count)} across {result.BlockUpdates.Count} packets");
 Console.WriteLine($"Output: {outputDir}");
 return 0;
@@ -47,8 +48,10 @@ static string ResolveInputPath(string input)
     }
 
     var newestCapture = Directory
-        .EnumerateFiles(path, "zone-capture-*.jsonl", SearchOption.TopDirectoryOnly)
+        .EnumerateFiles(path, "zone-capture-*.jsonl.gz", SearchOption.TopDirectoryOnly)
+        .Concat(Directory.EnumerateFiles(path, "zone-capture-*.jsonl", SearchOption.TopDirectoryOnly))
         .Select(static file => new FileInfo(file))
+        .Where(static file => file.Length > 0)
         .OrderByDescending(static file => file.LastWriteTimeUtc)
         .FirstOrDefault();
 
@@ -69,6 +72,28 @@ internal sealed class ReplayAnalyzer
         this.inputPath = inputPath;
     }
 
+    private static IEnumerable<string> ReadAllLines(string filePath)
+    {
+        if (filePath.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
+        {
+            using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
+            using var reader = new StreamReader(gzipStream, Encoding.UTF8);
+            string? line;
+            while ((line = reader.ReadLine()) is not null)
+            {
+                yield return line;
+            }
+        }
+        else
+        {
+            foreach (var line in File.ReadLines(filePath))
+            {
+                yield return line;
+            }
+        }
+    }
+
     public ReplayAnalysis Analyze()
     {
         var analysis = new ReplayAnalysis
@@ -76,7 +101,7 @@ internal sealed class ReplayAnalyzer
             SourcePath = inputPath
         };
 
-        foreach (var line in File.ReadLines(inputPath))
+        foreach (var line in ReadAllLines(inputPath))
         {
             if (string.IsNullOrWhiteSpace(line))
             {
@@ -140,6 +165,7 @@ internal sealed class ReplayAnalyzer
                 case "Recv_InitZone":
                     analysis.InitZoneRemainingBytes = packet.Remaining;
                     analysis.InitZonePayloadBytes = packet.PayloadBytes;
+                    analysis.InitZonePayload = payload;
                     TryReadInitZone(reader, packet, analysis);
                     break;
                 case "Recv_UnitCreate":
@@ -222,6 +248,39 @@ internal sealed class ReplayAnalyzer
                     break;
                 case "Recv_DoEndReload":
                     analysis.ReloadEvents.Add(new ReloadEvent(packet.Time, "End", reader.ReadUInt32()));
+                    break;
+                case "Recv_DoStartChannel":
+                    analysis.ChannelEvents.Add(ReadChannelStart(reader, packet));
+                    break;
+                case "Recv_DoEndChannel":
+                    analysis.ChannelEvents.Add(new ChannelEvent(packet.Time, "End", reader.ReadUInt32(), reader.ReadByte(), null, null, null));
+                    break;
+                case "Recv_DoDashStartCharge":
+                    analysis.DashChargeEvents.Add(new DashChargeEvent(packet.Time, "Start", reader.ReadUInt32(), reader.ReadByte()));
+                    break;
+                case "Recv_DoDashEndCharge":
+                    analysis.DashChargeEvents.Add(new DashChargeEvent(packet.Time, "End", reader.ReadUInt32(), reader.ReadByte()));
+                    break;
+                case "Recv_DashEndCharge":
+                    analysis.RpcResults.Add(ReadBoolRpcResult(reader, packet, "DashEndCharge"));
+                    break;
+                case "Recv_PickupTaken":
+                    analysis.PickupTakenEvents.Add(new PickupTakenEvent(packet.Time, reader.ReadUInt32(), reader.ReadUInt32()));
+                    break;
+                case "Recv_DoStartRecall":
+                    analysis.RecallEvents.Add(new RecallEvent(packet.Time, "Start", reader.ReadUInt32(), reader.ReadSingle(), reader.ReadUInt64()));
+                    break;
+                case "Recv_DoCancelRecall":
+                    analysis.RecallEvents.Add(new RecallEvent(packet.Time, "Cancel", reader.ReadUInt32(), null, null));
+                    break;
+                case "Recv_DoRecall":
+                    analysis.RecallEvents.Add(new RecallEvent(packet.Time, "Recall", reader.ReadUInt32(), null, null));
+                    break;
+                case "Recv_PortalTeleport":
+                    analysis.PortalTeleports.Add(new PortalTeleportEvent(packet.Time, reader.ReadUInt32(), reader.ReadUInt32(), reader.ReadUInt32()));
+                    break;
+                case "Recv_KickPlayer":
+                    analysis.KickPlayerEvents.Add(ReadKickPlayer(reader, packet));
                     break;
                 case "Recv_CastAbility":
                     analysis.RpcResults.Add(ReadBoolRpcResult(reader, packet, "CastAbility"));
@@ -809,6 +868,38 @@ internal sealed class ReplayAnalyzer
         Vector3f? shotPosition = flags[1] ? ReadVector3f(reader) : null;
         IReadOnlyList<ShotData> shots = flags[2] ? ReadShots(reader) : [];
         return new AbilityCastEvent(packet.Time, unitId, abilityKeyHash, shotPosition, shots);
+    }
+
+    private static ChannelEvent ReadChannelStart(BinaryReader reader, ReplayPacket packet)
+    {
+        var unitId = reader.ReadUInt32();
+        var flags = ReadBitField(reader, 4);
+        byte? toolIndex = flags[0] ? reader.ReadByte() : null;
+        Vector3f? hitPosition = flags[1] ? ReadVector3f(reader) : null;
+        Vector3s? targetBlock = flags[2] ? ReadVector3s(reader) : null;
+        uint? targetUnit = flags[3] ? reader.ReadUInt32() : null;
+        return new ChannelEvent(packet.Time, "Start", unitId, toolIndex, hitPosition, targetBlock, targetUnit);
+    }
+
+    private static KickPlayerEvent ReadKickPlayer(BinaryReader reader, ReplayPacket packet)
+    {
+        var remaining = reader.BaseStream.CanSeek ? reader.BaseStream.Length - reader.BaseStream.Position : 0;
+        if (remaining >= 9)
+        {
+            return new KickPlayerEvent(packet.Time, reader.ReadUInt64(), ReadString(reader));
+        }
+
+        if (remaining >= 5)
+        {
+            return new KickPlayerEvent(packet.Time, reader.ReadUInt32(), reader.ReadByte().ToString(CultureInfo.InvariantCulture));
+        }
+
+        if (remaining >= 4)
+        {
+            return new KickPlayerEvent(packet.Time, reader.ReadUInt32(), "");
+        }
+
+        return new KickPlayerEvent(packet.Time, 0, "");
     }
 
     private static CastData ReadCastData(BinaryReader reader)
@@ -1699,11 +1790,19 @@ internal static class ReplayReportWriter
         WriteCsv(Path.Combine(outputDir, "block_mined.csv"), ["time", "unit_id", "block_key_hash", "block_name"], analysis.BlockMined, item => [item.TimeText, item.UnitIdText, item.BlockKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.BlockKeyHash)]);
         WriteCsv(Path.Combine(outputDir, "barrier_updates.csv"), ["time", "labels"], analysis.BarrierUpdates, static item => [item.TimeText, string.Join("|", item.Labels)]);
         WriteCsv(Path.Combine(outputDir, "reloads.csv"), ["time", "phase", "unit_id"], analysis.ReloadEvents, static item => [item.TimeText, item.Phase, item.UnitIdText]);
+        WriteCsv(Path.Combine(outputDir, "channels.csv"), ["time", "phase", "unit_id", "tool_index", "hit_x", "hit_y", "hit_z", "target_block_x", "target_block_y", "target_block_z", "target_unit_id"], analysis.ChannelEvents, static item => [item.TimeText, item.Phase, item.UnitId.ToString(CultureInfo.InvariantCulture), item.ToolIndex?.ToString(CultureInfo.InvariantCulture) ?? "", item.HitPosition?.XText ?? "", item.HitPosition?.YText ?? "", item.HitPosition?.ZText ?? "", item.TargetBlock?.XText ?? "", item.TargetBlock?.YText ?? "", item.TargetBlock?.ZText ?? "", item.TargetUnitId?.ToString(CultureInfo.InvariantCulture) ?? ""]);
+        WriteCsv(Path.Combine(outputDir, "dash_charges.csv"), ["time", "phase", "unit_id", "tool_index"], analysis.DashChargeEvents, static item => [item.TimeText, item.Phase, item.UnitId.ToString(CultureInfo.InvariantCulture), item.ToolIndex.ToString(CultureInfo.InvariantCulture)]);
+        WriteCsv(Path.Combine(outputDir, "pickup_taken.csv"), ["time", "player_id", "pickup_key_hash", "pickup_name"], analysis.PickupTakenEvents, item => [item.TimeText, item.PlayerId.ToString(CultureInfo.InvariantCulture), item.PickupKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.PickupKeyHash)]);
+        WriteCsv(Path.Combine(outputDir, "recalls.csv"), ["time", "phase", "unit_id", "duration", "end_time"], analysis.RecallEvents, static item => [item.TimeText, item.Phase, item.UnitId.ToString(CultureInfo.InvariantCulture), item.Duration?.ToString("0.###", CultureInfo.InvariantCulture) ?? "", item.EndTime?.ToString(CultureInfo.InvariantCulture) ?? ""]);
+        WriteCsv(Path.Combine(outputDir, "portal_teleports.csv"), ["time", "unit_id", "portal_from_id", "portal_to_id"], analysis.PortalTeleports, static item => [item.TimeText, item.UnitId.ToString(CultureInfo.InvariantCulture), item.PortalFromId.ToString(CultureInfo.InvariantCulture), item.PortalToId.ToString(CultureInfo.InvariantCulture)]);
+        WriteCsv(Path.Combine(outputDir, "kick_players.csv"), ["time", "player_id", "reason"], analysis.KickPlayerEvents, static item => [item.TimeText, item.PlayerId.ToString(CultureInfo.InvariantCulture), item.Reason]);
         WriteCsv(Path.Combine(outputDir, "rpc_results.csv"), ["time", "name", "rpc_id", "status", "value"], analysis.RpcResults, static item => [item.TimeText, item.Name, item.RpcId.ToString(CultureInfo.InvariantCulture), item.Status, item.Value]);
         WriteCsv(Path.Combine(outputDir, "surrender_events.csv"), ["time", "phase", "team", "deadline", "accepted", "detail"], analysis.SurrenderEvents, static item => [item.TimeText, item.Phase, item.Team ?? "", item.Deadline?.ToString(CultureInfo.InvariantCulture) ?? "", item.Accepted?.ToString() ?? "", item.Detail ?? ""]);
         WriteCsv(Path.Combine(outputDir, "surrender_progress.csv"), ["time", "votes"], analysis.SurrenderProgress, static item => [item.TimeText, string.Join("|", item.Votes.Select(static vote => $"{vote.PlayerId}:{vote.Voted?.ToString() ?? "null"}"))]);
         WriteCsv(Path.Combine(outputDir, "end_match_players.csv"), ["player_id", "nickname", "squad_id", "backfiller", "noob", "total", "earned", "built", "destroyed", "objective", "block_assist", "kills", "deaths", "assists", "positive_medal_hash", "positive_medal_name", "negative_medal_hash", "negative_medal_name"], analysis.EndMatchResult?.Players ?? [], item => [item.PlayerId?.ToString(CultureInfo.InvariantCulture) ?? "", ResolvePlayerNickname(analysis, item.PlayerId), item.SquadId?.ToString(CultureInfo.InvariantCulture) ?? "", item.Backfiller?.ToString() ?? "", item.Noob?.ToString() ?? "", item.Stats?.Total?.ToString(CultureInfo.InvariantCulture) ?? "", FormatStat(item.Stats, "Earned"), FormatStat(item.Stats, "Built"), FormatStat(item.Stats, "Destroyed"), FormatStat(item.Stats, "Objective"), FormatStat(item.Stats, "BlockAssist"), FormatStat(item.Stats, "Kill"), FormatStat(item.Stats, "Death"), FormatStat(item.Stats, "Assist"), item.MedalPositiveKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", ResolveKeyName(analysis, item.MedalPositiveKeyHash), item.MedalNegativeKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", ResolveKeyName(analysis, item.MedalNegativeKeyHash)]);
-        WriteCsv(Path.Combine(outputDir, "zone_updates.csv"), ["time", "flags", "phase", "players", "objectives", "spawn_points", "respawns", "resource_cap", "supply", "team1_stats", "team2_stats"], analysis.ZoneUpdates, item => [item.TimeText, item.Flags, item.Phase?.PhaseType ?? "", item.PlayerInfo.Count.ToString(CultureInfo.InvariantCulture), item.Objectives.Count.ToString(CultureInfo.InvariantCulture), item.SpawnPoints.Count.ToString(CultureInfo.InvariantCulture), item.RespawnInfo.Count.ToString(CultureInfo.InvariantCulture), item.ResourceCap?.ToString("0.###", CultureInfo.InvariantCulture) ?? "", FormatSupply(analysis, item.SupplyInfo), FormatTeamStats(item.Stats?.Team1Stats), FormatTeamStats(item.Stats?.Team2Stats)]);
+        WriteCsv(Path.Combine(outputDir, "zone_updates.csv"), ["time", "flags", "phase", "phase_start", "phase_end", "players", "objectives", "spawn_points", "respawns", "resource_cap", "supply", "team1_stats", "team2_stats"], analysis.ZoneUpdates, item => [item.TimeText, item.Flags, item.Phase?.PhaseType ?? "", item.Phase?.StartTime?.ToString(CultureInfo.InvariantCulture) ?? "", item.Phase?.EndTime?.ToString(CultureInfo.InvariantCulture) ?? "", item.PlayerInfo.Count.ToString(CultureInfo.InvariantCulture), item.Objectives.Count.ToString(CultureInfo.InvariantCulture), item.SpawnPoints.Count.ToString(CultureInfo.InvariantCulture), item.RespawnInfo.Count.ToString(CultureInfo.InvariantCulture), item.ResourceCap?.ToString("0.###", CultureInfo.InvariantCulture) ?? "", FormatSupply(analysis, item.SupplyInfo), FormatTeamStats(item.Stats?.Team1Stats), FormatTeamStats(item.Stats?.Team2Stats)]);
+        WriteCsv(Path.Combine(outputDir, "match_player_stats.csv"), ["time", "player_id", "team", "kills", "deaths", "assists"], analysis.ZoneUpdates.SelectMany(static update => update.Stats?.PlayerStats.Select(player => (update, player)) ?? []), static item => [item.update.TimeText, item.player.PlayerId.ToString(CultureInfo.InvariantCulture), item.player.Team ?? "", item.player.Kills?.ToString(CultureInfo.InvariantCulture) ?? "", item.player.Deaths?.ToString(CultureInfo.InvariantCulture) ?? "", item.player.Assists?.ToString(CultureInfo.InvariantCulture) ?? ""]);
+        WriteCsv(Path.Combine(outputDir, "respawns.csv"), ["time", "player_id", "respawn_time"], analysis.ZoneUpdates.SelectMany(static update => update.RespawnInfo.Select(respawn => (update, respawn))), static item => [item.update.TimeText, item.respawn.PlayerId.ToString(CultureInfo.InvariantCulture), item.respawn.RespawnTime.ToString(CultureInfo.InvariantCulture)]);
         WriteCsv(Path.Combine(outputDir, "players.csv"), ["time", "player_id", "nickname", "steam_id", "squad_id", "looking_for_friends"], analysis.ZoneUpdates.SelectMany(static update => update.PlayerInfo.Select(player => (update, player))), static item => [item.update.TimeText, item.player.PlayerId.ToString(CultureInfo.InvariantCulture), item.player.Nickname ?? "", item.player.SteamId?.ToString(CultureInfo.InvariantCulture) ?? "", item.player.SquadId?.ToString(CultureInfo.InvariantCulture) ?? "", item.player.LookingForFriends?.ToString() ?? ""]);
         WriteCsv(Path.Combine(outputDir, "player_units.csv"), ["player_id", "nickname", "steam_id", "team", "unit_id", "unit_key_hash", "unit_name", "skin_key_hash", "skin_name", "gear_key_hashes", "gear_names", "controlled"], ReplayIdentityBuilder.BuildPlayerUnitIdentities(analysis), static item => [item.PlayerId.ToString(CultureInfo.InvariantCulture), item.Nickname ?? "", item.SteamId?.ToString(CultureInfo.InvariantCulture) ?? "", item.Team ?? "", item.UnitId?.ToString(CultureInfo.InvariantCulture) ?? "", item.UnitKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", item.UnitName ?? "", item.SkinKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", item.SkinName ?? "", string.Join("|", item.GearKeyHashes.Select(static key => key.ToString("X8", CultureInfo.InvariantCulture))), string.Join("|", item.GearNames), item.Controlled?.ToString() ?? ""]);
         WriteCsv(Path.Combine(outputDir, "objectives.csv"), ["time", "team", "id", "counter", "required_counter"], analysis.ZoneUpdates.SelectMany(static update => update.Objectives.Select(objective => (update, objective))), static item => [item.update.TimeText, item.objective.Team ?? "", item.objective.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.objective.Counter?.ToString(CultureInfo.InvariantCulture) ?? "", item.objective.RequiredCounter?.ToString(CultureInfo.InvariantCulture) ?? ""]);
@@ -1715,7 +1814,6 @@ internal static class ReplayReportWriter
         WriteCsv(Path.Combine(outputDir, "map_state_changed_cells.csv"), ["x", "y", "z", "updates", "initial_id", "initial_name", "final_id", "final_name", "final_damage", "final_vdata", "final_ldata", "final_team"], mapVerification.ChangedCells, item => [item.Position.XText, item.Position.YText, item.Position.ZText, item.UpdateCount.ToString(CultureInfo.InvariantCulture), item.Initial.Id.ToString(CultureInfo.InvariantCulture), ResolveBlockName(analysis, item.Initial.Id), item.Final.Id.ToString(CultureInfo.InvariantCulture), ResolveBlockName(analysis, item.Final.Id), item.Final.Damage.ToString(CultureInfo.InvariantCulture), item.Final.Vdata.ToString(CultureInfo.InvariantCulture), item.Final.Ldata.ToString(CultureInfo.InvariantCulture), FormatBlockTeam(item.Final.Ldata)]);
         WriteNormalizedJson(Path.Combine(outputDir, "replay.normalized.json"), analysis);
         WriteViewer(Path.Combine(outputDir, "viewer.html"), analysis);
-        WriteMapStateViewer(Path.Combine(outputDir, "map_state_viewer.html"), analysis, mapTimeline, mapVerification);
     }
 
     private static void WriteSummary(string outputDir, ReplayAnalysis analysis, MapStateVerificationData? mapVerification = null)
@@ -1803,6 +1901,12 @@ internal static class ReplayReportWriter
             $"Blocks mined: {analysis.BlockMined.Count}",
             $"Barrier updates: {analysis.BarrierUpdates.Count}",
             $"Reload events: {analysis.ReloadEvents.Count}",
+            $"Channel events: {analysis.ChannelEvents.Count}",
+            $"Dash charge events: {analysis.DashChargeEvents.Count}",
+            $"Pickup taken events: {analysis.PickupTakenEvents.Count}",
+            $"Recall events: {analysis.RecallEvents.Count}",
+            $"Portal teleport events: {analysis.PortalTeleports.Count}",
+            $"Kick player events: {analysis.KickPlayerEvents.Count}",
             $"RPC results: {analysis.RpcResults.Count}",
             $"Surrender events: {analysis.SurrenderEvents.Count}",
             $"Surrender progress packets: {analysis.SurrenderProgress.Count}",
@@ -1858,6 +1962,7 @@ internal static class ReplayReportWriter
 
     private static void WriteMapBinaryAssets(string outputDir, ReplayAnalysis analysis)
     {
+        WriteBytesIfPresent(Path.Combine(outputDir, "init_zone_payload.bin"), analysis.InitZonePayload);
         WriteBytesIfPresent(Path.Combine(outputDir, "init_map_data.bin"), analysis.InitZone?.MapData);
         WriteBytesIfPresent(Path.Combine(outputDir, "init_color_data.bin"), analysis.InitZone?.ColorData);
         WriteBytesIfPresent(Path.Combine(outputDir, "map_blocks_data.bin"), analysis.InitZone?.Map?.BlocksData);
@@ -2208,160 +2313,6 @@ function tick(now){if(playing){current += ((now-lastFrame)/1000)*Number(speed.va
 scrub.addEventListener('input',()=>{current=replay.start+(Number(scrub.value)/1000)*replay.duration});
 play.addEventListener('click',()=>{playing=!playing;play.textContent=playing?'Pause':'Play';lastFrame=performance.now()});
 addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
-</script>
-</body>
-</html>
-""".Replace("__DATA__", data, StringComparison.Ordinal);
-
-        File.WriteAllText(path, html, new UTF8Encoding(false));
-    }
-
-    private static void WriteMapStateViewer(string path, ReplayAnalysis analysis, IReadOnlyList<MapStateTimelineItem> timeline, MapStateVerificationData verification)
-    {
-        var initialBlocks = analysis.DecodedMap?.NonEmptyBlocks
-            .Select(item => new
-            {
-                x = item.Position.X,
-                y = item.Position.Y,
-                z = item.Position.Z,
-                id = item.Id,
-                name = ResolveBlockName(analysis, item.Id),
-                damage = item.Damage,
-                vdata = item.Vdata,
-                ldata = item.Ldata,
-                team = FormatBlockTeam(item.Ldata),
-                color = item.Color
-            })
-            .ToArray() ?? [];
-
-        var changes = timeline
-            .Select(item => new
-            {
-                seq = item.Sequence,
-                t = Math.Round(item.Time, 3),
-                source = item.Source,
-                x = item.Update.Position.X,
-                y = item.Update.Position.Y,
-                z = item.Update.Position.Z,
-                id = item.Update.Id,
-                name = item.Update.Id is ushort id ? ResolveBlockName(analysis, id) : "",
-                damage = item.Update.Damage,
-                vdata = item.Update.Vdata,
-                ldata = item.Update.Ldata,
-                team = FormatBlockTeam(item.Update.Ldata),
-                device = item.Placement is null ? "" : ResolveKeyName(analysis, item.Placement.DeviceBuilt.DeviceKeyHash),
-                direction = item.Placement?.BuildStart?.Direction ?? ""
-            })
-            .ToArray();
-
-        var data = JsonSerializer.Serialize(new
-        {
-            source = Path.GetFileName(analysis.SourcePath),
-            start = analysis.StartTime,
-            end = analysis.EndTime,
-            duration = analysis.DurationSeconds,
-            mapKey = analysis.MapKeyHash?.ToString("X8", CultureInfo.InvariantCulture),
-            mapName = ResolveKeyName(analysis, analysis.MapKeyHash),
-            size = analysis.DecodedMap?.Size,
-            verification = new
-            {
-                verification.InitialNonEmptyBlockCount,
-                verification.FinalNonEmptyBlockCount,
-                changedCellCount = verification.ChangedCells.Count,
-                verification.RepeatedCellCount,
-                verification.DuplicateNoOpUpdates,
-                verification.OutOfOrderUpdates
-            },
-            initialBlocks,
-            changes
-        });
-
-        var html = """
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BNL Map State Viewer</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#121414;color:#ece9df;font-family:Segoe UI,Arial,sans-serif;overflow:hidden}
-header{height:60px;display:flex;align-items:center;gap:12px;padding:10px 14px;background:#1b1d1c;border-bottom:1px solid #343735}
-main{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:calc(100vh - 60px)}
-canvas{display:block;width:100%;height:100%;background:#080b0a}
-aside{border-left:1px solid #343735;background:#171918;overflow:auto}
-section{padding:12px 14px;border-bottom:1px solid #2c302d}
-h2{font-size:13px;margin:0 0 9px;color:#f0eadf}
-button{height:36px;min-width:72px;border:0;border-radius:5px;background:#3d7a68;color:white}
-select{height:36px;background:#222624;color:#eee;border:1px solid #3c423e;border-radius:5px;padding:0 8px}
-input[type=range]{width:min(460px,36vw)}
-.stat{font-size:13px;color:#bcb8ae;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.metric{background:#202321;border:1px solid #303531;border-radius:6px;padding:8px}
-.metric strong{display:block;font-size:18px}.metric span{font-size:12px;color:#aaa69c}
-.row{display:grid;grid-template-columns:74px 1fr 52px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #2b2e2c;font-size:12px}
-.row:last-child{border-bottom:0}
-.swatch{width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,.25)}
-.events{max-height:420px;overflow:auto}
-.event{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #2b2e2c;font-size:12px}
-.event small{color:#aaa69c}
-</style>
-</head>
-<body>
-<header>
-<button id="play">Play</button>
-<input id="scrub" type="range" min="0" max="1000" value="0">
-<strong id="time">0.000s</strong>
-<select id="speed"><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option></select>
-<select id="mode"><option value="top" selected>Top Surface</option><option value="changes">Changed Cells</option></select>
-<span class="stat" id="meta"></span>
-</header>
-<main>
-<canvas id="view"></canvas>
-<aside>
-<section><h2>Map State</h2><div class="metrics" id="metrics"></div></section>
-<section><h2>Visible Blocks</h2><div id="legend"></div></section>
-<section><h2>Recent Changes</h2><div class="events" id="events"></div></section>
-</aside>
-</main>
-<script>
-const replay=__DATA__;
-const canvas=document.getElementById('view');
-const ctx=canvas.getContext('2d');
-const scrub=document.getElementById('scrub');
-const play=document.getElementById('play');
-const speed=document.getElementById('speed');
-const mode=document.getElementById('mode');
-const timeLabel=document.getElementById('time');
-const size=replay.size||{X:1,Y:1,Z:1};
-document.getElementById('meta').textContent=`${replay.source} | ${replay.mapName||replay.mapKey||'unknown'} | ${replay.initialBlocks.length} initial blocks | ${replay.changes.length} changes`;
-let current=replay.start, applied=-1, playing=false, last=performance.now();
-let state=new Map();
-const changed=new Set();
-const key=(x,y,z)=>`${x},${y},${z}`;
-const splitKey=k=>k.split(',').map(Number);
-function cloneBlock(b){return {x:b.x,y:b.y,z:b.z,id:b.id||0,name:b.name||'',damage:b.damage||0,vdata:b.vdata||0,ldata:b.ldata||0,team:b.team||'Neutral',color:b.color}}
-function resetState(){state=new Map(); changed.clear(); for(const b of replay.initialBlocks){state.set(key(b.x,b.y,b.z), cloneBlock(b));} applied=-1}
-function applyChange(c){const k=key(c.x,c.y,c.z); const prev=state.get(k)||{x:c.x,y:c.y,z:c.z,id:0,name:'block_air',damage:0,vdata:0,ldata:0,team:'Neutral'}; const next={x:c.x,y:c.y,z:c.z,id:c.id??prev.id,name:c.name||prev.name,damage:c.damage??prev.damage,vdata:c.vdata??prev.vdata,ldata:c.ldata??prev.ldata,team:c.team||prev.team,source:c.source,device:c.device,direction:c.direction,t:c.t}; if(next.id===0){state.delete(k)}else{state.set(k,next)} changed.add(k)}
-function seek(t){if(t<current) resetState(); while(applied+1<replay.changes.length && replay.changes[applied+1].t<=t){applied++; applyChange(replay.changes[applied]);} current=t}
-function colorFor(block){if(!block||block.id===0)return '#080b0a'; if(block.team==='Team1')return '#3c8dcc'; if(block.team==='Team2')return '#c94d4d'; const id=Number(block.id); const hue=(id*47)%360; const sat=block.name&&block.name.includes('air')?12:42; const light=block.name&&block.name.includes('stone')?48:38+((id*13)%18); return `hsl(${hue} ${sat}% ${light}%)`}
-function resize(){canvas.width=canvas.clientWidth*devicePixelRatio; canvas.height=canvas.clientHeight*devicePixelRatio}
-function topSurface(){const top=new Map(); for(const b of state.values()){if(b.id===0)continue; const k=`${b.x},${b.z}`; const old=top.get(k); if(!old||b.y>old.y)top.set(k,b)} return top}
-function draw(){ctx.clearRect(0,0,canvas.width,canvas.height); const pad=36*devicePixelRatio; const w=canvas.width-pad*2; const h=canvas.height-pad*2; const sx=w/Math.max(1,size.X); const sz=h/Math.max(1,size.Z); ctx.fillStyle='#0d1110'; ctx.fillRect(pad,pad,w,h); const top=topSurface(); const visible=[...top.values()]; const drawSet=mode.value==='changes'?visible.filter(b=>changed.has(key(b.x,b.y,b.z))):visible; for(const b of drawSet){ctx.fillStyle=colorFor(b); ctx.fillRect(pad+b.x*sx,pad+b.z*sz,Math.max(1,sx+0.4),Math.max(1,sz+0.4));} ctx.strokeStyle='#46504a'; ctx.lineWidth=1; ctx.strokeRect(pad,pad,w,h); for(const c of replay.changes.slice(Math.max(0,applied-80),applied+1)){const age=current-c.t; if(age>2)continue; ctx.strokeStyle=c.source==='block_update'?'rgba(255,255,255,.45)':'rgba(255,214,102,.9)'; ctx.lineWidth=Math.max(1,2*devicePixelRatio); ctx.strokeRect(pad+c.x*sx,pad+c.z*sz,Math.max(3,sx),Math.max(3,sz));} timeLabel.textContent=`${(current-replay.start).toFixed(3)}s`; renderSide(top)}
-function renderSide(top){const counts=new Map(); for(const b of top.values()){const k=`${b.id}|${b.name}`; counts.set(k,(counts.get(k)||0)+1)} const rows=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,18); document.getElementById('legend').innerHTML=rows.map(([k,count])=>{const [id,name]=k.split('|'); return `<div class="row"><span><span class="swatch" style="display:inline-block;background:${colorFor({id:Number(id),name})}"></span> ${id}</span><span>${name||'unknown'}</span><span>${count}</span></div>`}).join(''); const recent=replay.changes.slice(Math.max(0,applied-50),applied+1).reverse(); document.getElementById('events').innerHTML=recent.map(c=>`<div class="event"><span>${(c.t-replay.start).toFixed(2)}</span><span><strong>${c.source}</strong> ${c.name||c.id||''}<br><small>${c.x},${c.y},${c.z} ${c.device||''} ${c.direction||''}</small></span></div>`).join('')}
-document.getElementById('metrics').innerHTML=[
- ['Initial',replay.verification.InitialNonEmptyBlockCount],
- ['Final',replay.verification.FinalNonEmptyBlockCount],
- ['Changed',replay.verification.changedCellCount],
- ['Repeated',replay.verification.RepeatedCellCount],
- ['No-op',replay.verification.DuplicateNoOpUpdates],
- ['Out of order',replay.verification.OutOfOrderUpdates]
-].map(([k,v])=>`<div class="metric"><strong>${v}</strong><span>${k}</span></div>`).join('');
-function tick(now){if(playing){let t=current+((now-last)/1000)*Number(speed.value); if(t>replay.end){t=replay.end;playing=false;play.textContent='Play'} seek(t); scrub.value=String(Math.round((current-replay.start)/Math.max(.001,replay.duration)*1000));} last=now; draw(); requestAnimationFrame(tick)}
-scrub.addEventListener('input',()=>seek(replay.start+(Number(scrub.value)/1000)*replay.duration));
-play.addEventListener('click',()=>{playing=!playing; play.textContent=playing?'Pause':'Play'; last=performance.now()});
-mode.addEventListener('change',draw);
-addEventListener('resize',resize); resize(); resetState(); requestAnimationFrame(tick);
 </script>
 </body>
 </html>
@@ -2844,6 +2795,75 @@ addEventListener('resize',resize); resize(); resetState(); requestAnimationFrame
             })
             .ToArray();
 
+        var channels = analysis.ChannelEvents
+            .OrderBy(static item => item.Time)
+            .Select(static item => new
+            {
+                t = Math.Round(item.Time, 3),
+                item.Phase,
+                item.UnitId,
+                item.ToolIndex,
+                hitPosition = ToNormalizedVector(item.HitPosition),
+                targetBlock = item.TargetBlock is null ? null : new { x = item.TargetBlock.Value.X, y = item.TargetBlock.Value.Y, z = item.TargetBlock.Value.Z },
+                item.TargetUnitId
+            })
+            .ToArray();
+
+        var dashCharges = analysis.DashChargeEvents
+            .OrderBy(static item => item.Time)
+            .Select(static item => new
+            {
+                t = Math.Round(item.Time, 3),
+                item.Phase,
+                item.UnitId,
+                item.ToolIndex
+            })
+            .ToArray();
+
+        var pickups = analysis.PickupTakenEvents
+            .OrderBy(static item => item.Time)
+            .Select(item => new
+            {
+                t = Math.Round(item.Time, 3),
+                item.PlayerId,
+                pickupKeyHash = item.PickupKeyHash.ToString("X8", CultureInfo.InvariantCulture),
+                pickupName = ResolveKeyName(analysis, item.PickupKeyHash)
+            })
+            .ToArray();
+
+        var recalls = analysis.RecallEvents
+            .OrderBy(static item => item.Time)
+            .Select(static item => new
+            {
+                t = Math.Round(item.Time, 3),
+                item.Phase,
+                item.UnitId,
+                item.Duration,
+                item.EndTime
+            })
+            .ToArray();
+
+        var portalTeleports = analysis.PortalTeleports
+            .OrderBy(static item => item.Time)
+            .Select(static item => new
+            {
+                t = Math.Round(item.Time, 3),
+                item.UnitId,
+                item.PortalFromId,
+                item.PortalToId
+            })
+            .ToArray();
+
+        var kickPlayers = analysis.KickPlayerEvents
+            .OrderBy(static item => item.Time)
+            .Select(static item => new
+            {
+                t = Math.Round(item.Time, 3),
+                item.PlayerId,
+                item.Reason
+            })
+            .ToArray();
+
         var rpcResults = analysis.RpcResults
             .OrderBy(static item => item.Time)
             .Select(static item => new
@@ -3126,6 +3146,12 @@ addEventListener('resize',resize); resize(); resetState(); requestAnimationFrame
                 blockUpdates = analysis.BlockUpdates.Sum(static item => item.Count),
                 barrierUpdates = analysis.BarrierUpdates.Count,
                 reloadEvents = analysis.ReloadEvents.Count,
+                channelEvents = analysis.ChannelEvents.Count,
+                dashChargeEvents = analysis.DashChargeEvents.Count,
+                pickupTakenEvents = analysis.PickupTakenEvents.Count,
+                recallEvents = analysis.RecallEvents.Count,
+                portalTeleportEvents = analysis.PortalTeleports.Count,
+                kickPlayerEvents = analysis.KickPlayerEvents.Count,
                 rpcResults = analysis.RpcResults.Count,
                 surrenderEvents = analysis.SurrenderEvents.Count,
                 surrenderProgress = analysis.SurrenderProgress.Count,
@@ -3158,6 +3184,12 @@ addEventListener('resize',resize); resize(); resetState(); requestAnimationFrame
             blockUpdates,
             barrierUpdates,
             reloads,
+            channels,
+            dashCharges,
+            pickups,
+            recalls,
+            portalTeleports,
+            kickPlayers,
             rpcResults,
             surrenderEvents,
             surrenderProgress,
@@ -3799,13 +3831,13 @@ addEventListener('resize',resize); resize(); resetState(); requestAnimationFrame
         string.Join(";", ammo.Select(item => $"{ResolveKeyName(analysis, item.Key, item.Key.ToString("X8", CultureInfo.InvariantCulture))}:{string.Join("|", item.Value.Select(static ammoItem => $"{ammoItem.Index?.ToString(CultureInfo.InvariantCulture) ?? "?"}/{ammoItem.Mag?.ToString("0.###", CultureInfo.InvariantCulture) ?? ""}/{ammoItem.Pool?.ToString("0.###", CultureInfo.InvariantCulture) ?? ""}"))}"));
 
     private static string FormatEffects(ReplayAnalysis analysis, IReadOnlyDictionary<uint, ulong?> effects) =>
-        string.Join("|", effects.Select(item => $"{ResolveKeyName(analysis, item.Key, item.Key.ToString("X8", CultureInfo.InvariantCulture))}:{item.Value?.ToString(CultureInfo.InvariantCulture) ?? ""}"));
+        string.Join("|", effects.Select(item => $"{item.Key.ToString("X8", CultureInfo.InvariantCulture)}:{ResolveKeyName(analysis, item.Key, item.Key.ToString("X8", CultureInfo.InvariantCulture))}:{item.Value?.ToString(CultureInfo.InvariantCulture) ?? ""}"));
 
     private static string FormatFloatDictionary(IReadOnlyDictionary<string, float> values) =>
         string.Join("|", values.Select(static item => $"{item.Key}:{item.Value.ToString("0.###", CultureInfo.InvariantCulture)}"));
 
     private static string FormatDevices(ReplayAnalysis analysis, IReadOnlyDictionary<int, DeviceDataRecord> devices) =>
-        string.Join("|", devices.Select(item => $"{item.Key}:{ResolveKeyName(analysis, item.Value.DeviceKeyHash, item.Value.DeviceKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "")}/{item.Value.TotalCost?.ToString("0.###", CultureInfo.InvariantCulture) ?? ""}/{item.Value.CostInc?.ToString("0.###", CultureInfo.InvariantCulture) ?? ""}"));
+        string.Join("|", devices.Select(item => $"{item.Key}:{item.Value.DeviceKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? ResolveKeyName(analysis, item.Value.DeviceKeyHash, "")}/{item.Value.TotalCost?.ToString("0.###", CultureInfo.InvariantCulture) ?? ""}/{item.Value.CostInc?.ToString("0.###", CultureInfo.InvariantCulture) ?? ""}"));
 
     private static string FormatSupply(ReplayAnalysis analysis, SupplyInfoData? supply)
     {
@@ -3863,6 +3895,7 @@ internal sealed class ReplayAnalysis
     public double DurationSeconds => EndTime - StartTime;
     public int InitZoneRemainingBytes { get; set; }
     public int InitZonePayloadBytes { get; set; }
+    public byte[]? InitZonePayload { get; set; }
     public bool InitZoneFullyCaptured => InitZoneRemainingBytes == InitZonePayloadBytes && InitZonePayloadBytes > 0;
     public string InitZoneFlags { get; set; } = "";
     public int InitZoneUnreadBytes { get; set; }
@@ -3895,6 +3928,12 @@ internal sealed class ReplayAnalysis
     public List<BlockMinedEvent> BlockMined { get; } = [];
     public List<BarrierUpdateEvent> BarrierUpdates { get; } = [];
     public List<ReloadEvent> ReloadEvents { get; } = [];
+    public List<ChannelEvent> ChannelEvents { get; } = [];
+    public List<DashChargeEvent> DashChargeEvents { get; } = [];
+    public List<PickupTakenEvent> PickupTakenEvents { get; } = [];
+    public List<RecallEvent> RecallEvents { get; } = [];
+    public List<PortalTeleportEvent> PortalTeleports { get; } = [];
+    public List<KickPlayerEvent> KickPlayerEvents { get; } = [];
     public List<RpcResultEvent> RpcResults { get; } = [];
     public List<SurrenderEvent> SurrenderEvents { get; } = [];
     public List<SurrenderProgressEvent> SurrenderProgress { get; } = [];
@@ -4487,6 +4526,36 @@ internal sealed record AbilityCastEvent(double Time, uint UnitId, uint? AbilityK
 {
     public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
     public string UnitIdText => UnitId.ToString(CultureInfo.InvariantCulture);
+}
+
+internal sealed record ChannelEvent(double Time, string Phase, uint UnitId, byte? ToolIndex, Vector3f? HitPosition, Vector3s? TargetBlock, uint? TargetUnitId)
+{
+    public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
+}
+
+internal sealed record DashChargeEvent(double Time, string Phase, uint UnitId, byte ToolIndex)
+{
+    public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
+}
+
+internal sealed record PickupTakenEvent(double Time, uint PlayerId, uint PickupKeyHash)
+{
+    public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
+}
+
+internal sealed record RecallEvent(double Time, string Phase, uint UnitId, float? Duration, ulong? EndTime)
+{
+    public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
+}
+
+internal sealed record PortalTeleportEvent(double Time, uint UnitId, uint PortalFromId, uint PortalToId)
+{
+    public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
+}
+
+internal sealed record KickPlayerEvent(double Time, ulong PlayerId, string Reason)
+{
+    public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
 }
 
 internal sealed record BuildStartEvent(double Time, uint UnitId, byte? ToolIndex, uint? DeviceKeyHash, Vector3s? InsidePosition, Vector3s? OutsidePosition, string? Direction, bool? ShowGhost)

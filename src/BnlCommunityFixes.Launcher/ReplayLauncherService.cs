@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Text.Json;
 using BnlCommunityFixes.Core.Models;
 using BnlCommunityFixes.Core.Services;
@@ -7,6 +8,8 @@ namespace BnlCommunityFixes.Launcher;
 
 public sealed class ReplayLauncherService
 {
+    private static readonly TimeSpan MinimumCaptureAgeBeforeCompression = TimeSpan.FromMinutes(2);
+
     private readonly AppPaths paths;
     private readonly Logger logger;
     private readonly LauncherSettings settings;
@@ -27,9 +30,8 @@ public sealed class ReplayLauncherService
 
     public string LatestAnalysisDirectory => Path.Combine(paths.DataDir, "replay-analysis", "latest");
 
-    public string LatestViewerPath => Path.Combine(LatestAnalysisDirectory, "viewer.html");
-
-    public string LatestMapStateViewerPath => Path.Combine(LatestAnalysisDirectory, "map_state_viewer.html");
+    public string ReplayLaunchRequestPath => Path.Combine(paths.DataDir, "replay-launch-request.json");
+    public string ReplayLaunchRequestTextPath => Path.Combine(paths.DataDir, "replay-launch-request.path");
 
     public IReadOnlyList<ReplayCaptureInfo> ListCaptures(GameInstallInfo installInfo)
     {
@@ -39,9 +41,13 @@ public sealed class ReplayLauncherService
             return [];
         }
 
+        CompressCompletedCaptures(replayDirectory);
+
         return Directory
-            .EnumerateFiles(replayDirectory, "zone-capture-*.jsonl", SearchOption.TopDirectoryOnly)
+            .EnumerateFiles(replayDirectory, "zone-capture-*.jsonl.gz", SearchOption.TopDirectoryOnly)
+            .Concat(Directory.EnumerateFiles(replayDirectory, "zone-capture-*.jsonl", SearchOption.TopDirectoryOnly))
             .Select(file => CreateCaptureInfo(new FileInfo(file)))
+            .Where(static capture => capture.SizeBytes > 0)
             .OrderByDescending(static capture => capture.LastWriteTime)
             .ToArray();
     }
@@ -54,9 +60,13 @@ public sealed class ReplayLauncherService
             return null;
         }
 
+        CompressCompletedCaptures(replayDirectory);
+
         return Directory
-            .EnumerateFiles(replayDirectory, "zone-capture-*.jsonl", SearchOption.TopDirectoryOnly)
+            .EnumerateFiles(replayDirectory, "zone-capture-*.jsonl.gz", SearchOption.TopDirectoryOnly)
+            .Concat(Directory.EnumerateFiles(replayDirectory, "zone-capture-*.jsonl", SearchOption.TopDirectoryOnly))
             .Select(static file => new FileInfo(file))
+            .Where(static file => file.Length > 0)
             .OrderByDescending(static file => file.LastWriteTimeUtc)
             .FirstOrDefault();
     }
@@ -68,59 +78,14 @@ public sealed class ReplayLauncherService
         OpenPath(replayDirectory);
     }
 
-    public void OpenLatestViewer()
-    {
-        if (!File.Exists(LatestViewerPath))
-        {
-            throw new FileNotFoundException("No analyzed replay viewer exists yet. Analyze the latest replay first.", LatestViewerPath);
-        }
-
-        OpenPath(LatestViewerPath);
-    }
-
-    public void OpenLatestMapStateViewer()
-    {
-        if (!File.Exists(LatestMapStateViewerPath))
-        {
-            throw new FileNotFoundException("No analyzed map-state viewer exists yet. Analyze the latest replay first.", LatestMapStateViewerPath);
-        }
-
-        OpenPath(LatestMapStateViewerPath);
-    }
-
     public string GetAnalysisDirectory(FileInfo capture) =>
-        Path.Combine(paths.DataDir, "replay-analysis", Path.GetFileNameWithoutExtension(capture.Name));
-
-    public string GetViewerPath(FileInfo capture) =>
-        Path.Combine(GetAnalysisDirectory(capture), "viewer.html");
-
-    public string GetMapStateViewerPath(FileInfo capture) =>
-        Path.Combine(GetAnalysisDirectory(capture), "map_state_viewer.html");
+        Path.Combine(paths.DataDir, "replay-analysis", GetCaptureBaseName(capture.Name));
 
     public string GetValidationReportPath(FileInfo capture) =>
         Path.Combine(GetAnalysisDirectory(capture), "validation.txt");
 
-    public void OpenViewer(FileInfo capture)
-    {
-        var viewerPath = GetViewerPath(capture);
-        if (!File.Exists(viewerPath))
-        {
-            throw new FileNotFoundException("No analyzed replay viewer exists for this capture yet. Analyze it first.", viewerPath);
-        }
-
-        OpenPath(viewerPath);
-    }
-
-    public void OpenMapStateViewer(FileInfo capture)
-    {
-        var viewerPath = GetMapStateViewerPath(capture);
-        if (!File.Exists(viewerPath))
-        {
-            throw new FileNotFoundException("No analyzed map-state viewer exists for this capture yet. Analyze it first.", viewerPath);
-        }
-
-        OpenPath(viewerPath);
-    }
+    public string GetNormalizedReplayPath(FileInfo capture) =>
+        Path.Combine(GetAnalysisDirectory(capture), "replay.normalized.json");
 
     public void OpenValidationReport(FileInfo capture)
     {
@@ -131,6 +96,41 @@ public sealed class ReplayLauncherService
         }
 
         OpenPath(validationPath);
+    }
+
+    public bool HasAnalyzedReplay(FileInfo capture) =>
+        File.Exists(GetNormalizedReplayPath(capture));
+
+    public void WriteReplayLaunchRequest(FileInfo capture, bool launchReplayMode)
+    {
+        if (!capture.Exists)
+        {
+            throw new FileNotFoundException("Replay capture not found.", capture.FullName);
+        }
+
+        var analysisDirectory = GetAnalysisDirectory(capture);
+        var normalizedPath = GetNormalizedReplayPath(capture);
+        if (!File.Exists(normalizedPath))
+        {
+            throw new FileNotFoundException("No analyzed replay exists for this capture yet. Analyze it first.", normalizedPath);
+        }
+
+        var metadata = TryReadMetadata(normalizedPath);
+        Directory.CreateDirectory(paths.DataDir);
+        var request = new ReplayLaunchRequest(
+            capture.FullName,
+            analysisDirectory,
+            normalizedPath,
+            Path.Combine(analysisDirectory, "map_blocks.csv"),
+            Path.Combine(analysisDirectory, "map_state_timeline.csv"),
+            metadata.MapName,
+            metadata.DurationSeconds,
+            DateTimeOffset.UtcNow,
+            launchReplayMode);
+
+        File.WriteAllText(ReplayLaunchRequestPath, JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(ReplayLaunchRequestTextPath, normalizedPath);
+        logger.Info($"Wrote replay launch request for {capture.FullName} to {ReplayLaunchRequestPath}. Replay mode launch: {launchReplayMode}");
     }
 
     public void OpenCaptureLocation(FileInfo capture)
@@ -154,6 +154,86 @@ public sealed class ReplayLauncherService
         {
             capture.Delete();
         }
+    }
+
+    private void CompressCompletedCaptures(string replayDirectory)
+    {
+        foreach (var path in Directory.EnumerateFiles(replayDirectory, "zone-capture-*.jsonl", SearchOption.TopDirectoryOnly))
+        {
+            TryCompressCompletedCapture(new FileInfo(path));
+        }
+    }
+
+    private void TryCompressCompletedCapture(FileInfo capture)
+    {
+        if (!capture.Exists || capture.Length == 0)
+        {
+            return;
+        }
+
+        if (DateTime.UtcNow - capture.LastWriteTimeUtc < MinimumCaptureAgeBeforeCompression)
+        {
+            return;
+        }
+
+        var compressedPath = capture.FullName + ".gz";
+        var tempPath = compressedPath + ".tmp";
+
+        try
+        {
+            if (File.Exists(compressedPath) && new FileInfo(compressedPath).Length > 0)
+            {
+                capture.Delete();
+                return;
+            }
+
+            File.Delete(tempPath);
+
+            using (var source = new FileStream(capture.FullName, FileMode.Open, FileAccess.Read, FileShare.None))
+            using (var destination = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (var gzip = new GZipStream(destination, CompressionLevel.Optimal))
+            {
+                source.CopyTo(gzip);
+            }
+
+            if (new FileInfo(tempPath).Length == 0)
+            {
+                File.Delete(tempPath);
+                return;
+            }
+
+            File.Move(tempPath, compressedPath);
+            capture.Delete();
+            logger.Info($"Compressed replay capture {capture.FullName} to {compressedPath}.");
+        }
+        catch (IOException)
+        {
+            File.Delete(tempPath);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            File.Delete(tempPath);
+        }
+        catch (Exception exception)
+        {
+            File.Delete(tempPath);
+            logger.Warning($"Failed to compress replay capture {capture.FullName}: {exception.Message}");
+        }
+    }
+
+    private static string GetCaptureBaseName(string fileName)
+    {
+        if (fileName.EndsWith(".jsonl.gz", StringComparison.OrdinalIgnoreCase))
+        {
+            return fileName[..^".jsonl.gz".Length];
+        }
+
+        if (fileName.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
+        {
+            return fileName[..^".jsonl".Length];
+        }
+
+        return Path.GetFileNameWithoutExtension(fileName);
     }
 
     public async Task<ReplayAnalysisLaunchResult> AnalyzeLatestAsync(GameInstallInfo installInfo, CancellationToken cancellationToken)
@@ -201,7 +281,7 @@ public sealed class ReplayLauncherService
                 $"Replay analyzer failed with exit code {process.ExitCode}.{Environment.NewLine}{error}{Environment.NewLine}{output}");
         }
 
-        return new ReplayAnalysisLaunchResult(latestCapture.FullName, LatestAnalysisDirectory, LatestViewerPath, output);
+        return new ReplayAnalysisLaunchResult(latestCapture.FullName, LatestAnalysisDirectory, output);
     }
 
     public async Task<ReplayAnalysisLaunchResult> AnalyzeCaptureAsync(FileInfo capture, CancellationToken cancellationToken)
@@ -242,7 +322,7 @@ public sealed class ReplayLauncherService
                 $"Replay analyzer failed with exit code {process.ExitCode}.{Environment.NewLine}{error}{Environment.NewLine}{output}");
         }
 
-        return new ReplayAnalysisLaunchResult(capture.FullName, outputDirectory, GetViewerPath(capture), output);
+        return new ReplayAnalysisLaunchResult(capture.FullName, outputDirectory, output);
     }
 
     private static void OpenPath(string path)
@@ -296,16 +376,13 @@ public sealed class ReplayLauncherService
 
     private ReplayCaptureInfo CreateCaptureInfo(FileInfo capture)
     {
-        var viewerPath = GetViewerPath(capture);
-        var mapStateViewerPath = GetMapStateViewerPath(capture);
         var normalizedPath = Path.Combine(GetAnalysisDirectory(capture), "replay.normalized.json");
         var metadata = TryReadMetadata(normalizedPath);
         return new ReplayCaptureInfo(
             capture,
             capture.LastWriteTime,
             capture.Length,
-            File.Exists(viewerPath),
-            File.Exists(mapStateViewerPath),
+            File.Exists(normalizedPath),
             File.Exists(GetValidationReportPath(capture)),
             metadata.MapName,
             metadata.DurationSeconds,
@@ -369,13 +446,22 @@ public sealed class ReplayLauncherService
     }
 }
 
-public sealed record ReplayAnalysisLaunchResult(string CapturePath, string OutputDirectory, string ViewerPath, string AnalyzerOutput);
+public sealed record ReplayAnalysisLaunchResult(string CapturePath, string OutputDirectory, string AnalyzerOutput);
+public sealed record ReplayLaunchRequest(
+    string CapturePath,
+    string AnalysisDirectory,
+    string NormalizedPath,
+    string MapBlocksPath,
+    string MapStateTimelinePath,
+    string? MapName,
+    double? DurationSeconds,
+    DateTimeOffset RequestedUtc,
+    bool LaunchReplayMode);
 public sealed record ReplayCaptureInfo(
     FileInfo File,
     DateTime LastWriteTime,
     long SizeBytes,
-    bool HasViewer,
-    bool HasMapStateViewer,
+    bool HasAnalyzedReplay,
     bool HasValidationReport,
     string? MapName,
     double? DurationSeconds,

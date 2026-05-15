@@ -24,6 +24,7 @@ $AimHealthbarConfigPath = Join-Path $PSScriptRoot "aim-healthbar-config.json"
 $DeathCamHealthbarConfigPath = Join-Path $PSScriptRoot "deathcam-healthbar-config.json"
 $FriendlyLowHealthConfigPath = Join-Path $PSScriptRoot "friendly-low-health-config.json"
 $TeammateHpConfigPath = Join-Path $PSScriptRoot "teammate-hp-config.json"
+$AutoCrouchConfigPath = Join-Path $PSScriptRoot "experimental-auto-crouch-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
 $SavedCopyPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.font-configured.dll"
 $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
@@ -32,6 +33,7 @@ $LockOnHelperSourcePath = Join-Path $PSScriptRoot "LockOnRuntime.cs"
 $TrackingHelperSourcePath = Join-Path $PSScriptRoot "TrackingProjectileRuntime.cs"
 $RuntimeMenuSourcePath = Join-Path $PSScriptRoot "RuntimeMenu.cs"
 $MatchReplayRecorderSourcePath = Join-Path $PSScriptRoot "MatchReplayRecorderRuntime.cs"
+$ReplayPlayerSourcePath = Join-Path $PSScriptRoot "ReplayPlayerRuntime.cs"
 $ManagedDir = Join-Path $GameRoot "Win64\BlockNLoad_Data\Managed"
 $BackupPath = Join-Path $ManagedDir "Assembly-CSharp-backup.dll"
 $CecilPath = Join-Path $PSScriptRoot "Mono.Cecil.dll"
@@ -178,6 +180,9 @@ $MatchReplayRecorderConfig = Get-JsonConfig -Path $MatchReplayRecorderConfigPath
     enabled = $false
     capture_payload = $true
     max_payload_bytes = 262144
+    record_custom_games = $true
+    record_casual_games = $true
+    record_ranked_games = $true
 }
 $AimHealthbarConfig = Get-JsonConfig -Path $AimHealthbarConfigPath -Default @{
     enabled = $true
@@ -195,6 +200,9 @@ $FriendlyLowHealthConfig = Get-JsonConfig -Path $FriendlyLowHealthConfigPath -De
     color = "#FF4444"
 }
 $TeammateHpConfig = Get-JsonConfig -Path $TeammateHpConfigPath -Default @{
+    enabled = $false
+}
+$AutoCrouchConfig = Get-JsonConfig -Path $AutoCrouchConfigPath -Default @{
     enabled = $false
 }
 
@@ -220,6 +228,7 @@ $AnyEnabled = @(
     [bool]$AutoCasualQueueConfig.enabled,
     [bool]$FriendlyLowHealthConfig.enabled,
     [bool]$TeammateHpConfig.enabled,
+    [bool]$AutoCrouchConfig.enabled,
     $SkipIntroEnabled,
     $DisableMainMenuFrameCapEnabled
 ) -contains $true
@@ -394,6 +403,7 @@ $FriendlyLowHealthColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrWh
 [double]$FriendlyLowHealthIndicatorSize = if ($null -ne $FriendlyLowHealthConfig.indicator_size) { [double]$FriendlyLowHealthConfig.indicator_size } else { 1.0 }
 [double]$FriendlyLowHealthIndicatorAlpha = if ($null -ne $FriendlyLowHealthConfig.indicator_alpha) { [double]$FriendlyLowHealthConfig.indicator_alpha } else { 1.0 }
 [bool]$TeammateHpEnabled = if ($null -ne $TeammateHpConfig.enabled) { [bool]$TeammateHpConfig.enabled } else { $false }
+[bool]$AutoCrouchEnabled = if ($null -ne $AutoCrouchConfig.enabled) { [bool]$AutoCrouchConfig.enabled } else { $false }
 [bool]$SkipIntroEnabled = if ($null -ne $DebugMenuConfig.skip_intro) { [bool]$DebugMenuConfig.skip_intro } else { $false }
 [bool]$DisableMainMenuFrameCapEnabled = if ($null -ne $DebugMenuConfig.disable_main_menu_frame_cap) { [bool]$DebugMenuConfig.disable_main_menu_frame_cap } else { $false }
 [string]$DebugMenuKeyName = if ($null -ne $DebugMenuConfig.debug_menu_key -and -not [string]::IsNullOrWhiteSpace([string]$DebugMenuConfig.debug_menu_key)) { [string]$DebugMenuConfig.debug_menu_key } else { "F9" }
@@ -406,14 +416,20 @@ $DebugLobbyMenuKeyLiteral = $DebugLobbyMenuKeyName.Replace("\", "\\").Replace('"
 $DebugZoneMenuKeyLiteral = $DebugZoneMenuKeyName.Replace("\", "\\").Replace('"', '\"')
 [bool]$MatchReplayRecorderCapturePayload = if ($null -ne $MatchReplayRecorderConfig.capture_payload) { [bool]$MatchReplayRecorderConfig.capture_payload } else { $true }
 [int]$MatchReplayRecorderMaxPayloadBytes = if ($null -ne $MatchReplayRecorderConfig.max_payload_bytes) { [int]$MatchReplayRecorderConfig.max_payload_bytes } else { 262144 }
+[bool]$MatchReplayRecorderRecordCustomGames = if ($null -ne $MatchReplayRecorderConfig.record_custom_games) { [bool]$MatchReplayRecorderConfig.record_custom_games } else { $true }
+[bool]$MatchReplayRecorderRecordCasualGames = if ($null -ne $MatchReplayRecorderConfig.record_casual_games) { [bool]$MatchReplayRecorderConfig.record_casual_games } else { $true }
+[bool]$MatchReplayRecorderRecordRankedGames = if ($null -ne $MatchReplayRecorderConfig.record_ranked_games) { [bool]$MatchReplayRecorderConfig.record_ranked_games } else { $true }
 if ($MatchReplayRecorderMaxPayloadBytes -lt 0) { $MatchReplayRecorderMaxPayloadBytes = 0 }
 if ($MatchReplayRecorderMaxPayloadBytes -gt 1048576) { $MatchReplayRecorderMaxPayloadBytes = 1048576 }
 
 $HelperSource = @"
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Reflection;
 using Protocol;
 using UnityEngine;
@@ -2075,6 +2091,11 @@ if (Test-Path $MatchReplayRecorderSourcePath) {
     $MatchReplayRecorderSource = [regex]::Replace($MatchReplayRecorderSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     $HelperSource += "`r`n" + $MatchReplayRecorderSource
 }
+if (Test-Path $ReplayPlayerSourcePath) {
+    $ReplayPlayerSource = Get-Content -Raw -LiteralPath $ReplayPlayerSourcePath
+    $ReplayPlayerSource = [regex]::Replace($ReplayPlayerSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $HelperSource += "`r`n" + $ReplayPlayerSource
+}
 
 $HelperSource += @"
 
@@ -2952,6 +2973,42 @@ namespace BnlCommunityFixes
 "@
 }
 
+if ($AutoCrouchEnabled) {
+$HelperSource += @"
+
+namespace BnlCommunityFixes
+{
+    public static class AutoCrouchRuntime
+    {
+        private static bool configured;
+
+        static AutoCrouchRuntime()
+        {
+            EnsureConfigured();
+        }
+
+        public static void EnsureConfigured()
+        {
+            if (configured) return;
+            configured = true;
+            RuntimeFeatureState.ConfigureAutoCrouchDisable(true, $(Format-BoolLiteral $AutoCrouchEnabled));
+            RuntimeSettingsMenuManager.EnsureInstance();
+        }
+
+        // Returns true when auto-crouch should be suppressed (i.e. "ceiling check passes").
+        // Only called from PlayerMovementGroundMove.Update to replace the IsPossibleToStay call
+        // in the auto-crouch condition. Voluntary crouch/stand logic is unaffected.
+        public static bool IsPossibleToStayForAutoCrouch(MovementController controller)
+        {
+            EnsureConfigured();
+            if (RuntimeFeatureState.AutoCrouchDisabled) return true;
+            return controller.IsPossibleToStay();
+        }
+    }
+}
+"@
+}
+
 if (Test-Path $HelperOutputPath) {
     Remove-Item -LiteralPath $HelperOutputPath -Force
 }
@@ -2976,6 +3033,7 @@ $CscArgs = @(
     "/reference:C:\Windows\Microsoft.NET\Framework\v4.0.30319\mscorlib.dll",
     "/reference:C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.dll",
     "/reference:C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.Core.dll",
+    "/reference:C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.IO.Compression.dll",
     $TempCsPath
 )
 $cscResult = & $CscPath @CscArgs 2>&1
@@ -3015,7 +3073,7 @@ $MatchReplayRecorderRuntimeType = $HelperAssembly.MainModule.Types | Where-Objec
 $ImportedConfigureMatchReplayRecorder = $null
 $ImportedRecordMatchReplayPacket = $null
 if ($MatchReplayRecorderRuntimeType) {
-    $ConfigureMatchReplayRecorderMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "Configure" -and $_.Parameters.Count -eq 3 } | Select-Object -First 1
+    $ConfigureMatchReplayRecorderMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "Configure" -and $_.Parameters.Count -eq 6 } | Select-Object -First 1
     $RecordMatchReplayPacketMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "RecordPacket" -and $_.Parameters.Count -eq 2 } | Select-Object -First 1
     if ($ConfigureMatchReplayRecorderMethod) {
         $ImportedConfigureMatchReplayRecorder = $Module.ImportReference($ConfigureMatchReplayRecorderMethod)
@@ -3043,6 +3101,14 @@ if ($RuntimeMenuType) {
     $EnsureRuntimeMenuMethod = $RuntimeMenuType.Methods | Where-Object Name -eq "EnsureInstance" | Select-Object -First 1
     if ($EnsureRuntimeMenuMethod) {
         $ImportedEnsureRuntimeMenu = $Module.ImportReference($EnsureRuntimeMenuMethod)
+    }
+}
+$ReplayPlayerRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.ReplayPlayerRuntime" | Select-Object -First 1
+$ImportedEnsureReplayPlayer = $null
+if ($ReplayPlayerRuntimeType) {
+    $EnsureReplayPlayerMethod = $ReplayPlayerRuntimeType.Methods | Where-Object Name -eq "EnsureInstance" | Select-Object -First 1
+    if ($EnsureReplayPlayerMethod) {
+        $ImportedEnsureReplayPlayer = $Module.ImportReference($EnsureReplayPlayerMethod)
     }
 }
 $FontRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.FontRuntime" | Select-Object -First 1
@@ -3141,6 +3207,9 @@ if ([bool]$MatchReplayRecorderConfig.enabled) {
         $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_1),
         $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $MatchReplayRecorderMaxPayloadBytes),
         $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $(if ($MatchReplayRecorderCapturePayload) { 1 } else { 0 })),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $(if ($MatchReplayRecorderRecordCustomGames) { 1 } else { 0 })),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $(if ($MatchReplayRecorderRecordCasualGames) { 1 } else { 0 })),
+        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $(if ($MatchReplayRecorderRecordRankedGames) { 1 } else { 0 })),
         $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedConfigureMatchReplayRecorder)
     )) {
         $MainMenuStartIl.InsertBefore($MainMenuStartFirst, $instruction)
@@ -3208,6 +3277,34 @@ if ($ImportedEnsureRuntimeMenu) {
     $MainMenuStartIl = $MainMenuStartMethod.Body.GetILProcessor()
     $MainMenuStartFirst = $MainMenuStartMethod.Body.Instructions | Select-Object -First 1
     $MainMenuStartIl.InsertBefore($MainMenuStartFirst, $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedEnsureRuntimeMenu))
+}
+
+if ($AutoCrouchEnabled) {
+    $AutoCrouchRuntimeTypeForMenu = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.AutoCrouchRuntime" | Select-Object -First 1
+    if (-not $AutoCrouchRuntimeTypeForMenu) { throw "AutoCrouchRuntime type not found in helper assembly." }
+    $EnsureAutoCrouchConfiguredMethod = $AutoCrouchRuntimeTypeForMenu.Methods | Where-Object Name -eq "EnsureConfigured" | Select-Object -First 1
+    if (-not $EnsureAutoCrouchConfiguredMethod) { throw "AutoCrouchRuntime.EnsureConfigured not found." }
+    $ImportedEnsureAutoCrouchConfigured = $Module.ImportReference($EnsureAutoCrouchConfiguredMethod)
+
+    $MainMenuType = $Module.Types | Where-Object Name -eq "MainMenu" | Select-Object -First 1
+    if (-not $MainMenuType) { throw "MainMenu type not found." }
+    $MainMenuStartMethod = $MainMenuType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+    if (-not $MainMenuStartMethod -or -not $MainMenuStartMethod.HasBody) { throw "MainMenu.Start not found." }
+
+    $MainMenuStartIl = $MainMenuStartMethod.Body.GetILProcessor()
+    $MainMenuStartFirst = $MainMenuStartMethod.Body.Instructions | Select-Object -First 1
+    $MainMenuStartIl.InsertBefore($MainMenuStartFirst, $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedEnsureAutoCrouchConfigured))
+}
+
+if ($ImportedEnsureReplayPlayer) {
+    $MainMenuType = $Module.Types | Where-Object Name -eq "MainMenu" | Select-Object -First 1
+    if (-not $MainMenuType) { throw "MainMenu type not found." }
+    $MainMenuStartMethod = $MainMenuType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+    if (-not $MainMenuStartMethod -or -not $MainMenuStartMethod.HasBody) { throw "MainMenu.Start not found." }
+
+    $MainMenuStartIl = $MainMenuStartMethod.Body.GetILProcessor()
+    $MainMenuStartFirst = $MainMenuStartMethod.Body.Instructions | Select-Object -First 1
+    $MainMenuStartIl.InsertBefore($MainMenuStartFirst, $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedEnsureReplayPlayer))
 }
 
 $AttachHealingMethod = $CombatNumberRuntimeType.Methods | Where-Object Name -eq "AttachHealing" | Select-Object -First 1
@@ -4524,6 +4621,45 @@ if ($FriendlyLowHealthConfig.enabled) {
     }
 }
 
+if ($AutoCrouchEnabled) {
+    $AutoCrouchRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.AutoCrouchRuntime" | Select-Object -First 1
+    if (-not $AutoCrouchRuntimeType) { throw "AutoCrouchRuntime type not found in helper assembly." }
+    $IsPossibleToStayHelperMethod = $AutoCrouchRuntimeType.Methods | Where-Object Name -eq "IsPossibleToStayForAutoCrouch" | Select-Object -First 1
+    if (-not $IsPossibleToStayHelperMethod) { throw "AutoCrouchRuntime.IsPossibleToStayForAutoCrouch not found." }
+    $ImportedIsPossibleToStayForAutoCrouch = $Module.ImportReference($IsPossibleToStayHelperMethod)
+
+    # Find MovementController.IsPossibleToStay so we can locate its call site in PlayerMovementGroundMove.Update
+    $MovementControllerType = $Module.Types | Where-Object Name -eq "MovementController" | Select-Object -First 1
+    if (-not $MovementControllerType) { throw "MovementController type not found." }
+    $OriginalIsPossibleToStayMethod = $MovementControllerType.Methods | Where-Object { $_.Name -eq "IsPossibleToStay" -and -not $_.IsStatic } | Select-Object -First 1
+    if (-not $OriginalIsPossibleToStayMethod) { throw "MovementController.IsPossibleToStay not found." }
+
+    # Find PlayerMovementGroundMove.Update and replace the IsPossibleToStay call with our wrapper.
+    # The call appears in the condition: CrouchHold || !IsPossibleToStay()
+    # We replace the callvirt/call to IsPossibleToStay with a call to IsPossibleToStayForAutoCrouch,
+    # which takes the same argument (ldarg.0 = the MovementController via 'this.controller').
+    $GroundMoveType = $Module.Types | Where-Object Name -eq "PlayerMovementGroundMove" | Select-Object -First 1
+    if (-not $GroundMoveType) { throw "PlayerMovementGroundMove type not found." }
+    $GroundMoveUpdateMethod = $GroundMoveType.Methods | Where-Object { $_.Name -eq "Update" -and -not $_.IsStatic } | Select-Object -First 1
+    if (-not $GroundMoveUpdateMethod -or -not $GroundMoveUpdateMethod.HasBody) { throw "PlayerMovementGroundMove.Update not found." }
+
+    $GroundMoveInstructions = $GroundMoveUpdateMethod.Body.Instructions
+    $IsPossibleToStayCallInstr = $null
+    for ($i = 0; $i -lt $GroundMoveInstructions.Count; $i++) {
+        $instr = $GroundMoveInstructions[$i]
+        if (($instr.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Call -or $instr.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Callvirt) `
+            -and $instr.Operand -and $instr.Operand.Name -eq "IsPossibleToStay") {
+            $IsPossibleToStayCallInstr = $instr
+            break
+        }
+    }
+    if (-not $IsPossibleToStayCallInstr) { throw "IsPossibleToStay call not found in PlayerMovementGroundMove.Update." }
+
+    # Replace the call operand: same opcode, new target pointing to our wrapper
+    $IsPossibleToStayCallInstr.OpCode = [Mono.Cecil.Cil.OpCodes]::Call
+    $IsPossibleToStayCallInstr.Operand = $ImportedIsPossibleToStayForAutoCrouch
+}
+
 if ($TeammateHpEnabled) {
     $TeammateHpRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.TeammateHpRuntime" | Select-Object -First 1
     if (-not $TeammateHpRuntimeType) { throw "TeammateHpRuntime type not found in helper assembly." }
@@ -4628,5 +4764,6 @@ if ($DeathCamHealthbarConfig.enabled) { $Features.Add("deathcam-healthbar") | Ou
 if ($AutoCasualQueueConfig.enabled) { $Features.Add("auto-casual-queue") | Out-Null }
 if ($MatchReplayRecorderConfig.enabled) { $Features.Add("match-replay-recorder") | Out-Null }
 if ($TeammateHpEnabled) { $Features.Add("teammate-hp") | Out-Null }
+if ($AutoCrouchEnabled) { $Features.Add("disable-auto-crouch") | Out-Null }
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash
 Write-Output "Experimental all-in-one DLL built. SHA1=$Hash features=$([string]::Join(',', $Features))"

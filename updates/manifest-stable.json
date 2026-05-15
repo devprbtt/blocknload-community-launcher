@@ -1,22 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.3.9",
-  "minimum_supported_version": "2.3.0",
-  "published_at": "2026-05-12T21:00:00.0000000+00:00",
-  "notes": "# v2.3.9\n\n## Features\n- Deathcam: world-space healthbar now shows above all living teammates (not just those below the low-health threshold). Uses the normal team color at full health, switches to the alert color when below threshold.\n- Teammate HP: added HP display in the alive team panel, with F8 runtime toggle.\n",
+  "version": "2.4",
+  "minimum_supported_version": "2.2.0",
+  "published_at": "2026-05-15T01:28:59.5546612+00:00",
+  "notes": "# BNL Community Fixes v2.4\n\nReplay release candidate build.\n\n## Changes\n- Added match replay recording filters for custom, casual, and ranked matches.\n- Fixed recorder session open/close for the Unity Mono runtime by avoiding Monitor lock calls.\n- Replay recorder now records the selected match scopes only and writes the scope into session_start.\n- Replay mode launch remains launcher-only to avoid accidental mid-match replay starts.\n- Replay browser cleanup: removed old map viewer buttons and added analysis progress feedback.\n- Includes recent replay playback fixes and auto-crouch disable registration fix.",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.9/BnlCommunityFixes.exe",
-      "sha256": "261003D9750AC6E6B263B91701D783D98A7AB9F1807A5337E37BE4C4794920E3",
-      "size": 162884807
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4/BnlCommunityFixes.exe",
+      "sha256": "22270A9C0205D02416C0319F6907AA8226DA3EB8BB6459E43DB5E2E58162D030",
+      "size": 163241155
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.3.9/BnlUpdater.exe",
-      "sha256": "78512D8994E667F9E83E229B8D398732E313C402F320CBD3BD7733D2FDB7D390",
-      "size": 67622642
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4/BnlUpdater.exe",
+      "sha256": "0F52A3FA3E338880AE762808B1943B8EACC7BDE3F21F76162AE2D846FD31EE93",
+      "size": 67622638
+    },
+    "replay_analyzer_exe": {
+      "file_name": "BnlCommunityFixes.ReplayAnalyzer.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4/BnlCommunityFixes.ReplayAnalyzer.exe",
+      "sha256": "02635E23AA72683EC0D16FECD94680E8F60BF897EACF32E9F9C0178613FC6957",
+      "size": 68170993
     }
   }
 }

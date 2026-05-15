@@ -8,21 +8,23 @@ public sealed class ReplayBrowserForm : Form
 {
     private readonly GameInstallInfo installInfo;
     private readonly ReplayLauncherService replayService;
+    private readonly Action launchGame;
     private readonly DataGridView replayGrid;
     private readonly Button analyzeButton;
-    private readonly Button openViewerButton;
-    private readonly Button openMapViewerButton;
     private readonly Button openValidationButton;
     private readonly Button openLocationButton;
     private readonly Button deleteButton;
+    private readonly Button launchReplayModeButton;
     private readonly Button refreshButton;
+    private readonly ProgressBar analyzeProgressBar;
     private readonly Label statusLabel;
     private IReadOnlyList<ReplayCaptureInfo> captures = [];
 
-    public ReplayBrowserForm(GameInstallInfo installInfo, ReplayLauncherService replayService)
+    public ReplayBrowserForm(GameInstallInfo installInfo, ReplayLauncherService replayService, Action launchGame)
     {
         this.installInfo = installInfo;
         this.replayService = replayService;
+        this.launchGame = launchGame;
 
         Text = "Match Replays";
         StartPosition = FormStartPosition.CenterParent;
@@ -42,7 +44,7 @@ public sealed class ReplayBrowserForm : Form
             AllowUserToDeleteRows = false,
             AllowUserToResizeRows = false,
             AutoGenerateColumns = false,
-            MultiSelect = false,
+            MultiSelect = true,
             ReadOnly = true,
             RowHeadersVisible = false,
             SelectionMode = DataGridViewSelectionMode.FullRowSelect,
@@ -72,28 +74,10 @@ public sealed class ReplayBrowserForm : Form
         };
         analyzeButton.Click += async (_, _) => await AnalyzeSelectedAsync().ConfigureAwait(true);
 
-        openViewerButton = new Button
-        {
-            Text = "Open Viewer",
-            Location = new System.Drawing.Point(124, 432),
-            Size = new System.Drawing.Size(104, 30),
-            Anchor = AnchorStyles.Bottom | AnchorStyles.Left
-        };
-        openViewerButton.Click += (_, _) => OpenSelectedViewer();
-
-        openMapViewerButton = new Button
-        {
-            Text = "Map Viewer",
-            Location = new System.Drawing.Point(234, 432),
-            Size = new System.Drawing.Size(104, 30),
-            Anchor = AnchorStyles.Bottom | AnchorStyles.Left
-        };
-        openMapViewerButton.Click += (_, _) => OpenSelectedMapViewer();
-
         openValidationButton = new Button
         {
             Text = "Validation",
-            Location = new System.Drawing.Point(344, 432),
+            Location = new System.Drawing.Point(124, 432),
             Size = new System.Drawing.Size(98, 30),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left
         };
@@ -102,7 +86,7 @@ public sealed class ReplayBrowserForm : Form
         openLocationButton = new Button
         {
             Text = "Open Location",
-            Location = new System.Drawing.Point(448, 432),
+            Location = new System.Drawing.Point(228, 432),
             Size = new System.Drawing.Size(112, 30),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left
         };
@@ -110,9 +94,9 @@ public sealed class ReplayBrowserForm : Form
 
         deleteButton = new Button
         {
-            Text = "Delete",
-            Location = new System.Drawing.Point(566, 432),
-            Size = new System.Drawing.Size(86, 30),
+            Text = "Delete Selected",
+            Location = new System.Drawing.Point(346, 432),
+            Size = new System.Drawing.Size(104, 30),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left
         };
         deleteButton.Click += (_, _) => DeleteSelected();
@@ -120,11 +104,36 @@ public sealed class ReplayBrowserForm : Form
         refreshButton = new Button
         {
             Text = "Refresh",
-            Location = new System.Drawing.Point(658, 432),
+            Location = new System.Drawing.Point(456, 432),
             Size = new System.Drawing.Size(86, 30),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Left
         };
         refreshButton.Click += (_, _) => ReloadCaptures();
+
+        launchReplayModeButton = new Button
+        {
+            Text = "Launch Replay Mode",
+            Location = new System.Drawing.Point(548, 432),
+            Size = new System.Drawing.Size(136, 30),
+            Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
+            BackColor = System.Drawing.Color.FromArgb(198, 92, 0),
+            ForeColor = System.Drawing.Color.White,
+            FlatStyle = FlatStyle.Flat
+        };
+        launchReplayModeButton.FlatAppearance.BorderSize = 0;
+        launchReplayModeButton.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(176, 80, 0);
+        launchReplayModeButton.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(145, 66, 0);
+        launchReplayModeButton.Click += (_, _) => LaunchSelectedReplayMode();
+
+        analyzeProgressBar = new ProgressBar
+        {
+            Location = new System.Drawing.Point(690, 436),
+            Size = new System.Drawing.Size(196, 22),
+            Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+            Style = ProgressBarStyle.Marquee,
+            MarqueeAnimationSpeed = 30,
+            Visible = false
+        };
 
         statusLabel = new Label
         {
@@ -135,7 +144,7 @@ public sealed class ReplayBrowserForm : Form
             ForeColor = System.Drawing.SystemColors.GrayText
         };
 
-        Controls.AddRange([replayGrid, analyzeButton, openViewerButton, openMapViewerButton, openValidationButton, openLocationButton, deleteButton, refreshButton, statusLabel]);
+        Controls.AddRange([replayGrid, analyzeButton, openValidationButton, openLocationButton, deleteButton, refreshButton, launchReplayModeButton, analyzeProgressBar, statusLabel]);
         ReloadCaptures();
     }
 
@@ -168,15 +177,25 @@ public sealed class ReplayBrowserForm : Form
         return row.Capture;
     }
 
+    private IReadOnlyList<ReplayCaptureInfo> GetSelectedCaptures()
+    {
+        return replayGrid.SelectedRows
+            .Cast<DataGridViewRow>()
+            .Select(static row => row.DataBoundItem)
+            .OfType<ReplayCaptureRow>()
+            .Select(static row => row.Capture)
+            .ToArray();
+    }
+
     private void UpdateButtonState()
     {
         var selected = GetSelectedCapture();
-        analyzeButton.Enabled = selected is not null;
-        openViewerButton.Enabled = selected is not null && selected.HasViewer;
-        openMapViewerButton.Enabled = selected is not null && selected.HasMapStateViewer;
-        openValidationButton.Enabled = selected is not null && selected.HasValidationReport;
-        openLocationButton.Enabled = selected is not null;
-        deleteButton.Enabled = selected is not null;
+        var selectedCount = replayGrid.SelectedRows.Count;
+        analyzeButton.Enabled = selected is not null && selectedCount == 1;
+        openValidationButton.Enabled = selected is not null && selectedCount == 1 && selected.HasValidationReport;
+        openLocationButton.Enabled = selected is not null && selectedCount == 1;
+        deleteButton.Enabled = selectedCount > 0;
+        launchReplayModeButton.Enabled = selected is not null && selectedCount == 1 && replayService.HasAnalyzedReplay(selected.File);
     }
 
     private async Task AnalyzeSelectedAsync()
@@ -194,7 +213,6 @@ public sealed class ReplayBrowserForm : Form
             var result = await replayService.AnalyzeCaptureAsync(selected.File, CancellationToken.None).ConfigureAwait(true);
             statusLabel.Text = $"Analyzed {Path.GetFileName(result.CapturePath)}.";
             ReloadCaptures();
-            replayService.OpenViewer(new FileInfo(result.CapturePath));
         }
         catch (Exception exception)
         {
@@ -208,42 +226,6 @@ public sealed class ReplayBrowserForm : Form
         finally
         {
             SetBusy(false);
-        }
-    }
-
-    private void OpenSelectedViewer()
-    {
-        var selected = GetSelectedCapture();
-        if (selected is null)
-        {
-            return;
-        }
-
-        try
-        {
-            replayService.OpenViewer(selected.File);
-        }
-        catch (Exception exception)
-        {
-            MessageBox.Show(exception.Message, "Match Replays", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-    }
-
-    private void OpenSelectedMapViewer()
-    {
-        var selected = GetSelectedCapture();
-        if (selected is null)
-        {
-            return;
-        }
-
-        try
-        {
-            replayService.OpenMapStateViewer(selected.File);
-        }
-        catch (Exception exception)
-        {
-            MessageBox.Show(exception.Message, "Match Replays", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -283,7 +265,7 @@ public sealed class ReplayBrowserForm : Form
         }
     }
 
-    private void DeleteSelected()
+    private void LaunchSelectedReplayMode()
     {
         var selected = GetSelectedCapture();
         if (selected is null)
@@ -291,8 +273,33 @@ public sealed class ReplayBrowserForm : Form
             return;
         }
 
+        try
+        {
+            replayService.WriteReplayLaunchRequest(selected.File, launchReplayMode: true);
+            var map = string.IsNullOrWhiteSpace(selected.MapName) ? "unknown map" : selected.MapName;
+            statusLabel.Text = $"Launching replay mode for {selected.File.Name} ({map}).";
+            launchGame();
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(exception.Message, "Match Replays", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void DeleteSelected()
+    {
+        var selected = GetSelectedCaptures();
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        var message = selected.Count == 1
+            ? $"Delete this replay capture?{Environment.NewLine}{selected[0].File.Name}"
+            : $"Delete {selected.Count} selected replay captures?";
+
         var result = MessageBox.Show(
-            $"Delete this replay capture?{Environment.NewLine}{selected.File.Name}",
+            message,
             "Match Replays",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning,
@@ -305,8 +312,15 @@ public sealed class ReplayBrowserForm : Form
 
         try
         {
-            replayService.DeleteCapture(selected.File);
+            foreach (var capture in selected)
+            {
+                replayService.DeleteCapture(capture.File);
+            }
+
             ReloadCaptures();
+            statusLabel.Text = selected.Count == 1
+                ? $"Deleted {selected[0].File.Name}."
+                : $"Deleted {selected.Count} replay captures.";
         }
         catch (Exception exception)
         {
@@ -320,11 +334,10 @@ public sealed class ReplayBrowserForm : Form
         if (busy)
         {
             analyzeButton.Enabled = false;
-            openViewerButton.Enabled = false;
-            openMapViewerButton.Enabled = false;
             openValidationButton.Enabled = false;
             openLocationButton.Enabled = false;
             deleteButton.Enabled = false;
+            launchReplayModeButton.Enabled = false;
         }
         else
         {
@@ -332,6 +345,7 @@ public sealed class ReplayBrowserForm : Form
         }
 
         refreshButton.Enabled = !busy;
+        analyzeProgressBar.Visible = busy;
         if (!string.IsNullOrWhiteSpace(message))
         {
             statusLabel.Text = message;
@@ -353,7 +367,7 @@ public sealed class ReplayBrowserForm : Form
         public string Winner => Capture.Winner ?? "";
         public string Units => Capture.Units?.ToString(CultureInfo.InvariantCulture) ?? "";
         public string Size => FormatSize(Capture.SizeBytes);
-        public string Status => Capture.HasViewer ? "Analyzed" : "Not analyzed";
+        public string Status => Capture.HasAnalyzedReplay ? "Analyzed" : "Not analyzed";
         public string ReplayStatus => Capture.UsableForReplay is null ? "" : Capture.UsableForReplay.Value ? "Usable" : "Not usable";
         public string Quality => Capture.Quality ?? "";
         public string Checks => Capture.RequiredPassed is null || Capture.RequiredTotal is null

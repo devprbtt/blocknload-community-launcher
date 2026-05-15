@@ -25,11 +25,14 @@ public sealed class LauncherMainForm : Form
     private readonly Button moreOptionsButton;
     private readonly Button openReplayFolderButton;
     private readonly Button analyzeReplayButton;
-    private readonly Button openReplayViewerButton;
-    private readonly Button openMapStateViewerButton;
+    private readonly CheckBox recordReplaysCheckBox;
+    private readonly CheckBox recordCustomReplaysCheckBox;
+    private readonly CheckBox recordCasualReplaysCheckBox;
+    private readonly CheckBox recordRankedReplaysCheckBox;
     private readonly TextBox statusTextBox;
 
     private LauncherConfig? launcherConfig;
+    private bool syncingReplayRecorderToggle;
 
     public LauncherMainForm(
         AppPaths paths,
@@ -189,21 +192,34 @@ public sealed class LauncherMainForm : Form
         };
         analyzeReplayButton.Click += (_, _) => OpenReplayBrowser();
 
-        openReplayViewerButton = new Button
+        recordReplaysCheckBox = new CheckBox
         {
-            Text = "Open Viewer",
-            Location = new System.Drawing.Point(260, 278),
-            Size = new System.Drawing.Size(112, 28)
+            Text = "Record match replays",
+            Location = new System.Drawing.Point(260, 280),
+            Size = new System.Drawing.Size(160, 22)
         };
-        openReplayViewerButton.Click += (_, _) => OpenReplayViewer();
-
-        openMapStateViewerButton = new Button
+        recordReplaysCheckBox.CheckedChanged += (_, _) => ToggleReplayRecording();
+        recordCustomReplaysCheckBox = new CheckBox
         {
-            Text = "Map Viewer",
-            Location = new System.Drawing.Point(378, 278),
-            Size = new System.Drawing.Size(112, 28)
+            Text = "Custom",
+            Location = new System.Drawing.Point(424, 280),
+            Size = new System.Drawing.Size(76, 22)
         };
-        openMapStateViewerButton.Click += (_, _) => OpenMapStateViewer();
+        recordCustomReplaysCheckBox.CheckedChanged += (_, _) => ToggleReplayRecording();
+        recordCasualReplaysCheckBox = new CheckBox
+        {
+            Text = "Casual",
+            Location = new System.Drawing.Point(506, 280),
+            Size = new System.Drawing.Size(72, 22)
+        };
+        recordCasualReplaysCheckBox.CheckedChanged += (_, _) => ToggleReplayRecording();
+        recordRankedReplaysCheckBox = new CheckBox
+        {
+            Text = "Ranked",
+            Location = new System.Drawing.Point(584, 280),
+            Size = new System.Drawing.Size(78, 22)
+        };
+        recordRankedReplaysCheckBox.CheckedChanged += (_, _) => ToggleReplayRecording();
 
         statusTextBox = new TextBox
         {
@@ -231,8 +247,10 @@ public sealed class LauncherMainForm : Form
             replayLabel,
             openReplayFolderButton,
             analyzeReplayButton,
-            openReplayViewerButton,
-            openMapStateViewerButton,
+            recordReplaysCheckBox,
+            recordCustomReplaysCheckBox,
+            recordCasualReplaysCheckBox,
+            recordRankedReplaysCheckBox,
             statusTextBox
         ]);
 
@@ -328,6 +346,8 @@ public sealed class LauncherMainForm : Form
             lines.Add($"Feature builder script: {Path.Combine(paths.PatchingDir, "Build-ExperimentalCrosshairAssembly.ps1")}");
             lines.Add($"Feature DLL present: {File.Exists(Path.Combine(paths.PatchingDir, "Assembly-CSharp.experimental.dll"))}");
             lines.Add($"Helper DLL present: {File.Exists(Path.Combine(paths.PatchingDir, "BnlCommunityFixes.dll"))}");
+            var replayRecorder = LoadReplayRecorderConfig();
+            lines.Add($"Replay recording: {(replayRecorder.Enabled ? $"enabled ({replayRecorder.ScopeSummary})" : "disabled")}");
         }
 
         if (serverComboBox.SelectedItem is ServerItem selectedItem)
@@ -346,8 +366,7 @@ public sealed class LauncherMainForm : Form
         var replayControlsEnabled = installInfo.IsDetected;
         openReplayFolderButton.Enabled = replayControlsEnabled;
         analyzeReplayButton.Enabled = replayControlsEnabled;
-        openReplayViewerButton.Enabled = replayControlsEnabled && File.Exists(replayLauncherService.LatestViewerPath);
-        openMapStateViewerButton.Enabled = replayControlsEnabled && File.Exists(replayLauncherService.LatestMapStateViewerPath);
+        SyncReplayRecorderToggleFromConfig();
     }
 
     private void LaunchSelectedServer()
@@ -503,39 +522,115 @@ public sealed class LauncherMainForm : Form
             return;
         }
 
-        using var form = new ReplayBrowserForm(installInfo, replayLauncherService);
+        using var form = new ReplayBrowserForm(installInfo, replayLauncherService, LaunchSelectedServer);
         form.ShowDialog(this);
         UpdateStatusSummary();
     }
 
-    private void OpenReplayViewer()
+    private string ReplayRecorderConfigPath =>
+        Path.Combine(paths.PatchingDir, "experimental-match-replay-recorder-config.json");
+
+    private ReplayRecorderUiConfig LoadReplayRecorderConfig()
     {
         try
         {
-            replayLauncherService.OpenLatestViewer();
+            var configPath = ReplayRecorderConfigPath;
+            if (File.Exists(configPath))
+            {
+                var json = File.ReadAllText(configPath);
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                return new ReplayRecorderUiConfig(
+                    GetJsonBool(root, "enabled", false),
+                    GetJsonBool(root, "capture_payload", true),
+                    GetJsonInt(root, "max_payload_bytes", 262144),
+                    GetJsonBool(root, "record_custom_games", true),
+                    GetJsonBool(root, "record_casual_games", true),
+                    GetJsonBool(root, "record_ranked_games", true));
+            }
         }
-        catch (Exception exception)
+        catch
         {
-            logger.Exception(exception, "Failed to open replay viewer");
-            MessageBox.Show(
-                exception.Message,
-                "Block N Load Community Fixes V2",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
+            // ignore - default below
+        }
+
+        return new ReplayRecorderUiConfig(false, true, 262144, true, true, true);
+    }
+
+    private static bool GetJsonBool(System.Text.Json.JsonElement root, string propertyName, bool defaultValue)
+    {
+        return root.TryGetProperty(propertyName, out var prop) && prop.ValueKind is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False
+            ? prop.GetBoolean()
+            : defaultValue;
+    }
+
+    private static int GetJsonInt(System.Text.Json.JsonElement root, string propertyName, int defaultValue)
+    {
+        return root.TryGetProperty(propertyName, out var prop) && prop.ValueKind == System.Text.Json.JsonValueKind.Number && prop.TryGetInt32(out var value)
+            ? value
+            : defaultValue;
+    }
+
+    private void SyncReplayRecorderToggleFromConfig()
+    {
+        syncingReplayRecorderToggle = true;
+        try
+        {
+            var config = LoadReplayRecorderConfig();
+            recordReplaysCheckBox.Checked = config.Enabled;
+            recordCustomReplaysCheckBox.Checked = config.RecordCustomGames;
+            recordCasualReplaysCheckBox.Checked = config.RecordCasualGames;
+            recordRankedReplaysCheckBox.Checked = config.RecordRankedGames;
+            recordReplaysCheckBox.Enabled = installInfo.IsDetected;
+            recordCustomReplaysCheckBox.Enabled = installInfo.IsDetected && config.Enabled;
+            recordCasualReplaysCheckBox.Enabled = installInfo.IsDetected && config.Enabled;
+            recordRankedReplaysCheckBox.Enabled = installInfo.IsDetected && config.Enabled;
+        }
+        finally
+        {
+            syncingReplayRecorderToggle = false;
         }
     }
 
-    private void OpenMapStateViewer()
+    private void ToggleReplayRecording()
     {
+        if (syncingReplayRecorderToggle)
+        {
+            return;
+        }
+
+        var enabled = recordReplaysCheckBox.Checked;
+        var config = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            enabled,
+            capture_payload = true,
+            max_payload_bytes = 262144,
+            record_custom_games = recordCustomReplaysCheckBox.Checked,
+            record_casual_games = recordCasualReplaysCheckBox.Checked,
+            record_ranked_games = recordRankedReplaysCheckBox.Checked
+        }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
         try
         {
-            replayLauncherService.OpenLatestMapStateViewer();
+            Directory.CreateDirectory(paths.PatchingDir);
+            File.WriteAllText(ReplayRecorderConfigPath, config + Environment.NewLine);
+            UpdateStatusSummary();
         }
-        catch (Exception exception)
+        catch (Exception ex)
         {
-            logger.Exception(exception, "Failed to open map-state viewer");
+            logger.Exception(ex, "Failed to write replay recorder config");
+            syncingReplayRecorderToggle = true;
+            try
+            {
+                recordReplaysCheckBox.Checked = !enabled;
+            }
+            finally
+            {
+                syncingReplayRecorderToggle = false;
+            }
+
             MessageBox.Show(
-                exception.Message,
+                $"Failed to update replay recording setting.{Environment.NewLine}{ex.Message}",
                 "Block N Load Community Fixes V2",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
@@ -547,6 +642,27 @@ public sealed class LauncherMainForm : Form
         public override string ToString()
         {
             return $"{Server.Name} [{Server.Host}:{Server.Port}] ({Server.Patch})";
+        }
+    }
+
+    private sealed record ReplayRecorderUiConfig(
+        bool Enabled,
+        bool CapturePayload,
+        int MaxPayloadBytes,
+        bool RecordCustomGames,
+        bool RecordCasualGames,
+        bool RecordRankedGames)
+    {
+        public string ScopeSummary
+        {
+            get
+            {
+                var scopes = new List<string>();
+                if (RecordCustomGames) scopes.Add("custom");
+                if (RecordCasualGames) scopes.Add("casual");
+                if (RecordRankedGames) scopes.Add("ranked");
+                return scopes.Count == 0 ? "no match types selected" : string.Join(", ", scopes);
+            }
         }
     }
 }
