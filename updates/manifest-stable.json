@@ -1,27 +1,27 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "minimum_supported_version": "2.2.0",
-  "published_at": "2026-05-15T17:00:00.0000000+00:00",
-  "notes": "# BNL Community Fixes v2.4.1\n\nFirst-person replay camera improvements.\n\n## Changes\n- F3 first-person camera: fixed black & white rendering by copying deferred rendering path and disabling Camera.main effects.\n- F3 first-person camera: weapon animations now play correctly (digging, shooting etc).\n- F3 first-person camera: camera position and rotation smoothed to reduce bone jitter.\n- F3 first-person camera: pitch and yaw normalised to prevent 360° wraparound spin.\n- F3 first-person camera: FOV set to 120.\n- F3 toggle: fixed toggle breaking after first use (Camera.main reference cached before disabling).",
+  "published_at": "2026-05-15T19:00:00.0000000+00:00",
+  "notes": "# BNL Community Fixes v2.4.2\n\nBuild preview stuck block fix and cleanup.\n\n## Changes\n- Build preview: fixed blocks becoming stuck and unbreakable when the server rejects or ignores a placement — rollback now defers correctly if ZoneManager isn't ready and immediately resolves accepted builds.\n- Build preview: prediction timeout hardcoded to 3 seconds (removed user-configurable setting).\n- Removed font replacement feature.\n- Replay keybinds are now fully disabled when not launched via the replay launcher.",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.1/BnlCommunityFixes.exe",
-      "sha256": "5DBCDFCC7039F5C3B9A3BC92A1B16DA90A76E66133F0A8FC7ED655A713B1A15D",
-      "size": 154885088
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.2/BnlCommunityFixes.exe",
+      "sha256": "D1CF107360E984AF2AEF72AD169BBC5B1C0763CABF1CD3B3B4341FA6018C6311",
+      "size": 154879968
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.1/BnlUpdater.exe",
-      "sha256": "5A67A96DFDDD475F66F7EE1B73811B38FDA5D65401E977E864C9459721C781C8",
-      "size": 67622642
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.2/BnlUpdater.exe",
+      "sha256": "0B12B26704D264682807DABFDB6A49A10B598A715B0B63DB2B000D99A696063C",
+      "size": 67621618
     },
     "replay_analyzer_exe": {
       "file_name": "BnlCommunityFixes.ReplayAnalyzer.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.1/BnlCommunityFixes.ReplayAnalyzer.exe",
-      "sha256": "EFB342B97817761A544F2AE38B68C513B113141FEE6AF81A8F31D8EDDF2FF875",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.2/BnlCommunityFixes.ReplayAnalyzer.exe",
+      "sha256": "75FFEFCB0A844346E403733F4E71307C878F0798DE5C1D2DE9A246241D0BDE9F",
       "size": 68170997
     }
   }
