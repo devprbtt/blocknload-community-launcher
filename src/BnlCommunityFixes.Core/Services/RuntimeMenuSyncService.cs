@@ -264,8 +264,6 @@ public sealed class RuntimeMenuSyncService
                 {
                     case "local_build_preview_enabled":
                         if (bool.TryParse(val, out var b)) current.Enabled = b; break;
-                    case "local_build_preview_timeout_seconds":
-                        if (TryParseDouble(val, out var d)) current.PredictionTimeoutSeconds = d; break;
                 }
             }
         }
@@ -289,7 +287,6 @@ public sealed class RuntimeMenuSyncService
                 }
             }
             existing["local_build_preview_enabled"] = settings.Enabled.ToString();
-            existing["local_build_preview_timeout_seconds"] = settings.PredictionTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
             File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
         }
         catch { }

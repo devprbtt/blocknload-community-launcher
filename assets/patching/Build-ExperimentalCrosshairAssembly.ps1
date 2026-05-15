@@ -395,7 +395,6 @@ $EnemyShieldBuffBarColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrW
 [double]$EnemyShieldClockOffsetX = if ($null -ne $EnemyShieldBuffBarConfig.shield_clock_offset_x) { [double]$EnemyShieldBuffBarConfig.shield_clock_offset_x } else { 0.0 }
 [double]$EnemyShieldClockOffsetY = if ($null -ne $EnemyShieldBuffBarConfig.shield_clock_offset_y) { [double]$EnemyShieldBuffBarConfig.shield_clock_offset_y } else { 0.0 }
 [string]$EnemyShieldTimerDisplayMode = if ($null -ne $EnemyShieldBuffBarConfig.shield_timer_display_mode -and -not [string]::IsNullOrWhiteSpace([string]$EnemyShieldBuffBarConfig.shield_timer_display_mode)) { [string]$EnemyShieldBuffBarConfig.shield_timer_display_mode } else { "circle" }
-[double]$LocalBuildPreviewTimeoutSeconds = if ($null -ne $LocalBuildPreviewConfig.prediction_timeout_seconds) { [double]$LocalBuildPreviewConfig.prediction_timeout_seconds } else { 2.0 }
 [bool]$FriendlyLowHealthEnabled = if ($null -ne $FriendlyLowHealthConfig.enabled) { [bool]$FriendlyLowHealthConfig.enabled } else { $true }
 [double]$FriendlyLowHealthThreshold = if ($null -ne $FriendlyLowHealthConfig.threshold) { [double]$FriendlyLowHealthConfig.threshold } else { 0.3 }
 $FriendlyLowHealthColor = Convert-HexToColorData -Hex $(if ([string]::IsNullOrWhiteSpace([string]$FriendlyLowHealthConfig.color)) { "#FF4444" } else { [string]$FriendlyLowHealthConfig.color }) -Alpha 1.0
@@ -2518,7 +2517,6 @@ namespace BnlCommunityFixes
 "@
 
 if ($LocalBuildPreviewConfig.enabled) {
-    $LocalBuildPreviewTimeoutLiteral = Format-FloatLiteral $LocalBuildPreviewTimeoutSeconds
     $HelperSource += @"
 
 namespace BnlCommunityFixes
@@ -2529,20 +2527,17 @@ namespace BnlCommunityFixes
         private static PredictionManager manager;
         private static float instantCrateChainUntil;
 
+        private const float PredictionTimeoutSeconds = 3f;
+
         static LocalBuildPredictionRuntime()
         {
-            RuntimeFeatureState.ConfigureLocalBuildPreview($(Format-BoolLiteral $LocalBuildPreviewConfig.enabled), true, $LocalBuildPreviewTimeoutLiteral);
+            RuntimeFeatureState.ConfigureLocalBuildPreview($(Format-BoolLiteral $LocalBuildPreviewConfig.enabled), true, PredictionTimeoutSeconds);
             RuntimeSettingsMenuManager.EnsureInstance();
         }
 
         private static bool Enabled
         {
             get { return RuntimeFeatureState.LocalBuildPreviewEnabled; }
-        }
-
-        private static float PredictionTimeoutSeconds
-        {
-            get { return RuntimeFeatureState.LocalBuildPreviewTimeoutSeconds; }
         }
 
         private static PredictionManager Manager
@@ -2660,13 +2655,17 @@ namespace BnlCommunityFixes
 
         public static void OnStartBuildResult(ServiceZone.Rpc_StartBuild rpc, bool accepted)
         {
-            if (accepted) { pendingRpcBlockPos.Remove(rpc._Id); return; }
             Vector3s blockPos;
             if (!pendingRpcBlockPos.TryGetValue(rpc._Id, out blockPos)) return;
             pendingRpcBlockPos.Remove(rpc._Id);
             PredictionManager predictionManager = Manager;
             if (predictionManager == null) return;
-            predictionManager.RollbackBlock(blockPos);
+            if (accepted)
+                // Server accepted the build — resolve immediately so the prediction doesn't
+                // time out and roll back a block the server confirmed.
+                predictionManager.ResolveBlock(blockPos);
+            else
+                predictionManager.RollbackBlock(blockPos);
         }
 
         public static void TryInstantAcceptSwitchGear(Unit unit, ServiceZone.Rpc_SwitchGear rpc)
@@ -2777,6 +2776,8 @@ namespace BnlCommunityFixes
     public sealed class PredictionManager : UnityEngine.MonoBehaviour
     {
         private readonly System.Collections.Generic.List<PredictionEntry> entries = new System.Collections.Generic.List<PredictionEntry>();
+        // Rollbacks deferred because ZoneManager wasn't ready at removal time.
+        private readonly System.Collections.Generic.List<PredictionEntry> pendingRollbacks = new System.Collections.Generic.List<PredictionEntry>();
 
         public void AddPrediction(PredictionEntry entry)
         {
@@ -2822,6 +2823,20 @@ namespace BnlCommunityFixes
 
         private void Update()
         {
+            // Retry any rollbacks that were deferred because ZoneManager wasn't ready.
+            if (this.pendingRollbacks.Count > 0 &&
+                Singleton<ZoneManager>.Instance != null && Singleton<ZoneManager>.Instance.MapCreated)
+            {
+                for (int i = this.pendingRollbacks.Count - 1; i >= 0; i--)
+                {
+                    PredictionEntry rb = this.pendingRollbacks[i];
+                    this.pendingRollbacks.RemoveAt(i);
+                    System.Collections.Generic.Dictionary<Vector3s, BlockUpdate> rbUpdates = new System.Collections.Generic.Dictionary<Vector3s, BlockUpdate>();
+                    rbUpdates[rb.BlockPos] = rb.PreviousBlock.ToUpdate();
+                    Singleton<ZoneManager>.Instance.UpdateBlocks(rbUpdates);
+                }
+            }
+
             float now = UnityEngine.Time.time;
             for (int i = this.entries.Count - 1; i >= 0; i--)
             {
@@ -2836,12 +2851,19 @@ namespace BnlCommunityFixes
         {
             PredictionEntry entry = this.entries[index];
             this.entries.RemoveAt(index);
-            if (rollbackRealLocalBlock && entry != null && entry.IsRealLocalBlock &&
-                Singleton<ZoneManager>.Instance != null && Singleton<ZoneManager>.Instance.MapCreated)
+            if (rollbackRealLocalBlock && entry != null && entry.IsRealLocalBlock)
             {
-                System.Collections.Generic.Dictionary<Vector3s, BlockUpdate> updates = new System.Collections.Generic.Dictionary<Vector3s, BlockUpdate>();
-                updates[entry.BlockPos] = entry.PreviousBlock.ToUpdate();
-                Singleton<ZoneManager>.Instance.UpdateBlocks(updates);
+                if (Singleton<ZoneManager>.Instance != null && Singleton<ZoneManager>.Instance.MapCreated)
+                {
+                    System.Collections.Generic.Dictionary<Vector3s, BlockUpdate> updates = new System.Collections.Generic.Dictionary<Vector3s, BlockUpdate>();
+                    updates[entry.BlockPos] = entry.PreviousBlock.ToUpdate();
+                    Singleton<ZoneManager>.Instance.UpdateBlocks(updates);
+                }
+                else
+                {
+                    // ZoneManager not ready — defer rollback to next Update tick.
+                    this.pendingRollbacks.Add(entry);
+                }
             }
             if (entry != null && entry.PreviewObject != null)
                 UnityEngine.Object.Destroy(entry.PreviewObject);

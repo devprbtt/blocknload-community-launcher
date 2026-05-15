@@ -81,6 +81,7 @@ namespace BnlCommunityFixes
         private bool showDiagnosticPlayerHud;
         private bool showDebugWorldLabels;
         private bool replayModeLaunchChecked;
+        private bool replayModeEnabled; // true only when launched via replay launcher
         private bool fpCameraActive;
         private Camera fpCamera;
         private int fpMainCamOrigCullingMask;
@@ -135,6 +136,12 @@ namespace BnlCommunityFixes
         private void Update()
         {
             TryStartLauncherReplayMode();
+
+            // Skip all key handling if this is a normal game launch (not via replay launcher).
+            if (replayModeLaunchChecked && !replayModeEnabled)
+            {
+                return;
+            }
 
             if (Input.GetKeyDown(KeyCode.F7))
             {
@@ -1375,6 +1382,7 @@ namespace BnlCommunityFixes
             }
 
             replayModeLaunchChecked = true;
+            replayModeEnabled = true;
             Debug.Log("[BNL Replay] Starting one-shot launcher replay mode from " + requestPath);
             StartRealZoneSpectatorExperiment(true);
         }
