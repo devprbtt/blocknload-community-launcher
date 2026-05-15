@@ -16,7 +16,6 @@ public sealed class ConfigTransferForm : Form
         new("Crosshair",         "crosshair-config.json"),
         new("FOV / ADS",         "fov-config.json"),
         new("Team Colors",       "experimental-team-color-config.json"),
-        new("Font",              "experimental-font-config.json"),
         new("Damage / Healing",  "damage-healing-indicator-config.json"),
         new("Heal Alerts",       "heal-alert-indicator-config.json"),
         new("Objective Beam",    "experimental-base-objective-beam-config.json"),

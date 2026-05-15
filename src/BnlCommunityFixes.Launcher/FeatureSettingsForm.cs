@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.Drawing.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using BnlCommunityFixes.Core.Models;
@@ -33,12 +32,6 @@ public sealed class FeatureSettingsForm : Form
     private readonly CheckBox teamColorsEnabledCheckBox;
     private readonly TextBox friendlyColorTextBox;
     private readonly TextBox enemyColorTextBox;
-
-    private readonly CheckBox fontEnabledCheckBox;
-    private readonly ComboBox fontNameComboBox;
-    private readonly ComboBox fontStyleComboBox;
-    private readonly NumericUpDown fontSizeNumeric;
-    private readonly NumericUpDown fontSpacingNumeric;
 
     private readonly CheckBox damageHealingEnabledCheckBox;
     private readonly TextBox damageColorTextBox;
@@ -76,7 +69,6 @@ public sealed class FeatureSettingsForm : Form
     private readonly ComboBox shieldDisplayModeComboBox;
 
     private readonly CheckBox localBuildPreviewEnabledCheckBox;
-    private readonly NumericUpDown localBuildPreviewTimeoutNumeric;
 
     private readonly CheckBox aimHealthbarEnabledCheckBox;
 
@@ -289,42 +281,6 @@ public sealed class FeatureSettingsForm : Form
                 enemyColorTextBox.Text = s.EnemyColor;
             });
 
-        // --- Font ---
-        var fontTab = new TabPage("Font");
-        AddDescription(fontTab,
-            "Replaces the in-game UI font with any installed system font. Use size and line spacing multipliers to compensate " +
-            "for size differences between fonts. BoldAndItalic may not work for all fonts.");
-        fontEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
-        fontNameComboBox    = NewComboBox(14,  128, 240, "__DEFAULT__");
-        fontNameComboBox.DropDownStyle = ComboBoxStyle.DropDown;
-        fontStyleComboBox   = NewComboBox(274, 128, 160, "Keep", "Normal", "Bold", "Italic", "BoldAndItalic");
-        fontSizeNumeric     = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.25M, 10, 2, 0.05M);
-        fontSpacingNumeric  = NewDecimalNumeric(NumC2, NumCtrlY, NumW, 0.25M, 10, 2, 0.05M);
-        fontTab.Controls.AddRange([
-            fontEnabledCheckBox,
-            NewLabel("Font name",       14,  110), fontNameComboBox,
-            NewLabel("Style",          274,  110), fontStyleComboBox,
-            NewLabel("Size multiplier", NumC1, NumLabelY), fontSizeNumeric,
-            NewLabel("Line spacing",    NumC2, NumLabelY), fontSpacingNumeric
-        ]);
-        AddPresetBar<FontSettings>(fontTab, "font",
-            readFields: () => new FontSettings
-            {
-                Enabled = fontEnabledCheckBox.Checked,
-                SelectedFont = fontNameComboBox.Text.Trim(),
-                FontStyle = fontStyleComboBox.Text.Trim(),
-                SizeMultiplier = (double)fontSizeNumeric.Value,
-                LineSpacingMultiplier = (double)fontSpacingNumeric.Value
-            },
-            applyFields: s =>
-            {
-                fontEnabledCheckBox.Checked = s.Enabled;
-                fontNameComboBox.Text = s.SelectedFont;
-                fontStyleComboBox.Text = s.FontStyle;
-                fontSizeNumeric.Value = ToDecimal(s.SizeMultiplier, fontSizeNumeric);
-                fontSpacingNumeric.Value = ToDecimal(s.LineSpacingMultiplier, fontSpacingNumeric);
-            });
-
         // --- Damage/Healing ---
         var damageTab = new TabPage("Damage/Healing");
         AddDescription(damageTab,
@@ -499,24 +455,17 @@ public sealed class FeatureSettingsForm : Form
             "Only enable if you have high ping. Blocks and devices appear on your screen immediately when placed, " +
             "without waiting for server confirmation — eliminating the visual delay caused by network latency. " +
             "The server remains authoritative: if it rejects a placement the local preview reverts. " +
-            "Also reduces the delay felt when switching weapons and tools. " +
-            "Timeout controls how long a local preview persists before being cleaned up if the server hasn't responded.");
+            "Also reduces the delay felt when switching weapons and tools.");
         localBuildPreviewEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
-        localBuildPreviewTimeoutNumeric  = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.25M, 10, 2, 0.25M);
-        localBuildPreviewTab.Controls.AddRange([
-            localBuildPreviewEnabledCheckBox,
-            NewLabel("Prediction timeout (s)", NumC1, NumLabelY), localBuildPreviewTimeoutNumeric
-        ]);
+        localBuildPreviewTab.Controls.Add(localBuildPreviewEnabledCheckBox);
         AddPresetBar<LocalBuildPreviewSettings>(localBuildPreviewTab, "localBuildPreview",
             readFields: () => new LocalBuildPreviewSettings
             {
-                Enabled = localBuildPreviewEnabledCheckBox.Checked,
-                PredictionTimeoutSeconds = (double)localBuildPreviewTimeoutNumeric.Value
+                Enabled = localBuildPreviewEnabledCheckBox.Checked
             },
             applyFields: s =>
             {
                 localBuildPreviewEnabledCheckBox.Checked = s.Enabled;
-                localBuildPreviewTimeoutNumeric.Value = ToDecimal(s.PredictionTimeoutSeconds, localBuildPreviewTimeoutNumeric);
             });
 
         // --- Aim Healthbar ---
@@ -614,7 +563,7 @@ public sealed class FeatureSettingsForm : Form
         disableMainMenuFrameCapCheckBox = NewCheckBox("Disable frame cap on main menu (uncaps FPS while on the main menu screen)", 14, EnabledY + 30);
         miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox]);
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, fontTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, miscTab]);
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, miscTab]);
 
         var saveButton = new Button
         {
@@ -633,7 +582,6 @@ public sealed class FeatureSettingsForm : Form
         cancelButton.Click += (_, _) => DialogResult = DialogResult.Cancel;
 
         Controls.AddRange([infoLabel, tabs, saveButton, cancelButton]);
-        PopulateInstalledFonts();
         LoadValues();
     }
 
@@ -810,13 +758,6 @@ public sealed class FeatureSettingsForm : Form
         friendlyColorTextBox.Text = team.FriendlyColor;
         enemyColorTextBox.Text = team.EnemyColor;
 
-        var font = featureSettingsService.LoadFontSettings();
-        fontEnabledCheckBox.Checked = font.Enabled;
-        fontNameComboBox.Text = font.SelectedFont;
-        fontStyleComboBox.Text = font.FontStyle;
-        fontSizeNumeric.Value = ToDecimal(font.SizeMultiplier, fontSizeNumeric);
-        fontSpacingNumeric.Value = ToDecimal(font.LineSpacingMultiplier, fontSpacingNumeric);
-
         var damage = featureSettingsService.LoadDamageHealingSettings();
         damageHealingEnabledCheckBox.Checked = damage.Enabled;
         damageColorTextBox.Text = damage.DamageNumberColor;
@@ -858,7 +799,6 @@ public sealed class FeatureSettingsForm : Form
 
         var localBuildPreview = featureSettingsService.LoadLocalBuildPreviewSettings();
         localBuildPreviewEnabledCheckBox.Checked = localBuildPreview.Enabled;
-        localBuildPreviewTimeoutNumeric.Value = ToDecimal(localBuildPreview.PredictionTimeoutSeconds, localBuildPreviewTimeoutNumeric);
 
         var aimHealthbar = featureSettingsService.LoadAimHealthbarSettings();
         aimHealthbarEnabledCheckBox.Checked = aimHealthbar.Enabled;
@@ -984,15 +924,6 @@ public sealed class FeatureSettingsForm : Form
             EnemyColor = enemyColorTextBox.Text.Trim()
         });
 
-        featureSettingsService.SaveFontSettings(new FontSettings
-        {
-            Enabled = fontEnabledCheckBox.Checked,
-            SelectedFont = fontNameComboBox.Text.Trim(),
-            FontStyle = fontStyleComboBox.Text.Trim(),
-            SizeMultiplier = (double)fontSizeNumeric.Value,
-            LineSpacingMultiplier = (double)fontSpacingNumeric.Value
-        });
-
         featureSettingsService.SaveDamageHealingSettings(new DamageHealingSettings
         {
             Enabled = damageHealingEnabledCheckBox.Checked,
@@ -1042,8 +973,7 @@ public sealed class FeatureSettingsForm : Form
 
         featureSettingsService.SaveLocalBuildPreviewSettings(new LocalBuildPreviewSettings
         {
-            Enabled = localBuildPreviewEnabledCheckBox.Checked,
-            PredictionTimeoutSeconds = (double)localBuildPreviewTimeoutNumeric.Value
+            Enabled = localBuildPreviewEnabledCheckBox.Checked
         });
 
         featureSettingsService.SaveAimHealthbarSettings(new AimHealthbarSettings
@@ -1124,18 +1054,6 @@ public sealed class FeatureSettingsForm : Form
         return d;
     }
 
-    private void PopulateInstalledFonts()
-    {
-        var fonts = new InstalledFontCollection().Families
-            .Select(static f => f.Name)
-            .OrderBy(static n => n, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var name in fonts)
-        {
-            if (!fontNameComboBox.Items.Contains(name))
-                fontNameComboBox.Items.Add(name);
-        }
-    }
 
     private static bool ValidateColor(string value, out string error, bool allowDefaultToken = false)
     {

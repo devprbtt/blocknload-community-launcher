@@ -11,7 +11,6 @@ public sealed class ExperimentalAssemblyBuildService
         "fov-config.json",
         "experimental-team-color-config.json",
         "damage-healing-indicator-config.json",
-        "experimental-font-config.json",
         "heal-alert-indicator-config.json",
         "experimental-base-objective-beam-config.json",
         "experimental-enemy-shield-buffbar-config.json",

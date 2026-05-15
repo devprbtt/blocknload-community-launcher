@@ -90,9 +90,6 @@ public sealed class FeatureSettingsService
             runtimeSync.WriteTeamColorSettings(runtimeConfigPath, settings);
     }
 
-    public FontSettings LoadFontSettings() => Load("experimental-font-config.json", new FontSettings());
-    public void SaveFontSettings(FontSettings settings) => Save("experimental-font-config.json", settings);
-
     public DamageHealingSettings LoadDamageHealingSettings()
     {
         var launcherConfigPath = Path.Combine(paths.PatchingDir, "damage-healing-indicator-config.json");
