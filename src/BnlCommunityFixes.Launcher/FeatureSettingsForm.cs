@@ -79,6 +79,9 @@ public sealed class FeatureSettingsForm : Form
     private readonly CheckBox teammateHpEnabledCheckBox;
 
     private readonly CheckBox autoCrouchEnabledCheckBox;
+    private readonly CheckBox hideImpactVfxEnabledCheckBox;
+    private readonly CheckBox hideImpactVfxCheckBox;
+    private readonly CheckBox hideLavaWaterPlaneCheckBox;
 
     private readonly CheckBox friendlyLowHealthEnabledCheckBox;
     private readonly TextBox friendlyLowHealthColorTextBox;
@@ -555,6 +558,20 @@ public sealed class FeatureSettingsForm : Form
             readFields: () => new AutoCrouchSettings { Enabled = autoCrouchEnabledCheckBox.Checked },
             applyFields: s => { autoCrouchEnabledCheckBox.Checked = s.Enabled; });
 
+        // --- Hide Impact VFX ---
+        var hideImpactVfxTab = new TabPage("Impact VFX");
+        AddDescription(hideImpactVfxTab,
+            "Suppress explosion and impact visual effects (bombs, rockets, grenades, cannons, etc.). " +
+            "Only the visual particles are hidden — sound and damage still apply. " +
+            "Lava/Water plane hides the visual surface of the map's lava or water floor (collision is kept).");
+        hideImpactVfxEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        hideImpactVfxCheckBox = NewCheckBox("Hide impact/explosion VFX", 14, CheckRow1Y);
+        hideLavaWaterPlaneCheckBox = NewCheckBox("Hide lava/water plane", 14, CheckRow2Y);
+        hideImpactVfxTab.Controls.AddRange([hideImpactVfxEnabledCheckBox, hideImpactVfxCheckBox, hideLavaWaterPlaneCheckBox]);
+        AddPresetBar<HideImpactVfxSettings>(hideImpactVfxTab, "hideImpactVfx",
+            readFields: () => new HideImpactVfxSettings { Enabled = hideImpactVfxEnabledCheckBox.Checked, HideImpactVfx = hideImpactVfxCheckBox.Checked, HideLavaWaterPlane = hideLavaWaterPlaneCheckBox.Checked },
+            applyFields: s => { hideImpactVfxEnabledCheckBox.Checked = s.Enabled; hideImpactVfxCheckBox.Checked = s.HideImpactVfx; hideLavaWaterPlaneCheckBox.Checked = s.HideLavaWaterPlane; });
+
         // --- Misc ---
         var miscTab = new TabPage("Misc");
         AddDescription(miscTab,
@@ -563,7 +580,7 @@ public sealed class FeatureSettingsForm : Form
         disableMainMenuFrameCapCheckBox = NewCheckBox("Disable frame cap on main menu (uncaps FPS while on the main menu screen)", 14, EnabledY + 30);
         miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox]);
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, miscTab]);
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, hideImpactVfxTab, miscTab]);
 
         var saveButton = new Button
         {
@@ -823,6 +840,11 @@ public sealed class FeatureSettingsForm : Form
         var autoCrouch = featureSettingsService.LoadAutoCrouchSettings();
         autoCrouchEnabledCheckBox.Checked = autoCrouch.Enabled;
 
+        var hideImpactVfx = featureSettingsService.LoadHideImpactVfxSettings();
+        hideImpactVfxEnabledCheckBox.Checked = hideImpactVfx.Enabled;
+        hideImpactVfxCheckBox.Checked = hideImpactVfx.HideImpactVfx;
+        hideLavaWaterPlaneCheckBox.Checked = hideImpactVfx.HideLavaWaterPlane;
+
         skipIntroCheckBox.Checked = LoadDebugMenuBool("skip_intro");
         disableMainMenuFrameCapCheckBox.Checked = LoadDebugMenuBool("disable_main_menu_frame_cap");
     }
@@ -1009,6 +1031,13 @@ public sealed class FeatureSettingsForm : Form
         featureSettingsService.SaveAutoCrouchSettings(new AutoCrouchSettings
         {
             Enabled = autoCrouchEnabledCheckBox.Checked
+        });
+
+        featureSettingsService.SaveHideImpactVfxSettings(new HideImpactVfxSettings
+        {
+            Enabled = hideImpactVfxEnabledCheckBox.Checked,
+            HideImpactVfx = hideImpactVfxCheckBox.Checked,
+            HideLavaWaterPlane = hideLavaWaterPlaneCheckBox.Checked
         });
 
         SaveDebugMenuBool("skip_intro", skipIntroCheckBox.Checked);

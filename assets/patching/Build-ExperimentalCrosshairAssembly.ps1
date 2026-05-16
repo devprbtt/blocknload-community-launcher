@@ -25,6 +25,7 @@ $DeathCamHealthbarConfigPath = Join-Path $PSScriptRoot "deathcam-healthbar-confi
 $FriendlyLowHealthConfigPath = Join-Path $PSScriptRoot "friendly-low-health-config.json"
 $TeammateHpConfigPath = Join-Path $PSScriptRoot "teammate-hp-config.json"
 $AutoCrouchConfigPath = Join-Path $PSScriptRoot "experimental-auto-crouch-config.json"
+$HideImpactVfxConfigPath = Join-Path $PSScriptRoot "experimental-hide-impact-vfx-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
 $SavedCopyPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.font-configured.dll"
 $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
@@ -205,6 +206,11 @@ $TeammateHpConfig = Get-JsonConfig -Path $TeammateHpConfigPath -Default @{
 $AutoCrouchConfig = Get-JsonConfig -Path $AutoCrouchConfigPath -Default @{
     enabled = $false
 }
+$HideImpactVfxConfig = Get-JsonConfig -Path $HideImpactVfxConfigPath -Default @{
+    enabled = $false
+    hide_impact_vfx = $false
+    hide_lava_water_plane = $false
+}
 
 $AnyEnabled = @(
     [bool]$Config.enabled,
@@ -229,6 +235,7 @@ $AnyEnabled = @(
     [bool]$FriendlyLowHealthConfig.enabled,
     [bool]$TeammateHpConfig.enabled,
     [bool]$AutoCrouchConfig.enabled,
+    [bool]$HideImpactVfxConfig.enabled,
     $SkipIntroEnabled,
     $DisableMainMenuFrameCapEnabled
 ) -contains $true
@@ -2271,6 +2278,44 @@ namespace BnlCommunityFixes
         }
     }
 
+    public static class HideImpactVfxRuntime
+    {
+        private static bool initialized;
+
+        static HideImpactVfxRuntime()
+        {
+            RuntimeFeatureState.ConfigureHideImpactVfx(
+                $(Format-BoolLiteral $HideImpactVfxConfig.enabled),
+                $(Format-BoolLiteral ([bool]$HideImpactVfxConfig.hide_impact_vfx)),
+                $(Format-BoolLiteral ([bool]$HideImpactVfxConfig.hide_lava_water_plane)));
+            RuntimeSettingsMenuManager.EnsureInstance();
+            UnityEngine.Debug.Log("[BNL HideVfx] initialized — hideImpact=" + RuntimeFeatureState.HideImpactVfx + " hidePlane=" + RuntimeFeatureState.HideLavaWaterPlane);
+            initialized = true;
+        }
+
+        public static void EnsureInit() { }
+
+        public static bool ShouldHideVfx()
+        {
+            return RuntimeFeatureState.HideImpactVfx;
+        }
+
+        public static bool ShouldHidePlane()
+        {
+            return RuntimeFeatureState.HideLavaWaterPlane;
+        }
+
+        public static void HidePlane(MapPlane plane)
+        {
+            if (!RuntimeFeatureState.HideLavaWaterPlane) return;
+            if (plane == null) return;
+            Renderer[] renderers = plane.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+                renderers[i].enabled = false;
+            UnityEngine.Debug.Log("[BNL HideVfx] HidePlane: disabled " + renderers.Length + " renderer(s)");
+        }
+    }
+
     public static class AimHealthbarRuntime
     {
         static AimHealthbarRuntime()
@@ -4277,6 +4322,90 @@ if ($BaseObjectiveBeamConfig.enabled) {
     $Il.InsertBefore($TargetInstruction, $Il.Create([Mono.Cecil.Cil.OpCodes]::Stfld, $ImportedActiveField))
 }
 
+if ($HideImpactVfxConfig.enabled) {
+    $HideImpactVfxRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.HideImpactVfxRuntime" | Select-Object -First 1
+    if (-not $HideImpactVfxRuntimeType) { throw "HideImpactVfxRuntime helper type not found." }
+
+    $ImportedEnsureInit    = $Module.ImportReference(($HideImpactVfxRuntimeType.Methods | Where-Object Name -eq "EnsureInit"    | Select-Object -First 1))
+    $ImportedShouldHideVfx = $Module.ImportReference(($HideImpactVfxRuntimeType.Methods | Where-Object Name -eq "ShouldHideVfx" | Select-Object -First 1))
+    $ImportedShouldHidePlane = $Module.ImportReference(($HideImpactVfxRuntimeType.Methods | Where-Object Name -eq "ShouldHidePlane" | Select-Object -First 1))
+
+    # Patch ZoneServiceListener.Impact — if (ShouldHideVfx()) return;
+    $ZoneServiceListenerType = $Module.Types | Where-Object Name -eq "ZoneServiceListener" | Select-Object -First 1
+    if (-not $ZoneServiceListenerType) { throw "ZoneServiceListener type not found." }
+
+    $ImpactMethod = $ZoneServiceListenerType.Methods | Where-Object Name -eq "Impact" | Select-Object -First 1
+    if (-not $ImpactMethod -or -not $ImpactMethod.HasBody) { throw "ZoneServiceListener.Impact not found." }
+
+    $ImpactIl = $ImpactMethod.Body.GetILProcessor()
+    $FirstInstruction = $ImpactMethod.Body.Instructions[0]
+
+    # Call EnsureInit first so the static ctor fires even if no other hook triggered it.
+    $ImpactIl.InsertBefore($FirstInstruction, $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedEnsureInit))
+
+    $ContinueLabel = $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+    $ImpactIl.InsertBefore($FirstInstruction, $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldHideVfx))
+    $ImpactIl.InsertBefore($FirstInstruction, $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $ContinueLabel))
+    $ImpactIl.InsertBefore($FirstInstruction, $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Ret))
+    $ImpactIl.InsertBefore($FirstInstruction, $ContinueLabel)
+
+    # Patch MapPlane.Awake — after normal Awake runs (ground + collider both created),
+    # call HideImpactVfxRuntime.HidePlane(this) which disables renderers on the ground GO.
+    # Collision is preserved; only the visual mesh is hidden.
+    $MapPlaneType = $Module.Types | Where-Object Name -eq "MapPlane" | Select-Object -First 1
+    if (-not $MapPlaneType) { throw "MapPlane type not found." }
+
+    $MapPlaneAwake = $MapPlaneType.Methods | Where-Object Name -eq "Awake" | Select-Object -First 1
+    if (-not $MapPlaneAwake -or -not $MapPlaneAwake.HasBody) { throw "MapPlane.Awake not found." }
+
+    $ImportedHidePlane = $Module.ImportReference(($HideImpactVfxRuntimeType.Methods | Where-Object Name -eq "HidePlane" | Select-Object -First 1))
+
+    # Append before the final ret: HideImpactVfxRuntime.HidePlane(this)
+    $AwakeIl = $MapPlaneAwake.Body.GetILProcessor()
+    $RetInstruction = @($MapPlaneAwake.Body.Instructions) | Where-Object { $_.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ret } | Select-Object -Last 1
+    $AwakeIl.InsertBefore($RetInstruction, $AwakeIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+    $AwakeIl.InsertBefore($RetInstruction, $AwakeIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedHidePlane))
+
+    # Helper: inject if (ShouldHideVfx()) return; at the start of a void method.
+    function Inject-HideVfxEarlyReturn($method) {
+        $il = $method.Body.GetILProcessor()
+        $first = $method.Body.Instructions[0]
+        $cont = $il.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+        $il.InsertBefore($first, $il.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldHideVfx))
+        $il.InsertBefore($first, $il.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $cont))
+        $il.InsertBefore($first, $il.Create([Mono.Cecil.Cil.OpCodes]::Ret))
+        $il.InsertBefore($first, $cont)
+    }
+
+    # Patch RolyTankBallCannon.OnGearToolFire — cannon barrel smoke/flash
+    $CannonType = $Module.Types | Where-Object Name -eq "RolyTankBallCannon" | Select-Object -First 1
+    if ($CannonType) {
+        $CannonFire = $CannonType.Methods | Where-Object Name -eq "OnGearToolFire" | Select-Object -First 1
+        if ($CannonFire -and $CannonFire.HasBody) { Inject-HideVfxEarlyReturn $CannonFire }
+    }
+
+    # Patch RolyTankBallRocketEffect.OnGearToolFire — rocket muzzle trail
+    $RocketEffectType = $Module.Types | Where-Object Name -eq "RolyTankBallRocketEffect" | Select-Object -First 1
+    if ($RocketEffectType) {
+        $RocketFire = $RocketEffectType.Methods | Where-Object Name -eq "OnGearToolFire" | Select-Object -First 1
+        if ($RocketFire -and $RocketFire.HasBody) { Inject-HideVfxEarlyReturn $RocketFire }
+    }
+
+    # Patch GearModelFireEffect.ShotEffect — generic muzzle flash used by most weapons
+    $GearModelFireEffectType = $Module.Types | Where-Object Name -eq "GearModelFireEffect" | Select-Object -First 1
+    if ($GearModelFireEffectType) {
+        $ShotEffect = $GearModelFireEffectType.Methods | Where-Object Name -eq "ShotEffect" | Select-Object -First 1
+        if ($ShotEffect -and $ShotEffect.HasBody) { Inject-HideVfxEarlyReturn $ShotEffect }
+    }
+
+    # Patch GearModelShotEffect.ShotEffect — cast-triggered muzzle effects
+    $GearModelShotEffectType = $Module.Types | Where-Object Name -eq "GearModelShotEffect" | Select-Object -First 1
+    if ($GearModelShotEffectType) {
+        $ShotEffect2 = $GearModelShotEffectType.Methods | Where-Object { $_.Name -eq "ShotEffect" } | Select-Object -First 1
+        if ($ShotEffect2 -and $ShotEffect2.HasBody) { Inject-HideVfxEarlyReturn $ShotEffect2 }
+    }
+}
+
 if ($LocalBuildPreviewConfig.enabled) {
     $LbpRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.LocalBuildPredictionRuntime" | Select-Object -First 1
     if (-not $LbpRuntimeType) { throw "LocalBuildPredictionRuntime helper type not found." }
@@ -4787,5 +4916,6 @@ if ($AutoCasualQueueConfig.enabled) { $Features.Add("auto-casual-queue") | Out-N
 if ($MatchReplayRecorderConfig.enabled) { $Features.Add("match-replay-recorder") | Out-Null }
 if ($TeammateHpEnabled) { $Features.Add("teammate-hp") | Out-Null }
 if ($AutoCrouchEnabled) { $Features.Add("disable-auto-crouch") | Out-Null }
+if ($HideImpactVfxConfig.enabled) { $Features.Add("hide-impact-vfx") | Out-Null }
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash
 Write-Output "Experimental all-in-one DLL built. SHA1=$Hash features=$([string]::Join(',', $Features))"

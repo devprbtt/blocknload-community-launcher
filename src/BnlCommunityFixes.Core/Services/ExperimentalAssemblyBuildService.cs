@@ -21,7 +21,8 @@ public sealed class ExperimentalAssemblyBuildService
         "experimental-local-build-preview-config.json",
         "deathcam-healthbar-config.json",
         "friendly-low-health-config.json",
-        "teammate-hp-config.json"
+        "teammate-hp-config.json",
+        "experimental-hide-impact-vfx-config.json"
     ];
 
     private readonly AppPaths paths;

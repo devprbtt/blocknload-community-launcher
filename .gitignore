@@ -34,3 +34,4 @@ Desktop.ini
 # Dotnet
 artifacts/
 TestResults/
+out/

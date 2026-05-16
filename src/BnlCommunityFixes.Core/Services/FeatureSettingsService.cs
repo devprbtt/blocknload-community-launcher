@@ -160,6 +160,9 @@ public sealed class FeatureSettingsService
     public AutoCrouchSettings LoadAutoCrouchSettings() => Load("experimental-auto-crouch-config.json", new AutoCrouchSettings());
     public void SaveAutoCrouchSettings(AutoCrouchSettings settings) => Save("experimental-auto-crouch-config.json", settings);
 
+    public HideImpactVfxSettings LoadHideImpactVfxSettings() => Load("experimental-hide-impact-vfx-config.json", new HideImpactVfxSettings());
+    public void SaveHideImpactVfxSettings(HideImpactVfxSettings settings) => Save("experimental-hide-impact-vfx-config.json", settings);
+
     public TeammateHpSettings LoadTeammateHpSettings()
     {
         var launcherConfigPath = Path.Combine(paths.PatchingDir, "teammate-hp-config.json");

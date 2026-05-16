@@ -53,6 +53,10 @@ namespace BnlCommunityFixes
         public bool teammate_hp_enabled;
         public bool disable_auto_crouch;
         public bool has_disable_auto_crouch;
+        public bool hide_impact_vfx;
+        public bool has_hide_impact_vfx;
+        public bool hide_lava_water_plane;
+        public bool has_hide_lava_water_plane;
     }
 
     public static class RuntimeFeatureState
@@ -119,6 +123,9 @@ namespace BnlCommunityFixes
         private static bool teammateHpConfigured;
         private static bool defaultDisableAutoCrouch;
         private static bool autoCrouchConfigured;
+        private static bool hideImpactVfxConfigured;
+        private static bool defaultHideImpactVfx;
+        private static bool defaultHideLavaWaterPlane;
 
         private static bool loadedFromDisk;
         private static RuntimeMenuSettingsData loadedData;
@@ -135,6 +142,7 @@ namespace BnlCommunityFixes
         public static bool AutoCasualQueueSupported { get; private set; }
         public static bool TeammateHpSupported { get; private set; }
         public static bool AutoCrouchDisableSupported { get; private set; }
+        public static bool HideImpactVfxSupported { get; private set; }
 
         public static float CrosshairSizeMultiplier { get; private set; }
         public static float CrosshairSpreadMultiplier { get; private set; }
@@ -179,6 +187,8 @@ namespace BnlCommunityFixes
         public static bool AutoCasualQueueEnabled { get; private set; }
         public static bool TeammateHpEnabled { get; private set; }
         public static bool AutoCrouchDisabled { get; private set; }
+        public static bool HideImpactVfx { get; private set; }
+        public static bool HideLavaWaterPlane { get; private set; }
 
         static RuntimeFeatureState()
         {
@@ -213,6 +223,7 @@ namespace BnlCommunityFixes
             DeathCamHealthbarEnabled = true;
             AutoCasualQueueEnabled = false;
             TeammateHpEnabled = false;
+            HideImpactVfx = false;
         }
 
         private static string ConfigPath
@@ -353,6 +364,21 @@ namespace BnlCommunityFixes
                 HideBaseObjectiveBeam = defaultHideBaseObjectiveBeam;
                 baseObjectiveBeamConfigured = true;
                 ApplyLoadedBaseObjectiveBeam();
+            }
+        }
+
+        public static void ConfigureHideImpactVfx(bool supported, bool hideVfx, bool hidePlane)
+        {
+            HideImpactVfxSupported = HideImpactVfxSupported || supported;
+            defaultHideImpactVfx = hideVfx;
+            defaultHideLavaWaterPlane = hidePlane;
+
+            if (!hideImpactVfxConfigured)
+            {
+                HideImpactVfx = defaultHideImpactVfx;
+                HideLavaWaterPlane = defaultHideLavaWaterPlane;
+                hideImpactVfxConfigured = true;
+                ApplyLoadedHideImpactVfx();
             }
         }
 
@@ -590,6 +616,13 @@ namespace BnlCommunityFixes
             if (autoCrouchConfigured)
             {
                 AutoCrouchDisabled = defaultDisableAutoCrouch;
+            }
+
+            if (hideImpactVfxConfigured)
+            {
+                HideImpactVfx = defaultHideImpactVfx;
+                HideLavaWaterPlane = defaultHideLavaWaterPlane;
+                ApplyLoadedHideImpactVfx();
             }
         }
 
@@ -894,6 +927,18 @@ namespace BnlCommunityFixes
             HideBaseObjectiveBeam = loadedData.hide_base_objective_beam;
         }
 
+        private static void ApplyLoadedHideImpactVfx()
+        {
+            EnsureLoadedData();
+            if (loadedData == null)
+            {
+                return;
+            }
+
+            if (loadedData.has_hide_impact_vfx) HideImpactVfx = loadedData.hide_impact_vfx;
+            if (loadedData.has_hide_lava_water_plane) HideLavaWaterPlane = loadedData.hide_lava_water_plane;
+        }
+
         private static void ApplyLoadedLocalBuildPreview()
         {
             EnsureLoadedData();
@@ -1005,6 +1050,8 @@ namespace BnlCommunityFixes
             data.auto_casual_queue_enabled = AutoCasualQueueEnabled;
             data.teammate_hp_enabled = TeammateHpEnabled;
             data.disable_auto_crouch = AutoCrouchDisabled;
+            data.hide_impact_vfx = HideImpactVfx;
+            data.hide_lava_water_plane = HideLavaWaterPlane;
             return data;
         }
 
@@ -1047,6 +1094,8 @@ namespace BnlCommunityFixes
             lines.Add("auto_casual_queue_enabled=" + data.auto_casual_queue_enabled);
             lines.Add("teammate_hp_enabled=" + data.teammate_hp_enabled);
             lines.Add("disable_auto_crouch=" + data.disable_auto_crouch);
+            lines.Add("hide_impact_vfx=" + data.hide_impact_vfx);
+            lines.Add("hide_lava_water_plane=" + data.hide_lava_water_plane);
             return string.Join("\n", lines.ToArray());
         }
 
@@ -1198,6 +1247,12 @@ namespace BnlCommunityFixes
                         data.disable_auto_crouch = parsedBool;
                         data.has_disable_auto_crouch = true;
                     }
+                    break;
+                case "hide_impact_vfx":
+                    if (bool.TryParse(value, out parsedBool)) { data.hide_impact_vfx = parsedBool; data.has_hide_impact_vfx = true; }
+                    break;
+                case "hide_lava_water_plane":
+                    if (bool.TryParse(value, out parsedBool)) { data.hide_lava_water_plane = parsedBool; data.has_hide_lava_water_plane = true; }
                     break;
             }
         }
