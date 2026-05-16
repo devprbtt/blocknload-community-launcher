@@ -9,19 +9,19 @@
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.3/BnlCommunityFixes.exe",
-      "sha256": "B79F13293A449DF5003CF4A804D229B82AC69CCBA4A5A178E2438DE4CC60982D",
-      "size": 154892768
+      "sha256": "1B232E21176FA977E2A35B7B6951FAE164634C3EAF36B83C7AB557CD3CD8BB1D",
+      "size": 154896864
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.3/BnlUpdater.exe",
-      "sha256": "41236CEAC06AAE7E50B44DC88CF982E7F0BFA0B3AF6B5AFB01EF2ED1259E1290",
+      "sha256": "39E28F624DA51A17D2C5244670E5888858E82DE529660B78F9819ED70A1B997E",
       "size": 67622130
     },
     "replay_analyzer_exe": {
       "file_name": "BnlCommunityFixes.ReplayAnalyzer.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.3/BnlCommunityFixes.ReplayAnalyzer.exe",
-      "sha256": "A454D0747D9130A1765490CEB75C577E52D85CFB350850BBA032DE69364B1AC7",
+      "sha256": "954316183A532E8D9308B313FA60B7F748A40DA72E13AFC6807C23685983DC1B",
       "size": 68170997
     }
   }

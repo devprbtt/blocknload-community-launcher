@@ -57,6 +57,8 @@ namespace BnlCommunityFixes
         public bool has_hide_impact_vfx;
         public bool hide_lava_water_plane;
         public bool has_hide_lava_water_plane;
+        public bool hide_falling_blocks;
+        public bool has_hide_falling_blocks;
     }
 
     public static class RuntimeFeatureState
@@ -126,6 +128,7 @@ namespace BnlCommunityFixes
         private static bool hideImpactVfxConfigured;
         private static bool defaultHideImpactVfx;
         private static bool defaultHideLavaWaterPlane;
+        private static bool defaultHideFallingBlocks;
 
         private static bool loadedFromDisk;
         private static RuntimeMenuSettingsData loadedData;
@@ -189,6 +192,7 @@ namespace BnlCommunityFixes
         public static bool AutoCrouchDisabled { get; private set; }
         public static bool HideImpactVfx { get; private set; }
         public static bool HideLavaWaterPlane { get; private set; }
+        public static bool HideFallingBlocks { get; private set; }
 
         static RuntimeFeatureState()
         {
@@ -367,16 +371,18 @@ namespace BnlCommunityFixes
             }
         }
 
-        public static void ConfigureHideImpactVfx(bool supported, bool hideVfx, bool hidePlane)
+        public static void ConfigureHideImpactVfx(bool supported, bool hideVfx, bool hidePlane, bool hideFallingBlocks)
         {
             HideImpactVfxSupported = HideImpactVfxSupported || supported;
             defaultHideImpactVfx = hideVfx;
             defaultHideLavaWaterPlane = hidePlane;
+            defaultHideFallingBlocks = hideFallingBlocks;
 
             if (!hideImpactVfxConfigured)
             {
                 HideImpactVfx = defaultHideImpactVfx;
                 HideLavaWaterPlane = defaultHideLavaWaterPlane;
+                HideFallingBlocks = defaultHideFallingBlocks;
                 hideImpactVfxConfigured = true;
                 ApplyLoadedHideImpactVfx();
             }
@@ -622,6 +628,7 @@ namespace BnlCommunityFixes
             {
                 HideImpactVfx = defaultHideImpactVfx;
                 HideLavaWaterPlane = defaultHideLavaWaterPlane;
+                HideFallingBlocks = defaultHideFallingBlocks;
                 ApplyLoadedHideImpactVfx();
             }
         }
@@ -937,6 +944,7 @@ namespace BnlCommunityFixes
 
             if (loadedData.has_hide_impact_vfx) HideImpactVfx = loadedData.hide_impact_vfx;
             if (loadedData.has_hide_lava_water_plane) HideLavaWaterPlane = loadedData.hide_lava_water_plane;
+            if (loadedData.has_hide_falling_blocks) HideFallingBlocks = loadedData.hide_falling_blocks;
         }
 
         private static void ApplyLoadedLocalBuildPreview()
@@ -1052,6 +1060,7 @@ namespace BnlCommunityFixes
             data.disable_auto_crouch = AutoCrouchDisabled;
             data.hide_impact_vfx = HideImpactVfx;
             data.hide_lava_water_plane = HideLavaWaterPlane;
+            data.hide_falling_blocks = HideFallingBlocks;
             return data;
         }
 
@@ -1096,6 +1105,7 @@ namespace BnlCommunityFixes
             lines.Add("disable_auto_crouch=" + data.disable_auto_crouch);
             lines.Add("hide_impact_vfx=" + data.hide_impact_vfx);
             lines.Add("hide_lava_water_plane=" + data.hide_lava_water_plane);
+            lines.Add("hide_falling_blocks=" + data.hide_falling_blocks);
             return string.Join("\n", lines.ToArray());
         }
 
@@ -1253,6 +1263,9 @@ namespace BnlCommunityFixes
                     break;
                 case "hide_lava_water_plane":
                     if (bool.TryParse(value, out parsedBool)) { data.hide_lava_water_plane = parsedBool; data.has_hide_lava_water_plane = true; }
+                    break;
+                case "hide_falling_blocks":
+                    if (bool.TryParse(value, out parsedBool)) { data.hide_falling_blocks = parsedBool; data.has_hide_falling_blocks = true; }
                     break;
             }
         }

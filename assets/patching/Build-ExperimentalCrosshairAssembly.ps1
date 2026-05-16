@@ -210,6 +210,7 @@ $HideImpactVfxConfig = Get-JsonConfig -Path $HideImpactVfxConfigPath -Default @{
     enabled = $false
     hide_impact_vfx = $false
     hide_lava_water_plane = $false
+    hide_falling_blocks = $false
 }
 
 $AnyEnabled = @(
@@ -2287,9 +2288,10 @@ namespace BnlCommunityFixes
             RuntimeFeatureState.ConfigureHideImpactVfx(
                 $(Format-BoolLiteral $HideImpactVfxConfig.enabled),
                 $(Format-BoolLiteral ([bool]$HideImpactVfxConfig.hide_impact_vfx)),
-                $(Format-BoolLiteral ([bool]$HideImpactVfxConfig.hide_lava_water_plane)));
+                $(Format-BoolLiteral ([bool]$HideImpactVfxConfig.hide_lava_water_plane)),
+                $(Format-BoolLiteral ([bool]$HideImpactVfxConfig.hide_falling_blocks)));
             RuntimeSettingsMenuManager.EnsureInstance();
-            UnityEngine.Debug.Log("[BNL HideVfx] initialized — hideImpact=" + RuntimeFeatureState.HideImpactVfx + " hidePlane=" + RuntimeFeatureState.HideLavaWaterPlane);
+            UnityEngine.Debug.Log("[BNL HideVfx] initialized — hideImpact=" + RuntimeFeatureState.HideImpactVfx + " hidePlane=" + RuntimeFeatureState.HideLavaWaterPlane + " hideFallingBlocks=" + RuntimeFeatureState.HideFallingBlocks);
             initialized = true;
         }
 
@@ -2303,6 +2305,18 @@ namespace BnlCommunityFixes
         public static bool ShouldHidePlane()
         {
             return RuntimeFeatureState.HideLavaWaterPlane;
+        }
+
+        public static bool ShouldHideFallingBlocks()
+        {
+            return RuntimeFeatureState.HideFallingBlocks;
+        }
+
+        public static void DestroyFallingBlock(UnityEngine.GameObject go)
+        {
+            if (!RuntimeFeatureState.HideFallingBlocks) return;
+            if (go == null) return;
+            UnityEngine.Object.Destroy(go);
         }
 
         public static void HidePlane(MapPlane plane)
@@ -4330,7 +4344,9 @@ if ($HideImpactVfxConfig.enabled) {
     $ImportedShouldHideVfx = $Module.ImportReference(($HideImpactVfxRuntimeType.Methods | Where-Object Name -eq "ShouldHideVfx" | Select-Object -First 1))
     $ImportedShouldHidePlane = $Module.ImportReference(($HideImpactVfxRuntimeType.Methods | Where-Object Name -eq "ShouldHidePlane" | Select-Object -First 1))
 
-    # Patch ZoneServiceListener.Impact — if (ShouldHideVfx()) return;
+    # Patch ZoneServiceListener.Impact — only inject EnsureInit so the static ctor fires.
+    # Do NOT early-return here: Impact also handles sounds, GotHit, HitUnit etc.
+    # VFX is suppressed by patching GlobalEffects.MakeImpactEffect directly below.
     $ZoneServiceListenerType = $Module.Types | Where-Object Name -eq "ZoneServiceListener" | Select-Object -First 1
     if (-not $ZoneServiceListenerType) { throw "ZoneServiceListener type not found." }
 
@@ -4339,15 +4355,24 @@ if ($HideImpactVfxConfig.enabled) {
 
     $ImpactIl = $ImpactMethod.Body.GetILProcessor()
     $FirstInstruction = $ImpactMethod.Body.Instructions[0]
-
-    # Call EnsureInit first so the static ctor fires even if no other hook triggered it.
     $ImpactIl.InsertBefore($FirstInstruction, $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedEnsureInit))
 
-    $ContinueLabel = $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
-    $ImpactIl.InsertBefore($FirstInstruction, $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldHideVfx))
-    $ImpactIl.InsertBefore($FirstInstruction, $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $ContinueLabel))
-    $ImpactIl.InsertBefore($FirstInstruction, $ImpactIl.Create([Mono.Cecil.Cil.OpCodes]::Ret))
-    $ImpactIl.InsertBefore($FirstInstruction, $ContinueLabel)
+    # Patch GlobalEffects.MakeImpactEffect (both overloads) — if (ShouldHideVfx()) return;
+    # This suppresses only visual effects while leaving PostImpact (sounds) untouched.
+    $GlobalEffectsType = $Module.Types | Where-Object Name -eq "GlobalEffects" | Select-Object -First 1
+    if (-not $GlobalEffectsType) { throw "GlobalEffects type not found." }
+
+    $GlobalEffectsType.Methods | Where-Object Name -eq "MakeImpactEffect" | ForEach-Object {
+        $m = $_
+        if (-not $m.HasBody) { return }
+        $mIl = $m.Body.GetILProcessor()
+        $first = $m.Body.Instructions[0]
+        $cont = $mIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+        $mIl.InsertBefore($first, $mIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldHideVfx))
+        $mIl.InsertBefore($first, $mIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $cont))
+        $mIl.InsertBefore($first, $mIl.Create([Mono.Cecil.Cil.OpCodes]::Ret))
+        $mIl.InsertBefore($first, $cont)
+    }
 
     # Patch MapPlane.Awake — after normal Awake runs (ground + collider both created),
     # call HideImpactVfxRuntime.HidePlane(this) which disables renderers on the ground GO.
@@ -4403,6 +4428,42 @@ if ($HideImpactVfxConfig.enabled) {
     if ($GearModelShotEffectType) {
         $ShotEffect2 = $GearModelShotEffectType.Methods | Where-Object { $_.Name -eq "ShotEffect" } | Select-Object -First 1
         if ($ShotEffect2 -and $ShotEffect2.HasBody) { Inject-HideVfxEarlyReturn $ShotEffect2 }
+    }
+
+    # Patch BlockFalling.Create — DestroyFallingBlock(childBlock) then ret.
+    # childBlock (arg0) is the already-instantiated GO; we must destroy it, not just skip AddComponent.
+    $ImportedShouldHideFallingBlocks = $Module.ImportReference(($HideImpactVfxRuntimeType.Methods | Where-Object Name -eq "ShouldHideFallingBlocks" | Select-Object -First 1))
+    $ImportedDestroyFallingBlock = $Module.ImportReference(($HideImpactVfxRuntimeType.Methods | Where-Object Name -eq "DestroyFallingBlock" | Select-Object -First 1))
+    $BlockFallingType = $Module.Types | Where-Object Name -eq "BlockFalling" | Select-Object -First 1
+    if ($BlockFallingType) {
+        $BlockFallingCreateMethod = $BlockFallingType.Methods | Where-Object Name -eq "Create" | Select-Object -First 1
+        if ($BlockFallingCreateMethod -and $BlockFallingCreateMethod.HasBody) {
+            $bfIl = $BlockFallingCreateMethod.Body.GetILProcessor()
+            $bfFirst = $BlockFallingCreateMethod.Body.Instructions[0]
+            $bfCont = $bfIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+            # if (!HideFallingBlocks) goto cont
+            $bfIl.InsertBefore($bfFirst, $bfIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldHideFallingBlocks))
+            $bfIl.InsertBefore($bfFirst, $bfIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $bfCont))
+            # DestroyFallingBlock(childBlock)
+            $bfIl.InsertBefore($bfFirst, $bfIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+            $bfIl.InsertBefore($bfFirst, $bfIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedDestroyFallingBlock))
+            $bfIl.InsertBefore($bfFirst, $bfIl.Create([Mono.Cecil.Cil.OpCodes]::Ret))
+            $bfIl.InsertBefore($bfFirst, $bfCont)
+        }
+
+        # Patch BlockFalling.OnDestroy — early return suppresses ember/destroy VFX for falling blocks.
+        # MakeBlockDestroy is also called for regular block destruction (ZoneManager), so we can't patch
+        # that globally — patch OnDestroy specifically instead.
+        $BlockFallingOnDestroy = $BlockFallingType.Methods | Where-Object Name -eq "OnDestroy" | Select-Object -First 1
+        if ($BlockFallingOnDestroy -and $BlockFallingOnDestroy.HasBody) {
+            $odIl = $BlockFallingOnDestroy.Body.GetILProcessor()
+            $odFirst = $BlockFallingOnDestroy.Body.Instructions[0]
+            $odCont = $odIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+            $odIl.InsertBefore($odFirst, $odIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldHideFallingBlocks))
+            $odIl.InsertBefore($odFirst, $odIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $odCont))
+            $odIl.InsertBefore($odFirst, $odIl.Create([Mono.Cecil.Cil.OpCodes]::Ret))
+            $odIl.InsertBefore($odFirst, $odCont)
+        }
     }
 }
 

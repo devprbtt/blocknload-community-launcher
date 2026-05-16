@@ -82,6 +82,7 @@ public sealed class FeatureSettingsForm : Form
     private readonly CheckBox hideImpactVfxEnabledCheckBox;
     private readonly CheckBox hideImpactVfxCheckBox;
     private readonly CheckBox hideLavaWaterPlaneCheckBox;
+    private readonly CheckBox hideFallingBlocksCheckBox;
 
     private readonly CheckBox friendlyLowHealthEnabledCheckBox;
     private readonly TextBox friendlyLowHealthColorTextBox;
@@ -567,10 +568,11 @@ public sealed class FeatureSettingsForm : Form
         hideImpactVfxEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
         hideImpactVfxCheckBox = NewCheckBox("Hide impact/explosion VFX", 14, CheckRow1Y);
         hideLavaWaterPlaneCheckBox = NewCheckBox("Hide lava/water plane", 14, CheckRow2Y);
-        hideImpactVfxTab.Controls.AddRange([hideImpactVfxEnabledCheckBox, hideImpactVfxCheckBox, hideLavaWaterPlaneCheckBox]);
+        hideFallingBlocksCheckBox = NewCheckBox("Hide falling blocks", 14, CheckRow2Y + 28);
+        hideImpactVfxTab.Controls.AddRange([hideImpactVfxEnabledCheckBox, hideImpactVfxCheckBox, hideLavaWaterPlaneCheckBox, hideFallingBlocksCheckBox]);
         AddPresetBar<HideImpactVfxSettings>(hideImpactVfxTab, "hideImpactVfx",
-            readFields: () => new HideImpactVfxSettings { Enabled = hideImpactVfxEnabledCheckBox.Checked, HideImpactVfx = hideImpactVfxCheckBox.Checked, HideLavaWaterPlane = hideLavaWaterPlaneCheckBox.Checked },
-            applyFields: s => { hideImpactVfxEnabledCheckBox.Checked = s.Enabled; hideImpactVfxCheckBox.Checked = s.HideImpactVfx; hideLavaWaterPlaneCheckBox.Checked = s.HideLavaWaterPlane; });
+            readFields: () => new HideImpactVfxSettings { Enabled = hideImpactVfxEnabledCheckBox.Checked, HideImpactVfx = hideImpactVfxCheckBox.Checked, HideLavaWaterPlane = hideLavaWaterPlaneCheckBox.Checked, HideFallingBlocks = hideFallingBlocksCheckBox.Checked },
+            applyFields: s => { hideImpactVfxEnabledCheckBox.Checked = s.Enabled; hideImpactVfxCheckBox.Checked = s.HideImpactVfx; hideLavaWaterPlaneCheckBox.Checked = s.HideLavaWaterPlane; hideFallingBlocksCheckBox.Checked = s.HideFallingBlocks; });
 
         // --- Misc ---
         var miscTab = new TabPage("Misc");
@@ -844,6 +846,7 @@ public sealed class FeatureSettingsForm : Form
         hideImpactVfxEnabledCheckBox.Checked = hideImpactVfx.Enabled;
         hideImpactVfxCheckBox.Checked = hideImpactVfx.HideImpactVfx;
         hideLavaWaterPlaneCheckBox.Checked = hideImpactVfx.HideLavaWaterPlane;
+        hideFallingBlocksCheckBox.Checked = hideImpactVfx.HideFallingBlocks;
 
         skipIntroCheckBox.Checked = LoadDebugMenuBool("skip_intro");
         disableMainMenuFrameCapCheckBox.Checked = LoadDebugMenuBool("disable_main_menu_frame_cap");
@@ -1037,7 +1040,8 @@ public sealed class FeatureSettingsForm : Form
         {
             Enabled = hideImpactVfxEnabledCheckBox.Checked,
             HideImpactVfx = hideImpactVfxCheckBox.Checked,
-            HideLavaWaterPlane = hideLavaWaterPlaneCheckBox.Checked
+            HideLavaWaterPlane = hideLavaWaterPlaneCheckBox.Checked,
+            HideFallingBlocks = hideFallingBlocksCheckBox.Checked
         });
 
         SaveDebugMenuBool("skip_intro", skipIntroCheckBox.Checked);

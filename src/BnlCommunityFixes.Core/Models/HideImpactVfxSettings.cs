@@ -12,4 +12,7 @@ public sealed class HideImpactVfxSettings
 
     [JsonPropertyName("hide_lava_water_plane")]
     public bool HideLavaWaterPlane { get; set; }
+
+    [JsonPropertyName("hide_falling_blocks")]
+    public bool HideFallingBlocks { get; set; }
 }
