@@ -59,6 +59,14 @@ namespace BnlCommunityFixes
         public bool has_hide_lava_water_plane;
         public bool hide_falling_blocks;
         public bool has_hide_falling_blocks;
+        public float unit_gui_scale_multiplier;
+        public bool has_unit_gui_scale_multiplier;
+        public float wsi_scale_multiplier;
+        public bool has_wsi_scale_multiplier;
+        public string map_render_override;
+        public bool has_map_render_override;
+        public bool dps_overlay_enabled;
+        public bool has_dps_overlay_enabled;
     }
 
     public static class RuntimeFeatureState
@@ -129,6 +137,16 @@ namespace BnlCommunityFixes
         private static bool defaultHideImpactVfx;
         private static bool defaultHideLavaWaterPlane;
         private static bool defaultHideFallingBlocks;
+        private static bool unitGuiScaleConfigured;
+        private static float defaultUnitGuiScaleMultiplier = 1f;
+        private static bool wsiScaleConfigured;
+        private static float defaultWsiScaleMultiplier = 1f;
+        private static bool mapRenderOverrideConfigured;
+        private static string defaultMapRenderOverride;
+        public static readonly string[] MapRenderPresets = { "Default", "DaytimeWarm", "DaytimeCold", "Sunset", "Night" };
+
+        private static bool dpsOverlayConfigured;
+        private static bool defaultDpsOverlayEnabled;
 
         private static bool loadedFromDisk;
         private static RuntimeMenuSettingsData loadedData;
@@ -146,6 +164,15 @@ namespace BnlCommunityFixes
         public static bool TeammateHpSupported { get; private set; }
         public static bool AutoCrouchDisableSupported { get; private set; }
         public static bool HideImpactVfxSupported { get; private set; }
+        public static bool UnitGuiScaleSupported { get; private set; }
+        public static bool WsiScaleSupported { get; private set; }
+        public static bool MapRenderOverrideSupported { get; private set; }
+        public static bool DpsOverlaySupported { get; private set; }
+
+        public static float UnitGuiScaleMultiplier { get; private set; }
+        public static float WsiScaleMultiplier { get; private set; }
+        public static string MapRenderOverride { get; private set; }
+        public static bool DpsOverlayEnabled { get; private set; }
 
         public static float CrosshairSizeMultiplier { get; private set; }
         public static float CrosshairSpreadMultiplier { get; private set; }
@@ -228,6 +255,9 @@ namespace BnlCommunityFixes
             AutoCasualQueueEnabled = false;
             TeammateHpEnabled = false;
             HideImpactVfx = false;
+            UnitGuiScaleMultiplier = 1f;
+            WsiScaleMultiplier = 1f;
+            MapRenderOverride = null;
         }
 
         private static string ConfigPath
@@ -386,6 +416,98 @@ namespace BnlCommunityFixes
                 hideImpactVfxConfigured = true;
                 ApplyLoadedHideImpactVfx();
             }
+        }
+
+        public static void SetHideImpactVfx(bool value) { HideImpactVfx = value; }
+        public static void SetHideLavaWaterPlane(bool value) { HideLavaWaterPlane = value; }
+        public static void SetHideFallingBlocks(bool value) { HideFallingBlocks = value; }
+
+        public static void ConfigureUnitGuiScale(bool supported, float scaleMultiplier)
+        {
+            UnitGuiScaleSupported = UnitGuiScaleSupported || supported;
+            defaultUnitGuiScaleMultiplier = scaleMultiplier;
+
+            if (!unitGuiScaleConfigured)
+            {
+                UnitGuiScaleMultiplier = defaultUnitGuiScaleMultiplier;
+                unitGuiScaleConfigured = true;
+                ApplyLoadedUnitGuiScale();
+            }
+        }
+
+        public static void SetUnitGuiScaleMultiplier(float value)
+        {
+            UnitGuiScaleMultiplier = Mathf.Clamp(value, 0.1f, 3f);
+        }
+
+        public static void ConfigureWsiScale(bool supported, float scaleMultiplier)
+        {
+            WsiScaleSupported = WsiScaleSupported || supported;
+            defaultWsiScaleMultiplier = scaleMultiplier;
+
+            if (!wsiScaleConfigured)
+            {
+                WsiScaleMultiplier = defaultWsiScaleMultiplier;
+                wsiScaleConfigured = true;
+                ApplyLoadedWsiScale();
+            }
+        }
+
+        public static void SetWsiScaleMultiplier(float value)
+        {
+            WsiScaleMultiplier = Mathf.Clamp(value, 0.1f, 3f);
+        }
+
+        public static void ConfigureMapRenderOverride(bool supported, string preset)
+        {
+            MapRenderOverrideSupported = MapRenderOverrideSupported || supported;
+            defaultMapRenderOverride = preset;
+
+            if (!mapRenderOverrideConfigured)
+            {
+                MapRenderOverride = defaultMapRenderOverride;
+                mapRenderOverrideConfigured = true;
+                ApplyLoadedMapRenderOverride();
+            }
+        }
+
+        public static void SetMapRenderOverride(string value)
+        {
+            MapRenderOverride = value;
+        }
+
+        public static void CycleMapRenderOverride(int direction)
+        {
+            string[] presets = MapRenderPresets;
+            int current = 0;
+            for (int i = 0; i < presets.Length; i++)
+            {
+                if (string.Equals(presets[i], MapRenderOverride, StringComparison.OrdinalIgnoreCase))
+                {
+                    current = i;
+                    break;
+                }
+            }
+            int next = (current + direction + presets.Length) % presets.Length;
+            MapRenderOverride = presets[next];
+        }
+
+        public static void ConfigureDpsOverlay(bool supported, bool enabled)
+        {
+            DpsOverlaySupported = DpsOverlaySupported || supported;
+            defaultDpsOverlayEnabled = enabled;
+
+            if (!dpsOverlayConfigured)
+            {
+                DpsOverlayEnabled = defaultDpsOverlayEnabled;
+                dpsOverlayConfigured = true;
+                ApplyLoadedDpsOverlay();
+            }
+        }
+
+        public static void SetDpsOverlayEnabled(bool value)
+        {
+            DpsOverlayEnabled = value;
         }
 
         public static void ConfigureLocalBuildPreview(bool supported, bool enabled, float timeoutSeconds)
@@ -630,6 +752,24 @@ namespace BnlCommunityFixes
                 HideLavaWaterPlane = defaultHideLavaWaterPlane;
                 HideFallingBlocks = defaultHideFallingBlocks;
                 ApplyLoadedHideImpactVfx();
+            }
+
+            if (unitGuiScaleConfigured)
+            {
+                UnitGuiScaleMultiplier = defaultUnitGuiScaleMultiplier;
+                ApplyLoadedUnitGuiScale();
+            }
+
+            if (mapRenderOverrideConfigured)
+            {
+                MapRenderOverride = defaultMapRenderOverride;
+                ApplyLoadedMapRenderOverride();
+            }
+
+            if (dpsOverlayConfigured)
+            {
+                DpsOverlayEnabled = defaultDpsOverlayEnabled;
+                ApplyLoadedDpsOverlay();
             }
         }
 
@@ -947,6 +1087,54 @@ namespace BnlCommunityFixes
             if (loadedData.has_hide_falling_blocks) HideFallingBlocks = loadedData.hide_falling_blocks;
         }
 
+        private static void ApplyLoadedUnitGuiScale()
+        {
+            EnsureLoadedData();
+            if (loadedData == null)
+            {
+                return;
+            }
+
+            if (loadedData.has_unit_gui_scale_multiplier)
+                UnitGuiScaleMultiplier = Mathf.Clamp(loadedData.unit_gui_scale_multiplier, 0.1f, 3f);
+        }
+
+        private static void ApplyLoadedWsiScale()
+        {
+            EnsureLoadedData();
+            if (loadedData == null)
+            {
+                return;
+            }
+
+            if (loadedData.has_wsi_scale_multiplier)
+                WsiScaleMultiplier = Mathf.Clamp(loadedData.wsi_scale_multiplier, 0.1f, 3f);
+        }
+
+        private static void ApplyLoadedMapRenderOverride()
+        {
+            EnsureLoadedData();
+            if (loadedData == null)
+            {
+                return;
+            }
+
+            if (loadedData.has_map_render_override && !string.IsNullOrEmpty(loadedData.map_render_override))
+                MapRenderOverride = loadedData.map_render_override;
+        }
+
+        private static void ApplyLoadedDpsOverlay()
+        {
+            EnsureLoadedData();
+            if (loadedData == null)
+            {
+                return;
+            }
+
+            if (loadedData.has_dps_overlay_enabled)
+                DpsOverlayEnabled = loadedData.dps_overlay_enabled;
+        }
+
         private static void ApplyLoadedLocalBuildPreview()
         {
             EnsureLoadedData();
@@ -1061,6 +1249,10 @@ namespace BnlCommunityFixes
             data.hide_impact_vfx = HideImpactVfx;
             data.hide_lava_water_plane = HideLavaWaterPlane;
             data.hide_falling_blocks = HideFallingBlocks;
+            data.unit_gui_scale_multiplier = UnitGuiScaleMultiplier;
+            data.wsi_scale_multiplier = WsiScaleMultiplier;
+            data.map_render_override = MapRenderOverride;
+            data.dps_overlay_enabled = DpsOverlayEnabled;
             return data;
         }
 
@@ -1106,6 +1298,10 @@ namespace BnlCommunityFixes
             lines.Add("hide_impact_vfx=" + data.hide_impact_vfx);
             lines.Add("hide_lava_water_plane=" + data.hide_lava_water_plane);
             lines.Add("hide_falling_blocks=" + data.hide_falling_blocks);
+            lines.Add("unit_gui_scale_multiplier=" + data.unit_gui_scale_multiplier.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+            lines.Add("wsi_scale_multiplier=" + data.wsi_scale_multiplier.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+            if (data.map_render_override != null) lines.Add("map_render_override=" + data.map_render_override);
+            lines.Add("dps_overlay_enabled=" + data.dps_overlay_enabled.ToString().ToLowerInvariant());
             return string.Join("\n", lines.ToArray());
         }
 
@@ -1267,6 +1463,18 @@ namespace BnlCommunityFixes
                 case "hide_falling_blocks":
                     if (bool.TryParse(value, out parsedBool)) { data.hide_falling_blocks = parsedBool; data.has_hide_falling_blocks = true; }
                     break;
+                case "unit_gui_scale_multiplier":
+                    if (TryParseFloat(value, out parsedFloat)) { data.unit_gui_scale_multiplier = parsedFloat; data.has_unit_gui_scale_multiplier = true; }
+                    break;
+                case "wsi_scale_multiplier":
+                    if (TryParseFloat(value, out parsedFloat)) { data.wsi_scale_multiplier = parsedFloat; data.has_wsi_scale_multiplier = true; }
+                    break;
+                case "map_render_override":
+                    if (!string.IsNullOrEmpty(value)) { data.map_render_override = value; data.has_map_render_override = true; }
+                    break;
+                case "dps_overlay_enabled":
+                    if (bool.TryParse(value, out parsedBool)) { data.dps_overlay_enabled = parsedBool; data.has_dps_overlay_enabled = true; }
+                    break;
             }
         }
 
@@ -1414,6 +1622,17 @@ namespace BnlCommunityFixes
 
         private void OnGUI()
         {
+            if (RuntimeFeatureState.DpsOverlaySupported && RuntimeFeatureState.DpsOverlayEnabled)
+            {
+                string dpsText = DpsOverlayRuntime.GetDisplayText();
+                float w = 200f;
+                float h = 26f;
+                float x = Screen.width - w - 8f;
+                float y = 8f;
+                GUI.Box(new Rect(x, y, w, h), string.Empty);
+                GUI.Label(new Rect(x + 8f, y + 4f, w - 16f, 18f), dpsText);
+            }
+
             if (!visible)
             {
                 return;
@@ -1448,7 +1667,7 @@ namespace BnlCommunityFixes
 
             if (RuntimeFeatureState.CombatNumbersSupported)
             {
-                count += 8;
+                count += 11;
             }
 
             if (RuntimeFeatureState.HealAlertSupported)
@@ -1496,7 +1715,27 @@ namespace BnlCommunityFixes
                 count += 1;
             }
 
-            if (DebugMenuRuntime.Enabled)
+            if (RuntimeFeatureState.HideImpactVfxSupported)
+            {
+                count += 3;
+            }
+
+            if (RuntimeFeatureState.UnitGuiScaleSupported)
+            {
+                count += 1;
+            }
+
+            if (RuntimeFeatureState.WsiScaleSupported)
+            {
+                count += 1;
+            }
+
+            if (RuntimeFeatureState.MapRenderOverrideSupported)
+            {
+                count += 1;
+            }
+
+            if (RuntimeFeatureState.DpsOverlaySupported)
             {
                 count += 1;
             }
@@ -1612,9 +1851,36 @@ namespace BnlCommunityFixes
                 index -= 1;
             }
 
-            if (DebugMenuRuntime.Enabled)
+            if (RuntimeFeatureState.HideImpactVfxSupported)
             {
-                if (index == 0) return "Debug force start match";
+                if (index == 0) return "Hide impact VFX";
+                if (index == 1) return "Hide lava/water plane";
+                if (index == 2) return "Hide falling blocks";
+                index -= 3;
+            }
+
+            if (RuntimeFeatureState.UnitGuiScaleSupported)
+            {
+                if (index == 0) return "Unit GUI scale";
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.WsiScaleSupported)
+            {
+                if (index == 0) return "WSI scale";
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.MapRenderOverrideSupported)
+            {
+                if (index == 0) return "Map render";
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.DpsOverlaySupported)
+            {
+                if (index == 0) return "DPS overlay";
+                index -= 1;
             }
 
             return "Unknown";
@@ -1728,9 +1994,36 @@ namespace BnlCommunityFixes
                 index -= 1;
             }
 
-            if (DebugMenuRuntime.Enabled)
+            if (RuntimeFeatureState.HideImpactVfxSupported)
             {
-                if (index == 0) return "PRESS RIGHT / ENTER";
+                if (index == 0) return RuntimeFeatureState.HideImpactVfx ? "ON" : "OFF";
+                if (index == 1) return RuntimeFeatureState.HideLavaWaterPlane ? "ON" : "OFF";
+                if (index == 2) return RuntimeFeatureState.HideFallingBlocks ? "ON" : "OFF";
+                index -= 3;
+            }
+
+            if (RuntimeFeatureState.UnitGuiScaleSupported)
+            {
+                if (index == 0) return RuntimeFeatureState.UnitGuiScaleMultiplier.ToString("0.00");
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.WsiScaleSupported)
+            {
+                if (index == 0) return RuntimeFeatureState.WsiScaleMultiplier.ToString("0.00");
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.MapRenderOverrideSupported)
+            {
+                if (index == 0) return RuntimeFeatureState.MapRenderOverride ?? "Default";
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.DpsOverlaySupported)
+            {
+                if (index == 0) return RuntimeFeatureState.DpsOverlayEnabled ? "ON" : "OFF";
+                index -= 1;
             }
 
             return string.Empty;
@@ -1924,11 +2217,73 @@ namespace BnlCommunityFixes
                 index -= 1;
             }
 
-            if (DebugMenuRuntime.Enabled && index == 0)
+            if (RuntimeFeatureState.HideImpactVfxSupported && index == 0)
             {
-                DebugMenuRuntime.Execute("force_start_match");
+                RuntimeFeatureState.SetHideImpactVfx(!RuntimeFeatureState.HideImpactVfx);
                 return;
             }
+
+            if (RuntimeFeatureState.HideImpactVfxSupported && index == 1)
+            {
+                RuntimeFeatureState.SetHideLavaWaterPlane(!RuntimeFeatureState.HideLavaWaterPlane);
+                return;
+            }
+
+            if (RuntimeFeatureState.HideImpactVfxSupported && index == 2)
+            {
+                RuntimeFeatureState.SetHideFallingBlocks(!RuntimeFeatureState.HideFallingBlocks);
+                return;
+            }
+
+            if (RuntimeFeatureState.HideImpactVfxSupported)
+            {
+                index -= 3;
+            }
+
+            if (RuntimeFeatureState.UnitGuiScaleSupported && index == 0)
+            {
+                RuntimeFeatureState.SetUnitGuiScaleMultiplier(RuntimeFeatureState.UnitGuiScaleMultiplier + (0.05f * direction));
+                return;
+            }
+
+            if (RuntimeFeatureState.UnitGuiScaleSupported)
+            {
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.WsiScaleSupported && index == 0)
+            {
+                RuntimeFeatureState.SetWsiScaleMultiplier(RuntimeFeatureState.WsiScaleMultiplier + (0.05f * direction));
+                return;
+            }
+
+            if (RuntimeFeatureState.WsiScaleSupported)
+            {
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.MapRenderOverrideSupported && index == 0)
+            {
+                RuntimeFeatureState.CycleMapRenderOverride(direction);
+                return;
+            }
+
+            if (RuntimeFeatureState.MapRenderOverrideSupported)
+            {
+                index -= 1;
+            }
+
+            if (RuntimeFeatureState.DpsOverlaySupported && index == 0)
+            {
+                RuntimeFeatureState.SetDpsOverlayEnabled(!RuntimeFeatureState.DpsOverlayEnabled);
+                return;
+            }
+
+            if (RuntimeFeatureState.DpsOverlaySupported)
+            {
+                index -= 1;
+            }
+
         }
 
         private static void CycleCrosshairShape(int direction)

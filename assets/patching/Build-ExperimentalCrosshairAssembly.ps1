@@ -26,6 +26,9 @@ $FriendlyLowHealthConfigPath = Join-Path $PSScriptRoot "friendly-low-health-conf
 $TeammateHpConfigPath = Join-Path $PSScriptRoot "teammate-hp-config.json"
 $AutoCrouchConfigPath = Join-Path $PSScriptRoot "experimental-auto-crouch-config.json"
 $HideImpactVfxConfigPath = Join-Path $PSScriptRoot "experimental-hide-impact-vfx-config.json"
+$UnitGuiScaleConfigPath = Join-Path $PSScriptRoot "unit-gui-scale-config.json"
+$WsiConfigPath = Join-Path $PSScriptRoot "wsi-config.json"
+$MapRenderConfigPath = Join-Path $PSScriptRoot "experimental-map-render-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
 $SavedCopyPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.font-configured.dll"
 $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
@@ -67,8 +70,8 @@ $ProjectileConfig = Get-JsonConfig -Path $ProjectileConfigPath -Default @{
     unit_projectile_speed = 500.0
     rocket_projectile_lifetime_multiplier = 1.0
     unit_projectile_lifetime_multiplier = 1.0
-    log_tool_branches = $true
-    log_unit_card_id = $true
+    log_tool_branches = $false
+    log_unit_card_id = $false
 }
 $AccuracyConfig = Get-JsonConfig -Path $AccuracyConfigPath -Default @{
     enabled = $false
@@ -212,6 +215,20 @@ $HideImpactVfxConfig = Get-JsonConfig -Path $HideImpactVfxConfigPath -Default @{
     hide_lava_water_plane = $false
     hide_falling_blocks = $false
 }
+$UnitGuiScaleConfig = Get-JsonConfig -Path $UnitGuiScaleConfigPath -Default @{
+    enabled = $false
+    scale_multiplier = 1.0
+}
+$WsiConfig = Get-JsonConfig -Path $WsiConfigPath -Default @{
+    scale_enabled = $false
+    scale_multiplier = 1.0
+}
+$MapRenderConfig = Get-JsonConfig -Path $MapRenderConfigPath -Default @{
+    enabled = $false
+    preset = "Default"
+}
+[string]$MapRenderPreset = if (-not [string]::IsNullOrWhiteSpace([string]$MapRenderConfig.preset)) { [string]$MapRenderConfig.preset } else { "Default" }
+$MapRenderPresetLiteral = ($MapRenderPreset -replace '\\', '\\\\') -replace '"', '\"'
 
 $AnyEnabled = @(
     [bool]$Config.enabled,
@@ -237,6 +254,9 @@ $AnyEnabled = @(
     [bool]$TeammateHpConfig.enabled,
     [bool]$AutoCrouchConfig.enabled,
     [bool]$HideImpactVfxConfig.enabled,
+    [bool]$UnitGuiScaleConfig.enabled,
+    [bool]$WsiConfig.scale_enabled,
+    [bool]$MapRenderConfig.enabled,
     $SkipIntroEnabled,
     $DisableMainMenuFrameCapEnabled
 ) -contains $true
@@ -1855,7 +1875,7 @@ namespace BnlCommunityFixes
                 if (active.Number == oldNumber)
                 {
                     active.Value = value;
-                    active.IsCrit = active.IsCrit || crit;
+                    active.IsCrit = crit;
                     active.LastTime = Time.time;
                     RefreshDamageHold(active.Number);
                     ApplyDamageNumber(active.Number, active.IsCrit);
@@ -1866,7 +1886,7 @@ namespace BnlCommunityFixes
                     float combined = active.Value + value;
                     UnityEngine.Object.Destroy(active.Number.gameObject);
                     active.Value = combined;
-                    active.IsCrit = active.IsCrit || crit;
+                    active.IsCrit = crit;
                     active.LastTime = Time.time;
                     active.Number = oldNumber;
                     oldNumber.DamageValue = combined;
@@ -2327,6 +2347,171 @@ namespace BnlCommunityFixes
             for (int i = 0; i < renderers.Length; i++)
                 renderers[i].enabled = false;
             UnityEngine.Debug.Log("[BNL HideVfx] HidePlane: disabled " + renderers.Length + " renderer(s)");
+        }
+    }
+
+    public static class UnitGuiScaleRuntime
+    {
+        static UnitGuiScaleRuntime()
+        {
+            RuntimeFeatureState.ConfigureUnitGuiScale(
+                $(Format-BoolLiteral $UnitGuiScaleConfig.enabled),
+                $(Format-FloatLiteral ([double]$UnitGuiScaleConfig.scale_multiplier)));
+            RuntimeSettingsMenuManager.EnsureInstance();
+            UnityEngine.Debug.Log("[BNL UnitGuiScale] initialized — scale=" + RuntimeFeatureState.UnitGuiScaleMultiplier);
+        }
+
+        public static void EnsureInit() { }
+
+        public static float GetScaleMultiplier()
+        {
+            return RuntimeFeatureState.UnitGuiScaleMultiplier;
+        }
+    }
+
+    public static class WsiScaleRuntime
+    {
+        static WsiScaleRuntime()
+        {
+            RuntimeFeatureState.ConfigureWsiScale(
+                $(Format-BoolLiteral $WsiConfig.scale_enabled),
+                $(Format-FloatLiteral ([double]$WsiConfig.scale_multiplier)));
+            RuntimeSettingsMenuManager.EnsureInstance();
+            UnityEngine.Debug.Log("[BNL WsiScale] initialized — scale=" + RuntimeFeatureState.WsiScaleMultiplier);
+        }
+
+        public static void EnsureInit() { }
+
+        public static void ApplyScale(GuiWorldSpaceIndicator indicator)
+        {
+            if (!RuntimeFeatureState.WsiScaleSupported) return;
+            float m = RuntimeFeatureState.WsiScaleMultiplier;
+            indicator.IconMinSize = indicator.IconMinSize * m;
+            indicator.IconMaxSize = indicator.IconMaxSize * m;
+        }
+    }
+
+    public static class MapRenderOverrideRuntime
+    {
+        static MapRenderOverrideRuntime()
+        {
+            RuntimeFeatureState.ConfigureMapRenderOverride(
+                $(Format-BoolLiteral $MapRenderConfig.enabled),
+                "$MapRenderPresetLiteral");
+            RuntimeSettingsMenuManager.EnsureInstance();
+            UnityEngine.Debug.Log("[BNL MapRender] initialized — preset=" + RuntimeFeatureState.MapRenderOverride);
+        }
+
+        public static void EnsureInit() { }
+
+        public static string GetRenderOverride(string original)
+        {
+            if (!RuntimeFeatureState.MapRenderOverrideSupported) return original;
+            string ov = RuntimeFeatureState.MapRenderOverride;
+            if (ov == null || ov == "Default") return original;
+            return ov;
+        }
+    }
+
+    public static class DpsOverlayRuntime
+    {
+        private static float sessionStart;
+        private static float sessionTotal;
+        private static float lastHitTime;
+        private static float currentDps;
+        private static bool sessionActive;
+        private const float SessionResetSeconds = 2f;
+
+        static DpsOverlayRuntime()
+        {
+            RuntimeFeatureState.ConfigureDpsOverlay(true, false);
+            RuntimeSettingsMenuManager.EnsureInstance();
+            SubscribePhaseUpdate();
+            UnityEngine.Debug.Log("[BNL DpsOverlay] initialized");
+        }
+
+        public static void EnsureInit() { }
+
+        public static void TryRecordDamage(DamageInfo args)
+        {
+            if (!RuntimeFeatureState.DpsOverlayEnabled) return;
+            if (args == null) return;
+            Unit player = Singleton<UnitsRegistry>.Instance.GetPlayer();
+            if (player == null || args.SourceUnitId == null || args.SourceUnitId.Value != player.Id) return;
+            RecordDamage(args.Damage);
+        }
+
+        public static void RecordDamage(float amount)
+        {
+            if (amount <= 0f) return;
+
+            float now = UnityEngine.Time.time;
+
+            if (!sessionActive || (now - lastHitTime) >= SessionResetSeconds)
+            {
+                sessionStart = now;
+                sessionTotal = amount;
+                lastHitTime = now;
+                sessionActive = true;
+                return;
+            }
+
+            sessionTotal += amount;
+            lastHitTime = now;
+
+            float elapsed = now - sessionStart;
+            if (elapsed > 0f)
+                currentDps = sessionTotal / elapsed;
+        }
+
+        public static void ResetSession()
+        {
+            sessionActive = false;
+            sessionTotal = 0f;
+            currentDps = 0f;
+        }
+
+        public static string GetDisplayText()
+        {
+            return "DPS: " + UnityEngine.Mathf.RoundToInt(currentDps).ToString();
+        }
+
+
+        private static void SubscribePhaseUpdate()
+        {
+            try
+            {
+                ZoneMessenger messenger = Singleton<ZoneMessenger>.Instance;
+                if (messenger == null) return;
+                var field = typeof(ZoneMessenger).GetField("OnGlobalPhaseUpdate", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+                if (object.ReferenceEquals(field, null)) return;
+                var eventSource = field.GetValue(messenger);
+                if (object.ReferenceEquals(eventSource, null)) return;
+                var subscribeMethod = eventSource.GetType().GetMethod("Subscribe");
+                if (object.ReferenceEquals(subscribeMethod, null)) return;
+                var handler = System.Delegate.CreateDelegate(
+                    typeof(System.Action<>).MakeGenericType(typeof(GlobalPhaseUpdateEventArgs)),
+                    typeof(DpsOverlayRuntime).GetMethod("OnPhaseUpdate", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public));
+                if (object.ReferenceEquals(handler, null)) return;
+                var parameters = new object[] { handler, null };
+                subscribeMethod.Invoke(eventSource, parameters);
+            }
+            catch { }
+        }
+
+        public static void OnPhaseUpdate(GlobalPhaseUpdateEventArgs args)
+        {
+            try
+            {
+                if (args == null) return;
+                bool wasNotAssault = args.oldPhase == null || args.oldPhase.PhaseType != Protocol.ZonePhaseType.Assault;
+                bool isAssault = args.newPhase != null && args.newPhase.PhaseType == Protocol.ZonePhaseType.Assault;
+                if (wasNotAssault && isAssault)
+                {
+                    ResetSession();
+                }
+            }
+            catch { }
         }
     }
 
@@ -4467,6 +4652,92 @@ if ($HideImpactVfxConfig.enabled) {
     }
 }
 
+if ($UnitGuiScaleConfig.enabled) {
+    $UnitGuiScaleRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.UnitGuiScaleRuntime" | Select-Object -First 1
+    if (-not $UnitGuiScaleRuntimeType) { throw "UnitGuiScaleRuntime helper type not found." }
+
+    $ImportedUgsEnsureInit     = $Module.ImportReference(($UnitGuiScaleRuntimeType.Methods | Where-Object Name -eq "EnsureInit"        | Select-Object -First 1))
+    $ImportedUgsGetScaleMult   = $Module.ImportReference(($UnitGuiScaleRuntimeType.Methods | Where-Object Name -eq "GetScaleMultiplier" | Select-Object -First 1))
+
+    # Patch GuiFollow.UpdateScale — append: mul GetScaleMultiplier() before ret
+    # UpdateScale returns a float on the stack; we multiply it by our runtime value.
+    $GuiFollowType = $Module.Types | Where-Object Name -eq "GuiFollow" | Select-Object -First 1
+    if (-not $GuiFollowType) { throw "GuiFollow type not found." }
+
+    $GuiFollowUpdateScale = $GuiFollowType.Methods | Where-Object Name -eq "UpdateScale" | Select-Object -First 1
+    if (-not $GuiFollowUpdateScale -or -not $GuiFollowUpdateScale.HasBody) { throw "GuiFollow.UpdateScale not found." }
+
+    $ugsIl = $GuiFollowUpdateScale.Body.GetILProcessor()
+    $ugsRet = @($GuiFollowUpdateScale.Body.Instructions) | Where-Object { $_.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ret } | Select-Object -Last 1
+
+    # Before ret: stack has the lerped float — multiply by GetScaleMultiplier() then ret
+    $ugsIl.InsertBefore($ugsRet, $ugsIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedUgsGetScaleMult))
+    $ugsIl.InsertBefore($ugsRet, $ugsIl.Create([Mono.Cecil.Cil.OpCodes]::Mul))
+
+    # Patch GuiFollow.Update to trigger static ctor via EnsureInit on first call
+    $GuiFollowUpdate = $GuiFollowType.Methods | Where-Object Name -eq "Update" | Select-Object -First 1
+    if ($GuiFollowUpdate -and $GuiFollowUpdate.HasBody) {
+        $uguIl = $GuiFollowUpdate.Body.GetILProcessor()
+        $uguFirst = $GuiFollowUpdate.Body.Instructions[0]
+        $uguIl.InsertBefore($uguFirst, $uguIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedUgsEnsureInit))
+    }
+}
+
+if ($WsiConfig.scale_enabled) {
+    $WsiRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.WsiScaleRuntime" | Select-Object -First 1
+    if (-not $WsiRuntimeType) { throw "WsiScaleRuntime helper type not found." }
+
+    $ImportedWsiEnsureInit  = $Module.ImportReference(($WsiRuntimeType.Methods | Where-Object Name -eq "EnsureInit"   | Select-Object -First 1))
+    $ImportedWsiApplyScale  = $Module.ImportReference(($WsiRuntimeType.Methods | Where-Object Name -eq "ApplyScale"   | Select-Object -First 1))
+
+    # Patch GuiWorldSpaceIndicator.Awake — call ApplyScale(this) at the end, before ret
+    $WsiType = $Module.Types | Where-Object Name -eq "GuiWorldSpaceIndicator" | Select-Object -First 1
+    if (-not $WsiType) { throw "GuiWorldSpaceIndicator type not found." }
+
+    $WsiAwake = $WsiType.Methods | Where-Object Name -eq "Awake" | Select-Object -First 1
+    if (-not $WsiAwake -or -not $WsiAwake.HasBody) { throw "GuiWorldSpaceIndicator.Awake not found." }
+
+    $wsiIl  = $WsiAwake.Body.GetILProcessor()
+    $wsiRet = @($WsiAwake.Body.Instructions) | Where-Object { $_.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ret } | Select-Object -Last 1
+
+    # call EnsureInit to trigger static ctor, then call ApplyScale(this)
+    $wsiIl.InsertBefore($wsiRet, $wsiIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedWsiEnsureInit))
+    $wsiIl.InsertBefore($wsiRet, $wsiIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+    $wsiIl.InsertBefore($wsiRet, $wsiIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedWsiApplyScale))
+}
+
+if ($MapRenderConfig.enabled) {
+    $MapRenderRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.MapRenderOverrideRuntime" | Select-Object -First 1
+    if (-not $MapRenderRuntimeType) { throw "MapRenderOverrideRuntime helper type not found." }
+
+    $ImportedMapRenderEnsureInit    = $Module.ImportReference(($MapRenderRuntimeType.Methods | Where-Object Name -eq "EnsureInit"         | Select-Object -First 1))
+    $ImportedMapRenderGetOverride   = $Module.ImportReference(($MapRenderRuntimeType.Methods | Where-Object Name -eq "GetRenderOverride"  | Select-Object -First 1))
+
+    # Patch MapWorld.UpdateRender(string prefab): inject EnsureInit at start,
+    # then intercept the ZoneBuild.SetMapRender call's string argument.
+    $MapWorldType = $Module.Types | Where-Object Name -eq "MapWorld" | Select-Object -First 1
+    if (-not $MapWorldType) { throw "MapWorld type not found." }
+
+    $UpdateRenderMethod = $MapWorldType.Methods | Where-Object Name -eq "UpdateRender" | Select-Object -First 1
+    if (-not $UpdateRenderMethod -or -not $UpdateRenderMethod.HasBody) { throw "MapWorld.UpdateRender not found." }
+
+    $mrIl = $UpdateRenderMethod.Body.GetILProcessor()
+
+    # Inject EnsureInit at start
+    $mrFirst = $UpdateRenderMethod.Body.Instructions[0]
+    $mrIl.InsertBefore($mrFirst, $mrIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedMapRenderEnsureInit))
+
+    # Find the call to ZoneBuild.SetMapRender and insert GetRenderOverride before it
+    $SetMapRenderCall = $UpdateRenderMethod.Body.Instructions | Where-Object {
+        $_.OpCode.Code -eq [Mono.Cecil.Cil.Code]::Call -and
+        $_.Operand -is [Mono.Cecil.MethodReference] -and $_.Operand.Name -eq "SetMapRender"
+    } | Select-Object -First 1
+    if (-not $SetMapRenderCall) { throw "ZoneBuild.SetMapRender call not found in MapWorld.UpdateRender." }
+
+    # Stack before SetMapRender: ..., prefab(string). Insert GetRenderOverride(prefab) -> string
+    $mrIl.InsertBefore($SetMapRenderCall, $mrIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedMapRenderGetOverride))
+}
+
 if ($LocalBuildPreviewConfig.enabled) {
     $LbpRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.LocalBuildPredictionRuntime" | Select-Object -First 1
     if (-not $LbpRuntimeType) { throw "LocalBuildPredictionRuntime helper type not found." }
@@ -4932,6 +5203,47 @@ if ($DisableMainMenuFrameCapEnabled) {
     }
 }
 
+# DPS Overlay — always active, hooks OnGlobalUnitDamage unconditionally
+if ($true) {
+    $DpsRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.DpsOverlayRuntime" | Select-Object -First 1
+    if (-not $DpsRuntimeType) { throw "DpsOverlayRuntime helper type not found." }
+
+    $ImportedDpsEnsureInit   = $Module.ImportReference(($DpsRuntimeType.Methods | Where-Object Name -eq "EnsureInit"      | Select-Object -First 1))
+    $ImportedDpsTryRecord    = $Module.ImportReference(($DpsRuntimeType.Methods | Where-Object Name -eq "TryRecordDamage" | Select-Object -First 1))
+
+    $DpsGuiDetectorType = $Module.Types | Where-Object Name -eq "GuiDamageNumberDetector" | Select-Object -First 1
+    if (-not $DpsGuiDetectorType) { throw "GuiDamageNumberDetector type not found for DPS patch." }
+    $DpsOnGlobalUnitDamageMethod = $DpsGuiDetectorType.Methods | Where-Object Name -eq "OnGlobalUnitDamage" | Select-Object -First 1
+    if (-not $DpsOnGlobalUnitDamageMethod -or -not $DpsOnGlobalUnitDamageMethod.HasBody) { throw "OnGlobalUnitDamage not found for DPS patch." }
+
+    # Inject EnsureInit into MainMenu.Start so the ctor fires at startup (main menu loads
+    # before any match), making the F8 menu entry visible immediately.
+    $DpsMainMenuType = $Module.Types | Where-Object Name -eq "MainMenu" | Select-Object -First 1
+    if ($DpsMainMenuType) {
+        $DpsMainMenuStartMethod = $DpsMainMenuType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+        if ($DpsMainMenuStartMethod -and $DpsMainMenuStartMethod.HasBody) {
+            $DpsMainMenuIl = $DpsMainMenuStartMethod.Body.GetILProcessor()
+            $DpsMainMenuFirst = $DpsMainMenuStartMethod.Body.Instructions[0]
+            $DpsMainMenuIl.InsertBefore($DpsMainMenuFirst, $DpsMainMenuIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedDpsEnsureInit))
+        }
+    }
+
+    # Also inject into GuiDamageNumberDetector.Start as a fallback for scene reloads
+    $DpsStartMethod = $DpsGuiDetectorType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+    if ($DpsStartMethod -and $DpsStartMethod.HasBody) {
+        $DpsStartIl = $DpsStartMethod.Body.GetILProcessor()
+        $DpsStartFirst = $DpsStartMethod.Body.Instructions[0]
+        $DpsStartIl.InsertBefore($DpsStartFirst, $DpsStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedDpsEnsureInit))
+    }
+
+    $DpsIl = $DpsOnGlobalUnitDamageMethod.Body.GetILProcessor()
+
+    # Call TryRecordDamage(args) before the last ret only — it does its own player/enabled checks
+    $DpsLastRet = @($DpsOnGlobalUnitDamageMethod.Body.Instructions) | Where-Object { $_.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ret } | Select-Object -Last 1
+    $DpsIl.InsertBefore($DpsLastRet, $DpsIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1))
+    $DpsIl.InsertBefore($DpsLastRet, $DpsIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedDpsTryRecord))
+}
+
 # Skip intro — patch GuiLoginIntro.Start() to immediately call FinishWarning() + FinishIntro()
 if ($SkipIntroEnabled) {
     $GuiLoginIntroType = $Module.Types | Where-Object Name -eq "GuiLoginIntro" | Select-Object -First 1
@@ -4948,6 +5260,186 @@ if ($SkipIntroEnabled) {
         $IntroStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0),
         $IntroStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $FinishIntroMethod)
     )
+}
+
+# -----------------------------------------------------------------------
+# Null-guard patches — suppress per-frame exceptions during replay
+# -----------------------------------------------------------------------
+
+# 1. TeamFieldOfView.IsInVisionSector — guard viewer/target null (including destroyed Unity objects)
+# Uses UnityEngine.Object::op_Equality(obj, null) which returns true for destroyed objects.
+# op_Equality is resolved from UnityEngine.dll directly to get a clean resolvable MethodReference.
+# Pattern per arg: ldarg / ldnull / call op_Equality / brfalse <skip> / ldc.i4.0 / ret / <skip>: ...original...
+$TfovType = $Module.Types | Where-Object Name -eq "TeamFieldOfView" | Select-Object -First 1
+if ($TfovType) {
+    $IsInVisionSector = $TfovType.Methods | Where-Object Name -eq "IsInVisionSector" | Select-Object -First 1
+    if ($IsInVisionSector) {
+        $Il = $IsInVisionSector.Body.GetILProcessor()
+
+        # Resolve op_Equality from UnityEngine.dll
+        $UnityEngineAsm   = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($UnityEngineDll)
+        $UnityObjectType  = $UnityEngineAsm.MainModule.Types | Where-Object FullName -eq "UnityEngine.Object" | Select-Object -First 1
+        $OpEqMethod       = $UnityObjectType.Methods | Where-Object { $_.Name -eq "op_Equality" } | Select-Object -First 1
+        $OpEq             = $Module.ImportReference($OpEqMethod)
+        $UnityEngineAsm.Dispose()
+
+        foreach ($argOpCode in @([Mono.Cecil.Cil.OpCodes]::Ldarg_2, [Mono.Cecil.Cil.OpCodes]::Ldarg_1)) {
+            $originalFirst = @($IsInVisionSector.Body.Instructions)[0]
+            $retFalse = $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0)
+            $retInstr = $Il.Create([Mono.Cecil.Cil.OpCodes]::Ret)
+            $brfalse  = $Il.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $originalFirst)
+            $callEq   = $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $OpEq)
+            $ldnull   = $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldnull)
+            $ldarg    = $Il.Create($argOpCode)
+            $Il.InsertBefore($originalFirst, $retInstr)
+            $Il.InsertBefore($retInstr,      $retFalse)
+            $Il.InsertBefore($retFalse, $brfalse)
+            $Il.InsertBefore($brfalse,  $callEq)
+            $Il.InsertBefore($callEq,   $ldnull)
+            $Il.InsertBefore($ldnull,   $ldarg)
+        }
+        Write-Output "[NullGuard] Patched TeamFieldOfView.IsInVisionSector"
+    }
+
+    # IsVisibleTroughBlocks(Vector3s viewPoint, Unit target) — guard target (arg2) null
+    $IsVisibleTroughBlocks = $TfovType.Methods | Where-Object Name -eq "IsVisibleTroughBlocks" | Select-Object -First 1
+    if ($IsVisibleTroughBlocks) {
+        $Il2           = $IsVisibleTroughBlocks.Body.GetILProcessor()
+        $OriginalFirst = @($IsVisibleTroughBlocks.Body.Instructions)[0]
+        $retFalse2 = $Il2.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0)
+        $retInstr2 = $Il2.Create([Mono.Cecil.Cil.OpCodes]::Ret)
+        $brfalse2  = $Il2.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $OriginalFirst)
+        $callEq2   = $Il2.Create([Mono.Cecil.Cil.OpCodes]::Call, $OpEq)
+        $ldnull2   = $Il2.Create([Mono.Cecil.Cil.OpCodes]::Ldnull)
+        $ldarg22   = $Il2.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_2)
+        $Il2.InsertBefore($OriginalFirst, $retInstr2)
+        $Il2.InsertBefore($retInstr2,     $retFalse2)
+        $Il2.InsertBefore($retFalse2, $brfalse2)
+        $Il2.InsertBefore($brfalse2,  $callEq2)
+        $Il2.InsertBefore($callEq2,   $ldnull2)
+        $Il2.InsertBefore($ldnull2,   $ldarg22)
+        Write-Output "[NullGuard] Patched TeamFieldOfView.IsVisibleTroughBlocks"
+    }
+}
+
+# 3. GuiFollow.Update — return early if Camera.main is null (crashes every frame during replay)
+$GuiFollowType = $Module.Types | Where-Object Name -eq "GuiFollow" | Select-Object -First 1
+if ($GuiFollowType) {
+    $GuiFollowUpdate = $GuiFollowType.Methods | Where-Object Name -eq "Update" | Select-Object -First 1
+    if ($GuiFollowUpdate) {
+        $Il3 = $GuiFollowUpdate.Body.GetILProcessor()
+        # Find the first call to Camera::get_main
+        $GetMainInstr = $GuiFollowUpdate.Body.Instructions | Where-Object {
+            $_.Operand -is [Mono.Cecil.MethodReference] -and $_.Operand.Name -eq "get_main"
+        } | Select-Object -First 1
+        if ($GetMainInstr) {
+            $FinalRet3 = @($GuiFollowUpdate.Body.Instructions) | Where-Object { $_.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ret } | Select-Object -Last 1
+            # Resolve op_Implicit(UnityEngine.Object) from UnityEngine.dll — already have $OpEq, use op_Implicit instead
+            $UnityEngineAsm2  = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($UnityEngineDll)
+            $UnityObjectType2 = $UnityEngineAsm2.MainModule.Types | Where-Object FullName -eq "UnityEngine.Object" | Select-Object -First 1
+            $OpImplicit       = $UnityObjectType2.Methods | Where-Object { $_.Name -eq "op_Implicit" } | Select-Object -First 1
+            $OpImpl           = $Module.ImportReference($OpImplicit)
+            $UnityEngineAsm2.Dispose()
+            # Insert before GetMainInstr: call get_main / call op_Implicit / brfalse FinalRet
+            $brfalse3  = $Il3.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $FinalRet3)
+            $callImpl  = $Il3.Create([Mono.Cecil.Cil.OpCodes]::Call, $OpImpl)
+            $callMain  = $Il3.Create([Mono.Cecil.Cil.OpCodes]::Call, $Module.ImportReference($GetMainInstr.Operand))
+            $Il3.InsertBefore($GetMainInstr, $brfalse3)
+            $Il3.InsertBefore($brfalse3,     $callImpl)
+            $Il3.InsertBefore($callImpl,     $callMain)
+            Write-Output "[NullGuard] Patched GuiFollow.Update"
+        }
+    }
+}
+
+# 5. UnitGhostHandler.Update — guard buildStartTime/buildEndTime .HasValue before .Value
+$UghType = $Module.Types | Where-Object Name -eq "UnitGhostHandler" | Select-Object -First 1
+if ($UghType) {
+    $UpdateMethod = $UghType.Methods | Where-Object Name -eq "Update" | Select-Object -First 1
+    if ($UpdateMethod) {
+        $Il       = $UpdateMethod.Body.GetILProcessor()
+        $FinalRet = @($UpdateMethod.Body.Instructions) | Where-Object { $_.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ret } | Select-Object -Last 1
+
+        # Find get_HasValue on Nullable<Single> by scanning the Update method's own instructions
+        # (the existing ldflda/call get_Value pattern uses Nullable<Single>, so get_HasValue must match)
+        $HasValueRef = $null
+        foreach ($instr in $UpdateMethod.Body.Instructions) {
+            if ($instr.Operand -is [Mono.Cecil.MethodReference] -and
+                $instr.Operand.Name -eq "get_HasValue" -and
+                $instr.Operand.DeclaringType.Name -eq "Nullable``1") {
+                $HasValueRef = $instr.Operand
+                break
+            }
+        }
+        if (-not $HasValueRef) {
+            # Fall back: find get_HasValue on Nullable<Single> anywhere in module
+            foreach ($t in $Module.Types) {
+                foreach ($m in $t.Methods) {
+                    if (-not $m.HasBody) { continue }
+                    foreach ($instr in $m.Body.Instructions) {
+                        if ($instr.Operand -is [Mono.Cecil.MethodReference] -and
+                            $instr.Operand.Name -eq "get_HasValue" -and
+                            $instr.Operand.DeclaringType.FullName -eq "System.Nullable``1<System.Single>") {
+                            $HasValueRef = $instr.Operand
+                            break
+                        }
+                    }
+                    if ($HasValueRef) { break }
+                }
+                if ($HasValueRef) { break }
+            }
+        }
+        if (-not $HasValueRef) { throw "Could not find Nullable<Single>::get_HasValue reference in module" }
+        $HasValue = $Module.ImportReference($HasValueRef)
+
+        # Find all `call get_Value` on Nullable<Single> — pattern is ldarg.0, ldflda <field>, call get_Value
+        # Insert HasValue guard before each ldarg.0 that precedes the pattern
+        $GetValueInstrs = @(@($UpdateMethod.Body.Instructions) | Where-Object {
+            $_.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Call -and
+            $_.Operand -ne $null -and
+            [string]$_.Operand.Name -eq "get_Value"
+        })
+
+        # Strategy: find each brfalse that jumps to IL_0074 (separates the two object branches).
+        # Before each ldloc that follows such a brfalse, insert HasValue guards for both nullable fields.
+        # Stack is guaranteed empty at those ldloc points.
+        $NullableFields = @($UpdateMethod.Body.Instructions | Where-Object {
+            $_.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ldflda -and
+            $_.Operand -ne $null -and
+            $_.Operand.FieldType.Name -eq "Nullable``1"
+        } | ForEach-Object { $_.Operand } | Select-Object -Unique)
+
+        # Find all ldloc instructions that immediately follow a brfalse (clean stack points)
+        $allInstrs = @($UpdateMethod.Body.Instructions)
+        $insertPoints = @()
+        for ($i = 1; $i -lt $allInstrs.Count; $i++) {
+            $prev = $allInstrs[$i - 1]
+            $curr = $allInstrs[$i]
+            if (($prev.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Brfalse -or $prev.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Brfalse_S) -and
+                ($curr.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ldloc_0 -or $curr.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ldloc_1 -or
+                 $curr.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ldloc_2 -or $curr.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ldloc_3 -or
+                 $curr.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ldloc_S -or $curr.OpCode -eq [Mono.Cecil.Cil.OpCodes]::Ldloc)) {
+                $insertPoints += $curr
+            }
+        }
+
+        foreach ($insertPoint in $insertPoints) {
+            # Insert HasValue guards for each nullable field, in reverse field order so first field is first in IL
+            $fieldsReversed = @($NullableFields)
+            [array]::Reverse($fieldsReversed)
+            foreach ($field in $fieldsReversed) {
+                $brfalse   = $Il.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $FinalRet)
+                $callHv    = $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $HasValue)
+                $ldfldaNew = $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldflda, $field)
+                $ldarg0New = $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+                $Il.InsertBefore($insertPoint, $brfalse)
+                $Il.InsertBefore($brfalse,     $callHv)
+                $Il.InsertBefore($callHv,      $ldfldaNew)
+                $Il.InsertBefore($ldfldaNew,   $ldarg0New)
+            }
+        }
+        Write-Output "[NullGuard] Patched UnitGhostHandler.Update"
+    }
 }
 
 $Assembly.Write($OutputPath)
@@ -4978,5 +5470,8 @@ if ($MatchReplayRecorderConfig.enabled) { $Features.Add("match-replay-recorder")
 if ($TeammateHpEnabled) { $Features.Add("teammate-hp") | Out-Null }
 if ($AutoCrouchEnabled) { $Features.Add("disable-auto-crouch") | Out-Null }
 if ($HideImpactVfxConfig.enabled) { $Features.Add("hide-impact-vfx") | Out-Null }
+if ($UnitGuiScaleConfig.enabled) { $Features.Add("unit-gui-scale") | Out-Null }
+if ($WsiConfig.scale_enabled) { $Features.Add("wsi-scale") | Out-Null }
+if ($MapRenderConfig.enabled) { $Features.Add("map-render-override") | Out-Null }
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash
 Write-Output "Experimental all-in-one DLL built. SHA1=$Hash features=$([string]::Join(',', $Features))"

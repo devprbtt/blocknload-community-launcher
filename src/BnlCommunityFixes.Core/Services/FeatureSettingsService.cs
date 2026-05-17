@@ -160,8 +160,51 @@ public sealed class FeatureSettingsService
     public AutoCrouchSettings LoadAutoCrouchSettings() => Load("experimental-auto-crouch-config.json", new AutoCrouchSettings());
     public void SaveAutoCrouchSettings(AutoCrouchSettings settings) => Save("experimental-auto-crouch-config.json", settings);
 
-    public HideImpactVfxSettings LoadHideImpactVfxSettings() => Load("experimental-hide-impact-vfx-config.json", new HideImpactVfxSettings());
-    public void SaveHideImpactVfxSettings(HideImpactVfxSettings settings) => Save("experimental-hide-impact-vfx-config.json", settings);
+    public HideImpactVfxSettings LoadHideImpactVfxSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "experimental-hide-impact-vfx-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("experimental-hide-impact-vfx-config.json", new HideImpactVfxSettings());
+            settings = runtimeSync.ReadHideImpactVfxSettings(runtimeConfigPath, settings);
+            Save("experimental-hide-impact-vfx-config.json", settings);
+            return settings;
+        }
+        return Load("experimental-hide-impact-vfx-config.json", new HideImpactVfxSettings());
+    }
+
+    public void SaveHideImpactVfxSettings(HideImpactVfxSettings settings)
+    {
+        Save("experimental-hide-impact-vfx-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteHideImpactVfxSettings(runtimeConfigPath, settings);
+    }
+
+    public UnitGuiScaleSettings LoadUnitGuiScaleSettings() => Load("unit-gui-scale-config.json", new UnitGuiScaleSettings());
+    public void SaveUnitGuiScaleSettings(UnitGuiScaleSettings settings) => Save("unit-gui-scale-config.json", settings);
+
+    public WsiSettings LoadWsiSettings() => Load("wsi-config.json", new WsiSettings());
+    public void SaveWsiSettings(WsiSettings settings) => Save("wsi-config.json", settings);
+
+    public MapRenderOverrideSettings LoadMapRenderOverrideSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "experimental-map-render-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("experimental-map-render-config.json", new MapRenderOverrideSettings());
+            settings = runtimeSync.ReadMapRenderOverrideSettings(runtimeConfigPath, settings);
+            Save("experimental-map-render-config.json", settings);
+            return settings;
+        }
+        return Load("experimental-map-render-config.json", new MapRenderOverrideSettings());
+    }
+
+    public void SaveMapRenderOverrideSettings(MapRenderOverrideSettings settings)
+    {
+        Save("experimental-map-render-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteMapRenderOverrideSettings(runtimeConfigPath, settings);
+    }
 
     public TeammateHpSettings LoadTeammateHpSettings()
     {

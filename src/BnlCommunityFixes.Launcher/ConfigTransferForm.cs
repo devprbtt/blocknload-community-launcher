@@ -26,6 +26,9 @@ public sealed class ConfigTransferForm : Form
         new("Auto Queue",        "experimental-auto-casual-queue-config.json"),
         new("Low HP Alert",      "friendly-low-health-config.json"),
         new("Misc",              "experimental-debug-menu-config.json"),
+        new("Unit GUI Scale",    "unit-gui-scale-config.json"),
+        new("WSI Scale",         "wsi-config.json"),
+        new("Map Render",        "experimental-map-render-config.json"),
     ];
 
     private readonly CheckedListBox featureList;

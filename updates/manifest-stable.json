@@ -1,26 +1,26 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "minimum_supported_version": "2.2.0",
-  "published_at": "2026-05-16T02:00:00.0000000+00:00",
-  "notes": "# BNL Community Fixes v2.4.3\n\nImpact VFX and water/lava plane hiding.\n\n## Changes\n- New feature: hide explosion/impact VFX (grenades, rockets, cannon hits) — visual particles only, sound and damage unaffected.\n- New feature: hide lava/water plane visual surface — collision preserved, only the mesh is hidden.\n- Muzzle flash and barrel smoke effects (cannon, rocket) also suppressed when impact VFX hiding is enabled.\n- Fixed build preview stuck/unbreakable blocks and hardened prediction rollback (v2.4.2 carry-over).\n- Removed font replacement feature (v2.4.2 carry-over).",
+  "published_at": "2026-05-17T20:00:00.0000000+00:00",
+  "notes": "# BNL Community Fixes v2.4.4\n\nReplay lag fixes and single-instance launcher.\n\n## Changes\n- Fixed severe replay lag caused by thousands of per-frame exceptions during replay playback.\n- Patched `TeamFieldOfView.IsInVisionSector` and `IsVisibleTroughBlocks` to guard against destroyed Unity objects instead of crashing.\n- Patched `UnitGhostHandler.Update` to guard nullable `buildStartTime`/`buildEndTime` fields before accessing `.Value`.\n- Patched `GuiFollow.Update` to return early when `Camera.main` is null during replay.\n- Opening the launcher now automatically kills any other running launcher instances.\n- F8 in-game menu: map render preset and hide impact VFX settings now sync back to the launcher UI.\n- F8 in-game menu: removed debug force start match option.\n- WSI scale settings are now saved and loaded correctly in the launcher.",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.3/BnlCommunityFixes.exe",
-      "sha256": "1B232E21176FA977E2A35B7B6951FAE164634C3EAF36B83C7AB557CD3CD8BB1D",
-      "size": 154896864
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.4/BnlCommunityFixes.exe",
+      "sha256": "149E58175C38F13ABD26F96F0EFD44C01AB3A8AA745BAC98B453184CC614E27C",
+      "size": 163334343
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.3/BnlUpdater.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.4/BnlUpdater.exe",
       "sha256": "39E28F624DA51A17D2C5244670E5888858E82DE529660B78F9819ED70A1B997E",
       "size": 67622130
     },
     "replay_analyzer_exe": {
       "file_name": "BnlCommunityFixes.ReplayAnalyzer.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.3/BnlCommunityFixes.ReplayAnalyzer.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.4/BnlCommunityFixes.ReplayAnalyzer.exe",
       "sha256": "954316183A532E8D9308B313FA60B7F748A40DA72E13AFC6807C23685983DC1B",
       "size": 68170997
     }

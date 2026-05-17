@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>2.4.3</Version>
+    <Version>2.4.4</Version>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Launcher</RootNamespace>
@@ -34,6 +34,8 @@
     <EmbeddedResource Include="..\..\assets\patching\friendly-low-health-config.json" LogicalName="Patching.friendly-low-health-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\teammate-hp-config.json" LogicalName="Patching.teammate-hp-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-auto-crouch-config.json" LogicalName="Patching.experimental-auto-crouch-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\unit-gui-scale-config.json" LogicalName="Patching.unit-gui-scale-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-map-render-config.json" LogicalName="Patching.experimental-map-render-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\Mono.Cecil.dll" LogicalName="Patching.Mono.Cecil.dll" />
   </ItemGroup>
 

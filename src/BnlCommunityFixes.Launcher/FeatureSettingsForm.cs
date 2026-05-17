@@ -84,6 +84,15 @@ public sealed class FeatureSettingsForm : Form
     private readonly CheckBox hideLavaWaterPlaneCheckBox;
     private readonly CheckBox hideFallingBlocksCheckBox;
 
+    private readonly CheckBox unitGuiScaleEnabledCheckBox;
+    private readonly NumericUpDown unitGuiScaleNumeric;
+
+    private readonly CheckBox wsiScaleEnabledCheckBox;
+    private readonly NumericUpDown wsiScaleNumeric;
+
+    private readonly CheckBox mapRenderEnabledCheckBox;
+    private readonly ComboBox mapRenderPresetComboBox;
+
     private readonly CheckBox friendlyLowHealthEnabledCheckBox;
     private readonly TextBox friendlyLowHealthColorTextBox;
     private readonly NumericUpDown friendlyLowHealthThresholdNumeric;
@@ -574,6 +583,58 @@ public sealed class FeatureSettingsForm : Form
             readFields: () => new HideImpactVfxSettings { Enabled = hideImpactVfxEnabledCheckBox.Checked, HideImpactVfx = hideImpactVfxCheckBox.Checked, HideLavaWaterPlane = hideLavaWaterPlaneCheckBox.Checked, HideFallingBlocks = hideFallingBlocksCheckBox.Checked },
             applyFields: s => { hideImpactVfxEnabledCheckBox.Checked = s.Enabled; hideImpactVfxCheckBox.Checked = s.HideImpactVfx; hideLavaWaterPlaneCheckBox.Checked = s.HideLavaWaterPlane; hideFallingBlocksCheckBox.Checked = s.HideFallingBlocks; });
 
+        // --- Unit GUI Scale ---
+        var unitGuiScaleTab = new TabPage("Unit GUI Scale");
+        AddDescription(unitGuiScaleTab,
+            "Scales the healthbar and name label shown above all units (friendlies and enemies). " +
+            "Use values below 1.0 to shrink them for a cleaner view. Adjustable in-game via F8.");
+        unitGuiScaleEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        unitGuiScaleNumeric = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.1M, 3.0M, 2, 0.05M);
+        unitGuiScaleTab.Controls.AddRange([
+            unitGuiScaleEnabledCheckBox,
+            NewLabel("Scale multiplier", NumC1, NumLabelY), unitGuiScaleNumeric
+        ]);
+        AddPresetBar<UnitGuiScaleSettings>(unitGuiScaleTab, "unitGuiScale",
+            readFields: () => new UnitGuiScaleSettings { Enabled = unitGuiScaleEnabledCheckBox.Checked, ScaleMultiplier = (double)unitGuiScaleNumeric.Value },
+            applyFields: s => { unitGuiScaleEnabledCheckBox.Checked = s.Enabled; unitGuiScaleNumeric.Value = ToDecimal(s.ScaleMultiplier, unitGuiScaleNumeric); });
+
+        // --- WSI Scale ---
+        var wsiScaleTab = new TabPage("WSI Scale");
+        AddDescription(wsiScaleTab,
+            "Scales the world-space indicators (WSI) shown above units in the game world. " +
+            "Adjustable in-game via F8.");
+        wsiScaleEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        wsiScaleNumeric = NewDecimalNumeric(NumC1, NumCtrlY, NumW, 0.1M, 3.0M, 2, 0.05M);
+        wsiScaleTab.Controls.AddRange([
+            wsiScaleEnabledCheckBox,
+            NewLabel("Scale multiplier", NumC1, NumLabelY), wsiScaleNumeric
+        ]);
+        AddPresetBar<WsiSettings>(wsiScaleTab, "wsiScale",
+            readFields: () => new WsiSettings { ScaleEnabled = wsiScaleEnabledCheckBox.Checked, ScaleMultiplier = (double)wsiScaleNumeric.Value },
+            applyFields: s => { wsiScaleEnabledCheckBox.Checked = s.ScaleEnabled; wsiScaleNumeric.Value = ToDecimal(s.ScaleMultiplier, wsiScaleNumeric); });
+
+        // --- Map Render Override ---
+        var mapRenderTab = new TabPage("Map Render");
+        AddDescription(mapRenderTab,
+            "Override the map's environmental lighting preset. " +
+            "\"Default\" uses the map's own preset. Cycle through options in-game via F8.");
+        mapRenderEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        mapRenderPresetComboBox = new ComboBox
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Location = new Point(NumC1, NumCtrlY),
+            Width = 160
+        };
+        mapRenderPresetComboBox.Items.AddRange(["Default", "DaytimeWarm", "DaytimeCold", "Sunset", "Night"]);
+        mapRenderPresetComboBox.SelectedIndex = 0;
+        mapRenderTab.Controls.AddRange([
+            mapRenderEnabledCheckBox,
+            NewLabel("Lighting preset", NumC1, NumLabelY), mapRenderPresetComboBox
+        ]);
+        AddPresetBar<MapRenderOverrideSettings>(mapRenderTab, "mapRender",
+            readFields: () => new MapRenderOverrideSettings { Enabled = mapRenderEnabledCheckBox.Checked, Preset = mapRenderPresetComboBox.SelectedItem as string ?? "Default" },
+            applyFields: s => { mapRenderEnabledCheckBox.Checked = s.Enabled; var i = mapRenderPresetComboBox.Items.IndexOf(s.Preset); mapRenderPresetComboBox.SelectedIndex = i >= 0 ? i : 0; });
+
         // --- Misc ---
         var miscTab = new TabPage("Misc");
         AddDescription(miscTab,
@@ -582,7 +643,7 @@ public sealed class FeatureSettingsForm : Form
         disableMainMenuFrameCapCheckBox = NewCheckBox("Disable frame cap on main menu (uncaps FPS while on the main menu screen)", 14, EnabledY + 30);
         miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox]);
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, hideImpactVfxTab, miscTab]);
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, hideImpactVfxTab, unitGuiScaleTab, wsiScaleTab, mapRenderTab, miscTab]);
 
         var saveButton = new Button
         {
@@ -848,6 +909,19 @@ public sealed class FeatureSettingsForm : Form
         hideLavaWaterPlaneCheckBox.Checked = hideImpactVfx.HideLavaWaterPlane;
         hideFallingBlocksCheckBox.Checked = hideImpactVfx.HideFallingBlocks;
 
+        var unitGuiScale = featureSettingsService.LoadUnitGuiScaleSettings();
+        unitGuiScaleEnabledCheckBox.Checked = unitGuiScale.Enabled;
+        unitGuiScaleNumeric.Value = ToDecimal(unitGuiScale.ScaleMultiplier, unitGuiScaleNumeric);
+
+        var wsiScale = featureSettingsService.LoadWsiSettings();
+        wsiScaleEnabledCheckBox.Checked = wsiScale.ScaleEnabled;
+        wsiScaleNumeric.Value = ToDecimal(wsiScale.ScaleMultiplier, wsiScaleNumeric);
+
+        var mapRender = featureSettingsService.LoadMapRenderOverrideSettings();
+        mapRenderEnabledCheckBox.Checked = mapRender.Enabled;
+        var mapRenderIdx = mapRenderPresetComboBox.Items.IndexOf(mapRender.Preset);
+        mapRenderPresetComboBox.SelectedIndex = mapRenderIdx >= 0 ? mapRenderIdx : 0;
+
         skipIntroCheckBox.Checked = LoadDebugMenuBool("skip_intro");
         disableMainMenuFrameCapCheckBox.Checked = LoadDebugMenuBool("disable_main_menu_frame_cap");
     }
@@ -1042,6 +1116,24 @@ public sealed class FeatureSettingsForm : Form
             HideImpactVfx = hideImpactVfxCheckBox.Checked,
             HideLavaWaterPlane = hideLavaWaterPlaneCheckBox.Checked,
             HideFallingBlocks = hideFallingBlocksCheckBox.Checked
+        });
+
+        featureSettingsService.SaveUnitGuiScaleSettings(new UnitGuiScaleSettings
+        {
+            Enabled = unitGuiScaleEnabledCheckBox.Checked,
+            ScaleMultiplier = (double)unitGuiScaleNumeric.Value
+        });
+
+        featureSettingsService.SaveWsiSettings(new WsiSettings
+        {
+            ScaleEnabled = wsiScaleEnabledCheckBox.Checked,
+            ScaleMultiplier = (double)wsiScaleNumeric.Value
+        });
+
+        featureSettingsService.SaveMapRenderOverrideSettings(new MapRenderOverrideSettings
+        {
+            Enabled = mapRenderEnabledCheckBox.Checked,
+            Preset = mapRenderPresetComboBox.SelectedItem as string ?? "Default"
         });
 
         SaveDebugMenuBool("skip_intro", skipIntroCheckBox.Checked);

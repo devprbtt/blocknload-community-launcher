@@ -375,6 +375,101 @@ public sealed class RuntimeMenuSyncService
         catch { }
     }
 
+    public HideImpactVfxSettings ReadHideImpactVfxSettings(string runtimeConfigPath, HideImpactVfxSettings current)
+    {
+        if (!File.Exists(runtimeConfigPath))
+            return current;
+
+        try
+        {
+            var lines = File.ReadAllLines(runtimeConfigPath);
+            foreach (var line in lines)
+            {
+                var sep = line.IndexOf('=');
+                if (sep <= 0) continue;
+                var key = line[..sep].Trim();
+                var val = line[(sep + 1)..].Trim();
+                switch (key)
+                {
+                    case "hide_impact_vfx":
+                        if (bool.TryParse(val, out var b)) current.HideImpactVfx = b; break;
+                    case "hide_lava_water_plane":
+                        if (bool.TryParse(val, out b)) current.HideLavaWaterPlane = b; break;
+                    case "hide_falling_blocks":
+                        if (bool.TryParse(val, out b)) current.HideFallingBlocks = b; break;
+                }
+            }
+        }
+        catch { }
+
+        return current;
+    }
+
+    public void WriteHideImpactVfxSettings(string runtimeConfigPath, HideImpactVfxSettings settings)
+    {
+        try
+        {
+            var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(runtimeConfigPath))
+            {
+                foreach (var line in File.ReadAllLines(runtimeConfigPath))
+                {
+                    var sep = line.IndexOf('=');
+                    if (sep <= 0) continue;
+                    existing[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+                }
+            }
+            existing["hide_impact_vfx"] = settings.HideImpactVfx.ToString();
+            existing["hide_lava_water_plane"] = settings.HideLavaWaterPlane.ToString();
+            existing["hide_falling_blocks"] = settings.HideFallingBlocks.ToString();
+            File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
+        }
+        catch { }
+    }
+
+    public MapRenderOverrideSettings ReadMapRenderOverrideSettings(string runtimeConfigPath, MapRenderOverrideSettings current)
+    {
+        if (!File.Exists(runtimeConfigPath))
+            return current;
+
+        try
+        {
+            var lines = File.ReadAllLines(runtimeConfigPath);
+            foreach (var line in lines)
+            {
+                var sep = line.IndexOf('=');
+                if (sep <= 0) continue;
+                var key = line[..sep].Trim();
+                var val = line[(sep + 1)..].Trim();
+                if (key == "map_render_override" && !string.IsNullOrEmpty(val))
+                    current.Preset = val;
+            }
+        }
+        catch { }
+
+        return current;
+    }
+
+    public void WriteMapRenderOverrideSettings(string runtimeConfigPath, MapRenderOverrideSettings settings)
+    {
+        try
+        {
+            var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(runtimeConfigPath))
+            {
+                foreach (var line in File.ReadAllLines(runtimeConfigPath))
+                {
+                    var sep = line.IndexOf('=');
+                    if (sep <= 0) continue;
+                    existing[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+                }
+            }
+            existing["map_render_override"] = string.IsNullOrEmpty(settings.Preset) ? "Default" : settings.Preset;
+            File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
+        }
+        catch { }
+    }
+
     private static bool TryParseDouble(string val, out double result) =>
         double.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
 }

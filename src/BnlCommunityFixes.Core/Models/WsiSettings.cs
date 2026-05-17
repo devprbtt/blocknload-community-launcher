@@ -12,4 +12,10 @@ public sealed class WsiSettings
 
     [JsonPropertyName("show_objectives")]
     public bool ShowObjectives { get; set; } = true;
+
+    [JsonPropertyName("scale_enabled")]
+    public bool ScaleEnabled { get; set; }
+
+    [JsonPropertyName("scale_multiplier")]
+    public double ScaleMultiplier { get; set; } = 1.0;
 }

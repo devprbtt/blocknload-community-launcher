@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows.Forms;
 using BnlCommunityFixes.Core.Services;
 
@@ -5,6 +6,25 @@ namespace BnlCommunityFixes.Launcher;
 
 internal static class Program
 {
+    private static void KillOtherLauncherInstances(Logger logger)
+    {
+        var currentId = Environment.ProcessId;
+        foreach (var process in Process.GetProcessesByName("BnlCommunityFixes"))
+        {
+            if (process.Id == currentId)
+                continue;
+            try
+            {
+                process.Kill(entireProcessTree: true);
+                logger.Info($"Killed existing launcher process {process.Id}.");
+            }
+            catch (Exception ex)
+            {
+                logger.Warning($"Could not kill launcher process {process.Id}: {ex.Message}");
+            }
+        }
+    }
+
     [STAThread]
     private static async Task Main(string[] args)
     {
@@ -15,6 +35,7 @@ internal static class Program
         var runtimeOptions = LauncherRuntimeOptions.Parse(args);
 
         var logger = new Logger(paths.LauncherLogPath);
+        KillOtherLauncherInstances(logger);
         logger.Info("Launcher starting.");
 
         try
