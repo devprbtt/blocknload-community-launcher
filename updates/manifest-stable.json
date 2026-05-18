@@ -15,7 +15,7 @@
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.4/BnlUpdater.exe",
-      "sha256": "39E28F624DA51A17D2C5244670E5888858E82DE529660B78F9819ED70A1B997E",
+      "sha256": "aaf086ed0f2484d1215d72d0e43aafd18f13f6d76fcc15c5415899f65ed4f100",
       "size": 67622130
     },
     "replay_analyzer_exe": {
