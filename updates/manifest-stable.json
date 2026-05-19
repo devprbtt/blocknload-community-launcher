@@ -4,7 +4,7 @@
   "version": "2.4.6",
   "minimum_supported_version": "2.2.0",
   "published_at": "2026-05-19T00:00:00.0000000+00:00",
-  "notes": "# BNL Community Fixes v2.4.6\n\nReplay system fixes and damage/healing indicator improvement.\n\n## Changes\n- Fixed ESC menu opening and immediately closing during replay.\n- Fixed exit button in ESC menu not closing the game during replay.\n- Chat is now hidden by default in replay; press Enter to toggle it.\n- Fixed scoreboard team header icons showing white instead of blue/red.\n- Fixed minimap unit and cube positions being wrong in spectator/replay mode.\n- Smoother unit rotation playback using quaternion slerp sampling.\n- Suppressed locomotion animation while player is in building state during replay.\n- Fixed false full-health heal number appearing on screen every time a player spawns.\n",
+  "notes": "# BNL Community Fixes v2.4.6\n\nReplay system fixes and damage/healing indicator improvement.\n\n## Changes\n- Fixed ESC menu opening and immediately closing during replay.\n- Fixed exit button in ESC menu not closing the game during replay.\n- Chat is now hidden by default in replay; press Enter to toggle it.\n- \n- \n- Smoother unit rotation playback using quaternion slerp sampling.\n- Suppressed locomotion animation while player is in building state during replay.\n- Fixed false full-health heal number appearing on screen every time a player spawns.\n",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
