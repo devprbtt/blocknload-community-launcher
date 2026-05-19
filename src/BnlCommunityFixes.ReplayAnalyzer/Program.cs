@@ -35,6 +35,7 @@ Console.WriteLine($"Units created: {result.UnitCreates.Count}");
 Console.WriteLine($"Moves: {result.UnitMoves.Count}");
 Console.WriteLine($"Damage events: {result.Damages.Count}");
 Console.WriteLine($"Channel events: {result.ChannelEvents.Count}  dash charges: {result.DashChargeEvents.Count}  pickups: {result.PickupTakenEvents.Count}  recalls: {result.RecallEvents.Count}  portal teleports: {result.PortalTeleports.Count}  kicks: {result.KickPlayerEvents.Count}");
+Console.WriteLine($"Chat messages: {result.ChatMessages.Count}");
 Console.WriteLine($"Local replay events: {result.LocalReplayEvents.Count}");
 Console.WriteLine($"Block updates: {result.BlockUpdates.Sum(static item => item.Count)} across {result.BlockUpdates.Count} packets");
 Console.WriteLine($"Output: {outputDir}");
@@ -360,6 +361,15 @@ internal sealed class ReplayAnalyzer
                 case "Recv_SurrenderEnd":
                     analysis.SurrenderEvents.Add(new SurrenderEvent(packet.Time, "End", ReadTeamType(reader.ReadByte()), null, reader.ReadBoolean(), null));
                     break;
+                case "Recv_RoomMessage":
+                    analysis.ChatMessages.Add(ReadRoomMessage(reader, packet));
+                    break;
+                case "Recv_PrivateMessage":
+                    analysis.ChatMessages.Add(ReadPrivateMessage(reader, packet));
+                    break;
+                case "Recv_ServiceMessage":
+                    analysis.ChatMessages.Add(ReadServiceMessage(reader, packet));
+                    break;
             }
         }
         catch (Exception exception)
@@ -452,6 +462,93 @@ internal sealed class ReplayAnalyzer
         return position is null && rotation is null
             ? null
             : new ZoneTransformData(position, rotation, null, null, null, null, null, null, null, null);
+    }
+
+    private static ChatMessageEvent ReadRoomMessage(BinaryReader reader, ReplayPacket packet)
+    {
+        var room = ReadRoomId(reader);
+        var from = ReadChatPlayer(reader);
+        var message = ReadString(reader);
+        return new ChatMessageEvent(packet.Time, "room", room, from, null, message, null, new Dictionary<string, string>());
+    }
+
+    private static ChatMessageEvent ReadPrivateMessage(BinaryReader reader, ReplayPacket packet)
+    {
+        var from = ReadChatPlayer(reader);
+        var to = ReadChatPlayer(reader);
+        var message = ReadString(reader);
+        return new ChatMessageEvent(packet.Time, "private", null, from, to, message, null, new Dictionary<string, string>());
+    }
+
+    private static ChatMessageEvent ReadServiceMessage(BinaryReader reader, ReplayPacket packet)
+    {
+        var room = reader.ReadBoolean() ? ReadRoomId(reader) : null;
+        var message = ReadString(reader);
+        var isLocalized = reader.ReadBoolean();
+        var arguments = ReadStringDictionary(reader);
+        return new ChatMessageEvent(packet.Time, "service", room, null, null, message, isLocalized, arguments);
+    }
+
+    private static ChatPlayerData ReadChatPlayer(BinaryReader reader)
+    {
+        var flags = ReadBitField(reader, 2);
+        uint? playerId = flags[0] ? reader.ReadUInt32() : null;
+        string? nickname = flags[1] ? ReadString(reader) : null;
+        return new ChatPlayerData(playerId, nickname);
+    }
+
+    private static RoomIdData ReadRoomId(BinaryReader reader)
+    {
+        var type = reader.ReadByte();
+        return type switch
+        {
+            1 => ReadRoomIdTeam(reader),
+            2 => ReadRoomIdSquad(reader),
+            3 => ReadRoomIdCustomGame(reader),
+            4 => ReadRoomIdGlobal(reader),
+            _ => new RoomIdData(type.ToString(CultureInfo.InvariantCulture), null, null, null, null, null)
+        };
+    }
+
+    private static RoomIdData ReadRoomIdTeam(BinaryReader reader)
+    {
+        var flags = ReadBitField(reader, 3);
+        string? team = flags[0] ? ReadTeamType(reader.ReadByte()) : null;
+        int? lobbyId = flags[1] ? reader.ReadInt32() : null;
+        int? instanceId = flags[2] ? reader.ReadInt32() : null;
+        return new RoomIdData("Team", team, lobbyId, instanceId, null, null);
+    }
+
+    private static RoomIdData ReadRoomIdSquad(BinaryReader reader)
+    {
+        var flags = ReadBitField(reader, 1);
+        ulong? squadId = flags[0] ? reader.ReadUInt64() : null;
+        return new RoomIdData("Squad", null, null, null, squadId, null);
+    }
+
+    private static RoomIdData ReadRoomIdCustomGame(BinaryReader reader)
+    {
+        var flags = ReadBitField(reader, 1);
+        ulong? customGameId = flags[0] ? reader.ReadUInt64() : null;
+        return new RoomIdData("CustomGame", null, null, null, null, customGameId);
+    }
+
+    private static RoomIdData ReadRoomIdGlobal(BinaryReader reader)
+    {
+        _ = ReadBitField(reader, 0);
+        return new RoomIdData("Global", null, null, null, null, null);
+    }
+
+    private static Dictionary<string, string> ReadStringDictionary(BinaryReader reader)
+    {
+        var count = ReadSize(reader);
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        for (var i = 0; i < count; i++)
+        {
+            values[ReadString(reader)] = ReadString(reader);
+        }
+
+        return values;
     }
 
     private static Vector3f? TryReadJsonVector3f(JsonElement root, string propertyName)
@@ -1970,6 +2067,23 @@ internal static class ReplayReportWriter
         WriteCsv(Path.Combine(outputDir, "rpc_results.csv"), ["time", "name", "rpc_id", "status", "value"], analysis.RpcResults, static item => [item.TimeText, item.Name, item.RpcId.ToString(CultureInfo.InvariantCulture), item.Status, item.Value]);
         WriteCsv(Path.Combine(outputDir, "surrender_events.csv"), ["time", "phase", "team", "deadline", "accepted", "detail"], analysis.SurrenderEvents, static item => [item.TimeText, item.Phase, item.Team ?? "", item.Deadline?.ToString(CultureInfo.InvariantCulture) ?? "", item.Accepted?.ToString() ?? "", item.Detail ?? ""]);
         WriteCsv(Path.Combine(outputDir, "surrender_progress.csv"), ["time", "votes"], analysis.SurrenderProgress, static item => [item.TimeText, string.Join("|", item.Votes.Select(static vote => $"{vote.PlayerId}:{vote.Voted?.ToString() ?? "null"}"))]);
+        WriteCsv(Path.Combine(outputDir, "chat_messages.csv"), ["time", "kind", "room_type", "room_team", "room_lobby_id", "room_instance_id", "room_squad_id", "room_custom_game_id", "from_player_id", "from_nickname", "to_player_id", "to_nickname", "message", "is_localized", "arguments"], analysis.ChatMessages, static item => [
+            item.TimeText,
+            item.Kind,
+            item.Room?.Type ?? "",
+            item.Room?.Team ?? "",
+            item.Room?.LobbyId?.ToString(CultureInfo.InvariantCulture) ?? "",
+            item.Room?.InstanceId?.ToString(CultureInfo.InvariantCulture) ?? "",
+            item.Room?.SquadId?.ToString(CultureInfo.InvariantCulture) ?? "",
+            item.Room?.CustomGameId?.ToString(CultureInfo.InvariantCulture) ?? "",
+            item.From?.PlayerId?.ToString(CultureInfo.InvariantCulture) ?? "",
+            item.From?.Nickname ?? "",
+            item.To?.PlayerId?.ToString(CultureInfo.InvariantCulture) ?? "",
+            item.To?.Nickname ?? "",
+            item.Message,
+            item.IsLocalized?.ToString() ?? "",
+            FormatStringDictionary(item.Arguments)
+        ]);
         WriteCsv(Path.Combine(outputDir, "end_match_players.csv"), ["player_id", "nickname", "squad_id", "backfiller", "noob", "total", "earned", "built", "destroyed", "objective", "block_assist", "kills", "deaths", "assists", "positive_medal_hash", "positive_medal_name", "negative_medal_hash", "negative_medal_name"], analysis.EndMatchResult?.Players ?? [], item => [item.PlayerId?.ToString(CultureInfo.InvariantCulture) ?? "", ResolvePlayerNickname(analysis, item.PlayerId), item.SquadId?.ToString(CultureInfo.InvariantCulture) ?? "", item.Backfiller?.ToString() ?? "", item.Noob?.ToString() ?? "", item.Stats?.Total?.ToString(CultureInfo.InvariantCulture) ?? "", FormatStat(item.Stats, "Earned"), FormatStat(item.Stats, "Built"), FormatStat(item.Stats, "Destroyed"), FormatStat(item.Stats, "Objective"), FormatStat(item.Stats, "BlockAssist"), FormatStat(item.Stats, "Kill"), FormatStat(item.Stats, "Death"), FormatStat(item.Stats, "Assist"), item.MedalPositiveKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", ResolveKeyName(analysis, item.MedalPositiveKeyHash), item.MedalNegativeKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", ResolveKeyName(analysis, item.MedalNegativeKeyHash)]);
         WriteCsv(Path.Combine(outputDir, "zone_updates.csv"), ["time", "flags", "phase", "phase_start", "phase_end", "players", "objectives", "spawn_points", "respawns", "resource_cap", "supply", "team1_stats", "team2_stats"], analysis.ZoneUpdates, item => [item.TimeText, item.Flags, item.Phase?.PhaseType ?? "", item.Phase?.StartTime?.ToString(CultureInfo.InvariantCulture) ?? "", item.Phase?.EndTime?.ToString(CultureInfo.InvariantCulture) ?? "", item.PlayerInfo.Count.ToString(CultureInfo.InvariantCulture), item.Objectives.Count.ToString(CultureInfo.InvariantCulture), item.SpawnPoints.Count.ToString(CultureInfo.InvariantCulture), item.RespawnInfo.Count.ToString(CultureInfo.InvariantCulture), item.ResourceCap?.ToString("0.###", CultureInfo.InvariantCulture) ?? "", FormatSupply(analysis, item.SupplyInfo), FormatTeamStats(item.Stats?.Team1Stats), FormatTeamStats(item.Stats?.Team2Stats)]);
         WriteCsv(Path.Combine(outputDir, "match_player_stats.csv"), ["time", "player_id", "team", "kills", "deaths", "assists"], analysis.ZoneUpdates.SelectMany(static update => update.Stats?.PlayerStats.Select(player => (update, player)) ?? []), static item => [item.update.TimeText, item.player.PlayerId.ToString(CultureInfo.InvariantCulture), item.player.Team ?? "", item.player.Kills?.ToString(CultureInfo.InvariantCulture) ?? "", item.player.Deaths?.ToString(CultureInfo.InvariantCulture) ?? "", item.player.Assists?.ToString(CultureInfo.InvariantCulture) ?? ""]);
@@ -2082,6 +2196,7 @@ internal static class ReplayReportWriter
             $"RPC results: {analysis.RpcResults.Count}",
             $"Surrender events: {analysis.SurrenderEvents.Count}",
             $"Surrender progress packets: {analysis.SurrenderProgress.Count}",
+            $"Chat messages: {analysis.ChatMessages.Count}",
             $"End match winner: {analysis.EndMatch?.WinnerTeam ?? "unknown"}",
             $"End result payload bytes: {analysis.EndMatchResultPayloadBytes}",
             $"End result decoded: {analysis.EndMatchResult is not null}",
@@ -4096,6 +4211,9 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
     private static string FormatFloatDictionary(IReadOnlyDictionary<string, float> values) =>
         string.Join("|", values.Select(static item => $"{item.Key}:{item.Value.ToString("0.###", CultureInfo.InvariantCulture)}"));
 
+    private static string FormatStringDictionary(IReadOnlyDictionary<string, string> values) =>
+        string.Join("|", values.Select(static item => $"{item.Key}={item.Value}"));
+
     private static string FormatDevices(ReplayAnalysis analysis, IReadOnlyDictionary<int, DeviceDataRecord> devices) =>
         string.Join("|", devices.Select(item => $"{item.Key}:{item.Value.DeviceKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? ResolveKeyName(analysis, item.Value.DeviceKeyHash, "")}/{item.Value.TotalCost?.ToString("0.###", CultureInfo.InvariantCulture) ?? ""}/{item.Value.CostInc?.ToString("0.###", CultureInfo.InvariantCulture) ?? ""}"));
 
@@ -4198,6 +4316,7 @@ internal sealed class ReplayAnalysis
     public List<RpcResultEvent> RpcResults { get; } = [];
     public List<SurrenderEvent> SurrenderEvents { get; } = [];
     public List<SurrenderProgressEvent> SurrenderProgress { get; } = [];
+    public List<ChatMessageEvent> ChatMessages { get; } = [];
     public List<DecodeError> DecodeErrors { get; } = [];
     public IReadOnlyDictionary<uint, string> KeyNames { get; set; } = new Dictionary<uint, string>();
     public IReadOnlyDictionary<ushort, string> BlockNames { get; set; } = new Dictionary<ushort, string>();
@@ -4283,6 +4402,7 @@ internal static class ReplayValidation
             new("rpc_results", analysis.RpcResults.Count.ToString(CultureInfo.InvariantCulture)),
             new("surrender_events", analysis.SurrenderEvents.Count.ToString(CultureInfo.InvariantCulture)),
             new("surrender_progress", analysis.SurrenderProgress.Count.ToString(CultureInfo.InvariantCulture)),
+            new("chat_messages", analysis.ChatMessages.Count.ToString(CultureInfo.InvariantCulture)),
             new("end_match_result_players", (analysis.EndMatchResult?.Players.Count ?? 0).ToString(CultureInfo.InvariantCulture))
         };
 
@@ -4916,6 +5036,13 @@ internal sealed record SurrenderProgressEvent(double Time, IReadOnlyList<Surrend
 }
 
 internal sealed record SurrenderVoteData(uint PlayerId, bool? Voted);
+internal sealed record ChatMessageEvent(double Time, string Kind, RoomIdData? Room, ChatPlayerData? From, ChatPlayerData? To, string Message, bool? IsLocalized, IReadOnlyDictionary<string, string> Arguments)
+{
+    public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
+}
+
+internal sealed record ChatPlayerData(uint? PlayerId, string? Nickname);
+internal sealed record RoomIdData(string Type, string? Team, int? LobbyId, int? InstanceId, ulong? SquadId, ulong? CustomGameId);
 internal sealed record EndMatchResultData(
     double Time,
     string Flags,

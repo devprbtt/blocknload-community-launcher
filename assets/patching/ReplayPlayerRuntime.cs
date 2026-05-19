@@ -31,6 +31,7 @@ namespace BnlCommunityFixes
         private readonly List<KillReplayEvent> killEvents = new List<KillReplayEvent>();
         private readonly List<DamageReplayEvent> damageEvents = new List<DamageReplayEvent>();
         private readonly List<ZoneStatsReplayEvent> zoneStatsEvents = new List<ZoneStatsReplayEvent>();
+        private readonly List<ChatReplayEvent> chatEvents = new List<ChatReplayEvent>();
         private readonly Dictionary<string, float> deathHoldUntilByUnitId = new Dictionary<string, float>();
         private readonly List<ProjectileReplayObject> projectileObjects = new List<ProjectileReplayObject>();
         private readonly List<ImpactReplayEvent> impactEvents = new List<ImpactReplayEvent>();
@@ -106,6 +107,9 @@ namespace BnlCommunityFixes
         private Camera weaponCamera;
         private UnitMarker weaponCamMarker;
         private string weaponCamBoneName;
+        private bool replayChatVisible;
+        private bool exitButtonPatched;
+        private bool minimapZoomPatched;
 
         // Weapon attachment node prefix — BNL uses AttachmentNode_<Weapon> (and one typo: AttachementNode_<Weapon>).
         private const string AttachmentNodePrefix = "AttachmentNode_";
@@ -185,6 +189,11 @@ namespace BnlCommunityFixes
             {
                 Debug.Log("[BNL Replay] F3 pressed, loaded=" + loaded + " followPlayerIndex=" + followPlayerIndex);
                 ToggleFirstPersonCamera();
+            }
+
+            if (Input.GetKeyDown(KeyCode.Return) && loaded)
+            {
+                replayChatVisible = !replayChatVisible;
             }
 
             HandlePlayerFollowKeys();
@@ -271,6 +280,22 @@ namespace BnlCommunityFixes
             UpdateMarkerPositions();
             UpdateFollowCamera();
             UpdateLabels();
+        }
+
+        private void LateUpdate()
+        {
+            if (!loaded)
+            {
+                return;
+            }
+
+            MaintainReplayZoneDataForHud();
+            MaintainReplayPlayerCacheForHud();
+            EnsureReplayHudSpectatorScreen();
+            ForceNativeReplayChatVisibility();
+            ForceNativeReplayScoreboardVisibility();
+            PatchReplayExitButton();
+            EnsureReplayMinimapZoom();
         }
 
         private void OnGUI()
@@ -486,7 +511,12 @@ namespace BnlCommunityFixes
 
         private void TrySpectateReplayPlayer(PlayerReplayInfo player)
         {
-            UnitMarker marker = FindMarkerByUnitId(player.UnitId);
+            UnitMarker marker = FindCurrentPlayerMarker(player);
+            if (marker != null && marker.Track != null)
+            {
+                player.UnitId = marker.Track.UnitId;
+            }
+
             if (marker == null || marker.RealUnit == null)
             {
                 return;
@@ -1228,6 +1258,7 @@ namespace BnlCommunityFixes
                 LoadPlayerHudData();
                 LoadUnitStateEvents();
                 LoadZoneStatsEvents();
+                LoadChatEvents();
                 LoadKillEvents();
                 LoadDamageEvents();
                 LoadAbilityEvents();
@@ -1838,11 +1869,7 @@ namespace BnlCommunityFixes
                 LoadReplayFromPath(replayPath, false, true, "Loaded replay units on real map: ");
                 // Re-push player stats 1s after InitZone so ZoneData and the HUD are fully ready.
                 statsResyncAt = Time.realtimeSinceStartup + 1f;
-                // Force Hud into Spectator screen so TAB scoreboard works.
-                // Hud.Loading() sets Screen.Spectator only if ZoneData.IsSpectator is true when
-                // SceneManager.Loader.IsDone — but in synthetic replay init the loader may have
-                // already completed in Game screen. We force it via reflection.
-                TryForceHudSpectatorScreen();
+                EnsureReplayHudSpectatorScreen();
             }
             catch (Exception ex)
             {
@@ -4892,6 +4919,7 @@ namespace BnlCommunityFixes
                     }
                 }
 
+                LoadReplayPlayerSquadData();
                 replayPlayers.Sort(CompareReplayPlayers);
                 ApplyReplayPlayerStatsSnapshot();
                 Debug.Log("[BNL Replay] Loaded " + replayPlayers.Count + " replay player HUD rows");
@@ -4899,6 +4927,53 @@ namespace BnlCommunityFixes
             catch (Exception ex)
             {
                 Debug.Log("[BNL Replay] LoadPlayerHudData failed: " + ex.Message);
+            }
+        }
+
+        private void LoadReplayPlayerSquadData()
+        {
+            string path = Path.Combine(analysisDirectory, "players.csv");
+            if (!File.Exists(path))
+            {
+                return;
+            }
+
+            try
+            {
+                Dictionary<string, PlayerReplayInfo> playersById = new Dictionary<string, PlayerReplayInfo>();
+                for (int i = 0; i < replayPlayers.Count; i++)
+                {
+                    if (!string.IsNullOrEmpty(replayPlayers[i].PlayerId) && !playersById.ContainsKey(replayPlayers[i].PlayerId))
+                    {
+                        playersById[replayPlayers[i].PlayerId] = replayPlayers[i];
+                    }
+                }
+
+                using (StreamReader reader = new StreamReader(path))
+                {
+                    string header = reader.ReadLine();
+                    if (string.IsNullOrEmpty(header))
+                    {
+                        return;
+                    }
+
+                    Dictionary<string, int> columns = BuildCsvColumnIndex(header);
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        List<string> fields = SplitCsvLine(line);
+                        string playerId = GetCsvField(fields, columns, "player_id");
+                        PlayerReplayInfo player;
+                        if (playersById.TryGetValue(playerId, out player))
+                        {
+                            player.SquadId = GetCsvField(fields, columns, "squad_id");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] LoadReplayPlayerSquadData failed: " + ex.Message);
             }
         }
 
@@ -5238,6 +5313,81 @@ namespace BnlCommunityFixes
             {
                 Debug.Log("[BNL Replay] LoadMatchPlayerStats failed: " + ex.Message);
             }
+        }
+
+        private void LoadChatEvents()
+        {
+            chatEvents.Clear();
+            if (string.IsNullOrEmpty(analysisDirectory))
+            {
+                return;
+            }
+
+            string path = Path.Combine(analysisDirectory, "chat_messages.csv");
+            if (!File.Exists(path))
+            {
+                return;
+            }
+
+            try
+            {
+                using (StreamReader reader = new StreamReader(path))
+                {
+                    string header = reader.ReadLine();
+                    if (string.IsNullOrEmpty(header))
+                    {
+                        return;
+                    }
+
+                    Dictionary<string, int> columns = BuildCsvColumnIndex(header);
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        List<string> fields = SplitCsvLine(line);
+                        float time;
+                        if (!TryParseFloat(GetCsvField(fields, columns, "time"), out time))
+                        {
+                            continue;
+                        }
+
+                        ChatReplayEvent evt = new ChatReplayEvent();
+                        evt.Time = time;
+                        evt.Kind = GetCsvField(fields, columns, "kind");
+                        evt.RoomType = GetCsvField(fields, columns, "room_type");
+                        evt.RoomTeam = GetCsvField(fields, columns, "room_team");
+                        int intValue;
+                        ulong ulongValue;
+                        if (int.TryParse(GetCsvField(fields, columns, "room_lobby_id"), NumberStyles.Integer, CultureInfo.InvariantCulture, out intValue)) evt.RoomLobbyId = intValue;
+                        if (int.TryParse(GetCsvField(fields, columns, "room_instance_id"), NumberStyles.Integer, CultureInfo.InvariantCulture, out intValue)) evt.RoomInstanceId = intValue;
+                        if (ulong.TryParse(GetCsvField(fields, columns, "room_squad_id"), NumberStyles.Integer, CultureInfo.InvariantCulture, out ulongValue)) evt.RoomSquadId = ulongValue;
+                        if (ulong.TryParse(GetCsvField(fields, columns, "room_custom_game_id"), NumberStyles.Integer, CultureInfo.InvariantCulture, out ulongValue)) evt.RoomCustomGameId = ulongValue;
+
+                        uint playerId;
+                        if (uint.TryParse(GetCsvField(fields, columns, "from_player_id"), NumberStyles.Integer, CultureInfo.InvariantCulture, out playerId)) evt.FromPlayerId = playerId;
+                        evt.FromNickname = GetCsvField(fields, columns, "from_nickname");
+                        if (uint.TryParse(GetCsvField(fields, columns, "to_player_id"), NumberStyles.Integer, CultureInfo.InvariantCulture, out playerId)) evt.ToPlayerId = playerId;
+                        evt.ToNickname = GetCsvField(fields, columns, "to_nickname");
+                        evt.Message = GetCsvField(fields, columns, "message");
+                        bool isLocalized;
+                        if (bool.TryParse(GetCsvField(fields, columns, "is_localized"), out isLocalized)) evt.IsLocalized = isLocalized;
+                        evt.Arguments = ParseStringDictionary(GetCsvField(fields, columns, "arguments"));
+                        chatEvents.Add(evt);
+                    }
+                }
+
+                chatEvents.Sort(CompareChatEvents);
+                ResetReplayChatRooms();
+                Debug.Log("[BNL Replay] Loaded " + chatEvents.Count + " replay chat messages");
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] LoadChatEvents failed: " + ex.Message);
+            }
+        }
+
+        private static int CompareChatEvents(ChatReplayEvent a, ChatReplayEvent b)
+        {
+            return a.Time.CompareTo(b.Time);
         }
 
         private ZoneStatsReplayEvent FindOrCreateZoneStatsEvent(float time)
@@ -6549,6 +6699,35 @@ namespace BnlCommunityFixes
             return result;
         }
 
+        private static Dictionary<string, string> ParseStringDictionary(string value)
+        {
+            Dictionary<string, string> values = new Dictionary<string, string>();
+            if (string.IsNullOrEmpty(value))
+            {
+                return values;
+            }
+
+            string[] pairs = value.Split('|');
+            for (int i = 0; i < pairs.Length; i++)
+            {
+                if (string.IsNullOrEmpty(pairs[i]))
+                {
+                    continue;
+                }
+
+                int separator = pairs[i].IndexOf('=');
+                if (separator <= 0)
+                {
+                    values[pairs[i]] = "";
+                    continue;
+                }
+
+                values[pairs[i].Substring(0, separator)] = pairs[i].Substring(separator + 1);
+            }
+
+            return values;
+        }
+
         private static bool TryParseHexUInt(string value, out uint result)
         {
             result = 0;
@@ -6948,7 +7127,7 @@ namespace BnlCommunityFixes
                     marker.GameObject.transform.position = sample.Position;
                     if (sample.HasRotation)
                     {
-                        marker.GameObject.transform.rotation = RotationToQuaternion(sample.Rotation);
+                        marker.GameObject.transform.rotation = SampleRotationQuaternion(sample);
                     }
 
                     // Fire OnUnitCommonMovementLand when replay crosses the recorded land time.
@@ -7024,7 +7203,7 @@ namespace BnlCommunityFixes
                 projectile.GameObject.transform.position = sample.Position;
                 if (sample.HasRotation)
                 {
-                    projectile.GameObject.transform.rotation = RotationToQuaternion(sample.Rotation);
+                    projectile.GameObject.transform.rotation = SampleRotationQuaternion(sample);
                 }
                 else
                 {
@@ -7313,7 +7492,17 @@ namespace BnlCommunityFixes
             float curTime = replayTime;
             if (curTime < prevTime)
             {
+                ResetReplayChatRooms();
                 prevTime = float.MinValue;
+            }
+
+            for (int i = 0; i < chatEvents.Count; i++)
+            {
+                ChatReplayEvent evt = chatEvents[i];
+                if (evt.Time > prevTime && evt.Time <= curTime)
+                {
+                    ApplyChatEvent(evt);
+                }
             }
 
             ZoneServiceListener listener = null;
@@ -8032,6 +8221,236 @@ namespace BnlCommunityFixes
             }
         }
 
+        private void ApplyChatEvent(ChatReplayEvent evt)
+        {
+            try
+            {
+                Chat chat = Singleton<Chat>.Instance;
+                if (chat == null || string.IsNullOrEmpty(evt.Message))
+                {
+                    return;
+                }
+
+                if (string.Equals(evt.Kind, "private", StringComparison.OrdinalIgnoreCase))
+                {
+                    Protocol.ChatPlayer from = BuildChatPlayer(evt.FromPlayerId, evt.FromNickname);
+                    Protocol.ChatPlayer to = BuildChatPlayer(evt.ToPlayerId, evt.ToNickname);
+                    Protocol.ChatPlayer roomPlayer = from.PlayerId != 0 ? from : to;
+                    chat.AddMessageToPrivateRoom(roomPlayer, from.PlayerId == 0 ? null : from, evt.Message);
+                    return;
+                }
+
+                Protocol.RoomId room = BuildChatRoomId(evt);
+                if (room == null)
+                {
+                    return;
+                }
+
+                Dictionary<string, string> arguments = evt.Arguments == null || evt.Arguments.Count == 0 ? null : evt.Arguments;
+                if (evt.IsLocalized == true)
+                {
+                    string localized = evt.Message;
+                    try { localized = Singleton<Localizer>.Instance.Get(evt.Message); } catch { }
+                    chat.AddMessageToPublicRoom(room, null, localized, arguments);
+                    return;
+                }
+
+                Protocol.ChatPlayer fromPlayer = string.Equals(evt.Kind, "service", StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : BuildChatPlayer(evt.FromPlayerId, evt.FromNickname);
+                chat.AddMessageToPublicRoom(room, fromPlayer, evt.Message, arguments);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] Replay chat event failed: " + ex.Message);
+            }
+        }
+
+        private void MaintainReplayZoneDataForHud()
+        {
+            try
+            {
+                ZoneData zoneData = Singleton<ZoneData>.Instance;
+                if (zoneData == null)
+                {
+                    return;
+                }
+
+                zoneData.IsSpectator = true;
+                zoneData.MyTeam = GetReplayPrimaryTeam();
+
+                Dictionary<uint, PlayerStatsReplayData> replayStats = GetReplayPlayerStatsAt(replayTime);
+                Dictionary<uint, Protocol.MatchPlayerStats> snapshot = BuildReplayPlayerStats(replayStats);
+                foreach (KeyValuePair<uint, Protocol.MatchPlayerStats> item in snapshot)
+                {
+                    zoneData.PlayerStats[item.Key] = item.Value;
+                }
+
+                ZoneMessenger messenger = Singleton<ZoneMessenger>.Instance;
+                if (messenger != null)
+                {
+                    messenger.OnStatisticsUpdate();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] MaintainReplayZoneDataForHud failed: " + ex.Message);
+            }
+        }
+
+        private void MaintainReplayPlayerCacheForHud()
+        {
+            try
+            {
+                RegisterReplayPlayerNamesWithGameSystems();
+                ZonePlayersCache playersCache = Singleton<ZonePlayersCache>.Instance;
+                if (playersCache == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < replayPlayers.Count; i++)
+                {
+                    PlayerReplayInfo player = replayPlayers[i];
+                    uint playerId;
+                    if (!uint.TryParse(player.PlayerId, NumberStyles.Integer, CultureInfo.InvariantCulture, out playerId))
+                    {
+                        continue;
+                    }
+
+                    UnitMarker marker = FindCurrentPlayerMarker(player);
+                    if (marker == null || marker.RealUnit == null || marker.Metadata == null)
+                    {
+                        continue;
+                    }
+
+                    playersCache.OnPlayerUnitCreate(playerId, marker.RealUnit.Id, BuildUnitInit(marker.Metadata, marker.RealUnit.transform.position, true));
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] MaintainReplayPlayerCacheForHud failed: " + ex.Message);
+            }
+        }
+
+        private UnitMarker FindCurrentPlayerMarker(PlayerReplayInfo player)
+        {
+            if (player == null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrEmpty(player.PlayerId))
+            {
+                UnitMarker latest = null;
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    UnitMarker candidate = markers[i];
+                    if (candidate == null || candidate.RealUnit == null || candidate.Metadata == null)
+                    {
+                        continue;
+                    }
+                    if (string.Equals(candidate.Metadata.PlayerId, player.PlayerId, StringComparison.Ordinal))
+                    {
+                        latest = candidate;
+                    }
+                }
+                if (latest != null)
+                {
+                    return latest;
+                }
+            }
+
+            return FindMarkerByUnitId(player.UnitId);
+        }
+
+        private Dictionary<uint, PlayerStatsReplayData> GetReplayPlayerStatsAt(float time)
+        {
+            Dictionary<uint, PlayerStatsReplayData> latest = null;
+            for (int i = 0; i < zoneStatsEvents.Count; i++)
+            {
+                ZoneStatsReplayEvent evt = zoneStatsEvents[i];
+                if (evt.Time > time)
+                {
+                    break;
+                }
+                if (evt.PlayerStats != null && evt.PlayerStats.Count > 0)
+                {
+                    latest = evt.PlayerStats;
+                }
+            }
+
+            return latest;
+        }
+
+        private Protocol.TeamType GetReplayPrimaryTeam()
+        {
+            for (int i = 0; i < replayPlayers.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(replayPlayers[i].Team))
+                {
+                    return TeamFromString(replayPlayers[i].Team);
+                }
+            }
+
+            return Protocol.TeamType.Team1;
+        }
+
+        private void ResetReplayChatRooms()
+        {
+            try
+            {
+                Chat chat = Singleton<Chat>.Instance;
+                if (chat == null)
+                {
+                    return;
+                }
+
+                chat.PublicRooms.Clear();
+                chat.PrivateRooms.Clear();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] Reset replay chat rooms failed: " + ex.Message);
+            }
+        }
+
+        private static Protocol.ChatPlayer BuildChatPlayer(uint playerId, string nickname)
+        {
+            Protocol.ChatPlayer player = new Protocol.ChatPlayer();
+            player.PlayerId = playerId;
+            player.Nickname = nickname ?? "";
+            return player;
+        }
+
+        private static Protocol.RoomId BuildChatRoomId(ChatReplayEvent evt)
+        {
+            if (string.Equals(evt.RoomType, "Team", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol.RoomIdTeam room = new Protocol.RoomIdTeam();
+                room.Team = TeamFromString(evt.RoomTeam);
+                room.LobbyId = evt.RoomLobbyId;
+                room.InstanceId = evt.RoomInstanceId;
+                return room;
+            }
+
+            if (string.Equals(evt.RoomType, "Squad", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol.RoomIdSquad room = new Protocol.RoomIdSquad();
+                room.SquadId = evt.RoomSquadId;
+                return room;
+            }
+
+            if (string.Equals(evt.RoomType, "CustomGame", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol.RoomIdCustomGame room = new Protocol.RoomIdCustomGame();
+                room.CustomGameId = evt.RoomCustomGameId;
+                return room;
+            }
+
+            return new Protocol.RoomIdGlobal();
+        }
+
         private Protocol.ZonePhase BuildLocalPhase(ZoneStatsReplayEvent evt)
         {
             Protocol.ZonePhase phase = new Protocol.ZonePhase();
@@ -8114,44 +8533,315 @@ namespace BnlCommunityFixes
             return local < 0L ? 0UL : (ulong)local;
         }
 
-        private static void TryForceHudSpectatorScreen()
+        private static void EnsureReplayHudSpectatorScreen()
         {
             try
             {
-                // Hud.Screen.Spectator = 1 (enum value from decompiled assembly)
-                // Hud.SetScreen is public — call directly via Singleton<Hud>.
-                System.Type hudType = null;
-                foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
+                Hud hud = Singleton<Hud>.Instance;
+                if (hud == null)
                 {
-                    hudType = asm.GetType("Hud");
-                    if (!object.ReferenceEquals(hudType, null)) break;
+                    return;
                 }
-                if (object.ReferenceEquals(hudType, null)) return;
 
-                var singletonType = typeof(Singleton<>).MakeGenericType(hudType);
-                var instanceProp = singletonType.GetProperty("Instance",
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                if (object.ReferenceEquals(instanceProp, null)) return;
-
-                object hud = instanceProp.GetValue(null, null);
-                if (object.ReferenceEquals(hud, null)) return;
-
-                var screenType = hudType.GetNestedType("Screen");
-                if (object.ReferenceEquals(screenType, null)) return;
-                object spectatorValue = System.Enum.ToObject(screenType, 2); // Spectator = 2 (Invisible=0, Game=1, Spectator=2)
-
-                var setScreen = hudType.GetMethod("SetScreen",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
-                if (!object.ReferenceEquals(setScreen, null))
+                hud.HelpScreen = false;
+                hud.IsMapFullSize = false;
+                // Keep cursor locked so Hud.Update's cursor-race-condition path (flag &&
+                // !CursorHelper.IsLocked) can't force ShowEscMenu=true every frame.
+                // This was previously suppressed by setting ShowEscMenu=false here, which
+                // also blocked intentional ESC presses. The cursor lock achieves the same
+                // protection while letting ESC open/close the menu normally.
+                if (!hud.ShowEscMenu)
                 {
-                    setScreen.Invoke(hud, new object[] { spectatorValue });
-                    Debug.Log("[BNL Replay] Forced Hud.SetScreen(Spectator) for TAB scoreboard");
+                    CursorHelper.IsLocked = true;
+                }
+                if (hud.Content != null && !hud.Content.activeSelf)
+                {
+                    hud.Content.SetActive(true);
+                }
+                hud.SetScreen(Hud.Screen.Spectator);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] EnsureReplayHudSpectatorScreen failed: " + ex.Message);
+            }
+        }
+
+        private void PatchReplayExitButton()
+        {
+            if (exitButtonPatched)
+            {
+                return;
+            }
+
+            try
+            {
+                UnityEngine.Object[] menus = UnityEngine.Object.FindObjectsOfType(typeof(GuiMatchMenu));
+                if (menus == null || menus.Length == 0)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < menus.Length; i++)
+                {
+                    GuiMatchMenu menu = menus[i] as GuiMatchMenu;
+                    if (menu == null || menu.Buttons == null)
+                    {
+                        continue;
+                    }
+
+                    Button[] buttons = menu.Buttons.GetComponentsInChildren<Button>(true);
+                    for (int j = 0; j < buttons.Length; j++)
+                    {
+                        Button btn = buttons[j];
+                        if (btn == null)
+                        {
+                            continue;
+                        }
+
+                        Text label = btn.GetComponentInChildren<Text>();
+                        if (label == null)
+                        {
+                            continue;
+                        }
+
+                        string localizedExit = "";
+                        try { localizedExit = Singleton<Localizer>.Instance.Get("exit").ToUpper(); } catch { }
+                        if (!string.IsNullOrEmpty(localizedExit) && label.text == localizedExit)
+                        {
+                            btn.onClick.RemoveAllListeners();
+                            btn.onClick.AddListener(() => Application.Quit());
+                            exitButtonPatched = true;
+                            Debug.Log("[BNL Replay] Patched exit button to Application.Quit()");
+                            break;
+                        }
+                    }
+
+                    if (exitButtonPatched)
+                    {
+                        break;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Debug.Log("[BNL Replay] TryForceHudSpectatorScreen failed: " + ex.Message);
+                Debug.Log("[BNL Replay] PatchReplayExitButton failed: " + ex.Message);
             }
+        }
+
+        private void EnsureReplayMinimapZoom()
+        {
+            if (minimapZoomPatched) return;
+            if (!realZoneInitApplied) return;
+            try
+            {
+                MinimapCamera minimapCam = Singleton<MinimapCamera>.Instance;
+                GuiMinimap minimap = Singleton<GuiMinimap>.Instance;
+                if (minimapCam == null || minimap == null) return;
+                // GuiMinimapSwitch.Update() is gated on !IsSpectator so the zoom is never
+                // set to AllMap in spectator/replay mode. Force it here so that
+                // ConvertToMapPosition uses FullMapRect instead of an uninitialised ViewRect.
+                minimapCam.Zoom = MinimapCamera.ZoomType.AllMap;
+                minimap.UpdateViewRect();
+                minimapZoomPatched = true;
+                Debug.Log("[BNL Replay] Minimap zoom forced to AllMap");
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] EnsureReplayMinimapZoom failed: " + ex.Message);
+            }
+        }
+
+        private void ForceNativeReplayChatVisibility()
+        {
+            try
+            {
+                UnityEngine.Object[] chatHuds = UnityEngine.Object.FindObjectsOfType(typeof(GuiChatHud));
+                if (chatHuds == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < chatHuds.Length; i++)
+                {
+                    GuiChatHud chatHud = chatHuds[i] as GuiChatHud;
+                    if (chatHud == null || chatHud.Chat == null)
+                    {
+                        continue;
+                    }
+
+                    chatHud.Chat.gameObject.SetActive(replayChatVisible);
+                    chatHud.Chat.IsOpen = replayChatVisible;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] ForceNativeReplayChatVisibility failed: " + ex.Message);
+            }
+        }
+
+        private static void ForceNativeReplayScoreboardVisibility()
+        {
+            try
+            {
+                bool show = Input.GetKey(KeyCode.Tab);
+                UnityEngine.Object[] scores = UnityEngine.Object.FindObjectsOfType(typeof(GuiScores));
+                if (scores == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < scores.Length; i++)
+                {
+                    GuiScores gui = scores[i] as GuiScores;
+                    if (gui == null || gui.Content == null)
+                    {
+                        continue;
+                    }
+
+                    if (show)
+                    {
+                        gui.SendMessage("OnGlobalStatisticsUpdate", SendMessageOptions.DontRequireReceiver);
+                        gui.Content.SetActive(true);
+                        gui.SendMessage("UpdateData", SendMessageOptions.DontRequireReceiver);
+                        RefreshNativeReplayScoreboardRows(gui);
+                    }
+                    else if (gui.Content.activeSelf)
+                    {
+                        gui.Content.SetActive(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] ForceNativeReplayScoreboardVisibility failed: " + ex.Message);
+            }
+        }
+
+        private static void RefreshNativeReplayScoreboardRows(GuiScores gui)
+        {
+            try
+            {
+                if (gui == null)
+                {
+                    return;
+                }
+
+                // In spectator/replay mode GuiScores.Start() skips setting team icon colors.
+                // Apply team colors to the header icons manually so they show blue/red instead of white.
+                try
+                {
+                    TeamColorContainer tcc = Singleton<TeamColorContainer>.Instance;
+                    if (tcc != null)
+                    {
+                        if (gui.MyTeamIcon != null)
+                            gui.MyTeamIcon.color = tcc.Gui.TeamFriendly;
+                        if (gui.OppTeamIcon != null)
+                            gui.OppTeamIcon.color = tcc.Gui.TeamEnemy;
+                    }
+                }
+                catch { }
+
+                RefreshNativeReplayScoreboardRows(gui.MyTeam);
+                RefreshNativeReplayScoreboardRows(gui.OppTeam);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] RefreshNativeReplayScoreboardRows failed: " + ex.Message);
+            }
+        }
+
+        private static void RefreshNativeReplayScoreboardRows(DataPopulation population)
+        {
+            if (population == null)
+            {
+                return;
+            }
+
+            List<GuiPlayerScore> rows = population.GetContent<GuiPlayerScore>();
+            for (int i = 0; i < rows.Count; i++)
+            {
+                GuiPlayerScore row = rows[i];
+                if (row == null)
+                {
+                    continue;
+                }
+
+                Protocol.MatchPlayerStats stats = Singleton<ZoneData>.Instance.GetPlayerStats(row.PlayerId);
+                row.SetKills(stats.Kills);
+                row.SetDeaths(stats.Deaths);
+                if (row.Assists != null)
+                {
+                    row.Assists.text = stats.Assists.ToString(CultureInfo.InvariantCulture);
+                }
+                row.SetIsMe(row.PlayerId == Singleton<PlayerData>.Instance.Id);
+                row.UpdateClass();
+                bool alive = IsReplayPlayerAlive(row.PlayerId);
+                row.SetIsDead(!alive);
+                if (alive && row.RespawnTime != null)
+                {
+                    row.RespawnTime.text = string.Empty;
+                }
+
+                PlayerReplayInfo player = FindReplayPlayer(row.PlayerId);
+                if (player != null && string.IsNullOrEmpty(player.SquadId) && row.SquadNumContent != null)
+                {
+                    row.SquadNumContent.SetActive(false);
+                }
+            }
+        }
+
+        private static PlayerReplayInfo FindReplayPlayer(uint playerId)
+        {
+            if (instance == null)
+            {
+                return null;
+            }
+
+            string id = playerId.ToString(CultureInfo.InvariantCulture);
+            for (int i = 0; i < instance.replayPlayers.Count; i++)
+            {
+                if (string.Equals(instance.replayPlayers[i].PlayerId, id, StringComparison.Ordinal))
+                {
+                    return instance.replayPlayers[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsReplayPlayerAlive(uint playerId)
+        {
+            if (instance == null)
+            {
+                return true;
+            }
+
+            string id = playerId.ToString(CultureInfo.InvariantCulture);
+            UnitMarker latest = null;
+            for (int i = 0; i < instance.markers.Count; i++)
+            {
+                UnitMarker marker = instance.markers[i];
+                if (marker == null || marker.Metadata == null || marker.Track == null || marker.Track.Points.Count == 0)
+                {
+                    continue;
+                }
+                if (!string.Equals(marker.Metadata.PlayerId, id, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (marker.Track.Points[0].Time <= instance.replayTime && (latest == null || marker.Track.Points[0].Time > latest.Track.Points[0].Time))
+                {
+                    latest = marker;
+                }
+            }
+
+            if (latest == null)
+            {
+                return true;
+            }
+
+            return instance.replayTime < latest.DropTime;
         }
 
         private void ApplyReplayPlayerStatsSnapshot()
@@ -9096,16 +9786,18 @@ namespace BnlCommunityFixes
             try
             {
                 Unit unit = marker.RealUnit;
-                Vector3 sanitizedVelocity = GetSanitizedReplayVelocity(sample);
+                bool isReplayBuilding = IsReplayUnitBuilding(marker.Track.UnitId, replayTime);
+                Vector3 sanitizedVelocity = isReplayBuilding ? Vector3.zero : GetSanitizedReplayVelocity(sample);
                 unit.LocalVelocity = sanitizedVelocity;
                 unit.IsCrouch = sample.IsCrouch.HasValue && sample.IsCrouch.Value;
                 unit.IsJump = sample.IsJump.HasValue && sample.IsJump.Value;
-                unit.IsSprint = sample.IsSprint.HasValue && sample.IsSprint.Value;
+                unit.IsSprint = !isReplayBuilding && sample.IsSprint.HasValue && sample.IsSprint.Value;
                 unit.IsWallClimb = sample.IsWallClimb.HasValue && sample.IsWallClimb.Value;
                 unit.IsDash = sample.IsDash.HasValue && sample.IsDash.Value;
                 unit.IsGroundSlam = sample.IsGroundSlam.HasValue && sample.IsGroundSlam.Value;
+                unit.IsDeviceBuilding = isReplayBuilding;
                 unit.IsCommonMovementActive = true;
-                ApplyReplayAnimationState(unit, sample);
+                ApplyReplayAnimationState(unit, sample, isReplayBuilding);
 
                 UnitMotor motor = unit.GetComponent<UnitMotor>();
                 if (motor != null && motor.enabled)
@@ -9129,7 +9821,7 @@ namespace BnlCommunityFixes
                     unit.transform.position = sample.Position;
                     if (sample.HasRotation)
                     {
-                        unit.transform.rotation = RotationToYawQuaternion(sample.Rotation);
+                        unit.transform.rotation = SampleYawQuaternion(sample);
                     }
                 }
                 else
@@ -9138,7 +9830,7 @@ namespace BnlCommunityFixes
                     unit.transform.position = Vector3.Lerp(unit.transform.position, sample.Position, smoothing);
                     if (sample.HasRotation)
                     {
-                        unit.transform.rotation = Quaternion.Slerp(unit.transform.rotation, RotationToYawQuaternion(sample.Rotation), smoothing);
+                        unit.transform.rotation = Quaternion.Slerp(unit.transform.rotation, SampleYawQuaternion(sample), smoothing);
                     }
                 }
 
@@ -9154,7 +9846,7 @@ namespace BnlCommunityFixes
             }
         }
 
-        private static void ApplyReplayAnimationState(Unit unit, ReplaySample sample)
+        private static void ApplyReplayAnimationState(Unit unit, ReplaySample sample, bool isReplayBuilding)
         {
             if (unit == null)
             {
@@ -9174,11 +9866,11 @@ namespace BnlCommunityFixes
 
                     animation.IsCrouch = sample.IsCrouch.HasValue && sample.IsCrouch.Value;
                     animation.IsJump = sample.IsJump.HasValue && sample.IsJump.Value;
-                    animation.IsSprint = sample.IsSprint.HasValue && sample.IsSprint.Value;
+                    animation.IsSprint = !isReplayBuilding && sample.IsSprint.HasValue && sample.IsSprint.Value;
                     animation.IsWallClimb = sample.IsWallClimb.HasValue && sample.IsWallClimb.Value;
                     animation.IsDash = sample.IsDash.HasValue && sample.IsDash.Value;
                     animation.IsGroundSlam = sample.IsGroundSlam.HasValue && sample.IsGroundSlam.Value;
-                    animation.LocalVelocity = GetSanitizedReplayVelocity(sample);
+                    animation.LocalVelocity = isReplayBuilding ? Vector3.zero : GetSanitizedReplayVelocity(sample);
                 }
             }
             catch { }
@@ -9189,8 +9881,14 @@ namespace BnlCommunityFixes
             try
             {
                 Unit unit = marker.RealUnit;
+                bool isReplayBuilding = IsReplayUnitBuilding(marker.Track.UnitId, point.Time);
                 Protocol.ZoneTransform transform = BuildZoneTransform(point);
                 transform.NoInterpolation = forceSnap || (point.NoInterpolation.HasValue && point.NoInterpolation.Value);
+                if (isReplayBuilding)
+                {
+                    transform.LocalVelocity = Vector3s.zero;
+                    transform.IsSprint = false;
+                }
 
                 ZoneServiceListener listener = Singleton<ZoneServiceListener>.Instance;
                 uint unitId;
@@ -9200,13 +9898,14 @@ namespace BnlCommunityFixes
                     return;
                 }
 
-                unit.LocalVelocity = GetSanitizedReplayVelocity(point);
+                unit.LocalVelocity = isReplayBuilding ? Vector3.zero : GetSanitizedReplayVelocity(point);
                 unit.IsCrouch = point.IsCrouch.HasValue && point.IsCrouch.Value;
                 unit.IsJump = point.IsJump.HasValue && point.IsJump.Value;
-                unit.IsSprint = point.IsSprint.HasValue && point.IsSprint.Value;
+                unit.IsSprint = !isReplayBuilding && point.IsSprint.HasValue && point.IsSprint.Value;
                 unit.IsWallClimb = point.IsWallClimb.HasValue && point.IsWallClimb.Value;
                 unit.IsDash = point.IsDash.HasValue && point.IsDash.Value;
                 unit.IsGroundSlam = point.IsGroundSlam.HasValue && point.IsGroundSlam.Value;
+                unit.IsDeviceBuilding = isReplayBuilding;
                 unit.transform.position = point.Position;
                 if (point.HasRotation)
                 {
@@ -9228,6 +9927,31 @@ namespace BnlCommunityFixes
             {
                 marker.RealUnit.transform.rotation = RotationToQuaternion(point.Rotation);
             }
+        }
+
+        private bool IsReplayUnitBuilding(string unitId, float time)
+        {
+            if (string.IsNullOrEmpty(unitId) || buildEvents.Count == 0)
+            {
+                return false;
+            }
+
+            uint parsedUnitId;
+            if (!uint.TryParse(unitId, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedUnitId))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < buildEvents.Count; i++)
+            {
+                BuildReplayEvent evt = buildEvents[i];
+                if (evt.BuilderUnitId == parsedUnitId && time >= evt.Time && time <= evt.DeviceTime + 0.05f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Protocol.ZoneTransform BuildZoneTransform(ReplayPoint point)
@@ -9374,7 +10098,9 @@ namespace BnlCommunityFixes
                 ReplaySample sample = new ReplaySample(Vector3.Lerp(a.Position, b.Position, t));
                 if (a.HasRotation && b.HasRotation)
                 {
-                    sample.Rotation = Vector3.Lerp(a.Rotation, b.Rotation, t);
+                    sample.RotationQuaternion = Quaternion.Slerp(RotationToQuaternion(a.Rotation), RotationToQuaternion(b.Rotation), t);
+                    sample.HasRotationQuaternion = true;
+                    sample.Rotation = QuaternionToReplayRotation(sample.RotationQuaternion);
                     sample.HasRotation = true;
                 }
                 else if (a.HasRotation)
@@ -9439,7 +10165,9 @@ namespace BnlCommunityFixes
                 ReplaySample sample = new ReplaySample(Vector3.Lerp(a.Position, b.Position, t));
                 if (a.HasRotation && b.HasRotation)
                 {
-                    sample.Rotation = Vector3.Lerp(a.Rotation, b.Rotation, t);
+                    sample.RotationQuaternion = Quaternion.Slerp(RotationToQuaternion(a.Rotation), RotationToQuaternion(b.Rotation), t);
+                    sample.HasRotationQuaternion = true;
+                    sample.Rotation = QuaternionToReplayRotation(sample.RotationQuaternion);
                     sample.HasRotation = true;
                 }
                 else if (a.HasRotation || b.HasRotation)
@@ -9572,9 +10300,25 @@ namespace BnlCommunityFixes
             return Quaternion.Euler(rotation.x / 10f, rotation.y / 10f, rotation.z / 10f);
         }
 
+        private static Quaternion SampleRotationQuaternion(ReplaySample sample)
+        {
+            if (sample != null && sample.HasRotationQuaternion)
+            {
+                return sample.RotationQuaternion;
+            }
+
+            return sample != null ? RotationToQuaternion(sample.Rotation) : Quaternion.identity;
+        }
+
         private static Quaternion RotationToYawQuaternion(Vector3 rotation)
         {
             return Quaternion.Euler(0f, rotation.y / 10f, 0f);
+        }
+
+        private static Quaternion SampleYawQuaternion(ReplaySample sample)
+        {
+            Quaternion rotation = SampleRotationQuaternion(sample);
+            return Quaternion.Euler(0f, rotation.eulerAngles.y, 0f);
         }
 
         private static Vector3 QuaternionToReplayRotation(Quaternion rotation)
@@ -9607,6 +10351,7 @@ namespace BnlCommunityFixes
             buildEvents.Clear();
             damageEvents.Clear();
             zoneStatsEvents.Clear();
+            chatEvents.Clear();
             projectileObjects.Clear();
             projectilePrefabCache.Clear();
             abilityEvents.Clear();
@@ -9713,6 +10458,8 @@ namespace BnlCommunityFixes
             public Vector3 Position;
             public Vector3 Rotation;
             public bool HasRotation;
+            public Quaternion RotationQuaternion;
+            public bool HasRotationQuaternion;
             public Vector3 LocalVelocity;
             public bool HasLocalVelocity;
             public bool? IsCrouch;
@@ -9733,6 +10480,11 @@ namespace BnlCommunityFixes
                 ReplaySample sample = new ReplaySample(point.Position);
                 sample.Rotation = point.Rotation;
                 sample.HasRotation = point.HasRotation;
+                if (point.HasRotation)
+                {
+                    sample.RotationQuaternion = RotationToQuaternion(point.Rotation);
+                    sample.HasRotationQuaternion = true;
+                }
                 sample.LocalVelocity = point.LocalVelocity;
                 sample.HasLocalVelocity = point.HasLocalVelocity;
                 sample.IsCrouch = point.IsCrouch;
@@ -9840,6 +10592,7 @@ namespace BnlCommunityFixes
             public string Team;
             public string UnitId;
             public string UnitName;
+            public string SquadId;
         }
 
         private sealed class UnitStateEvent
@@ -9884,6 +10637,25 @@ namespace BnlCommunityFixes
             public MatchTeamStatsData Team2;
             public Dictionary<uint, ulong> RespawnInfo;
             public Dictionary<uint, PlayerStatsReplayData> PlayerStats;
+        }
+
+        private sealed class ChatReplayEvent
+        {
+            public float Time;
+            public string Kind;
+            public string RoomType;
+            public string RoomTeam;
+            public int RoomLobbyId;
+            public int RoomInstanceId;
+            public ulong RoomSquadId;
+            public ulong RoomCustomGameId;
+            public uint FromPlayerId;
+            public string FromNickname;
+            public uint ToPlayerId;
+            public string ToNickname;
+            public string Message;
+            public bool? IsLocalized;
+            public Dictionary<string, string> Arguments;
         }
 
         private sealed class PlayerStatsReplayData

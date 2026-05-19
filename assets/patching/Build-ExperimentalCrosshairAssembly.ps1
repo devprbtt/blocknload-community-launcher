@@ -1917,6 +1917,10 @@ namespace BnlCommunityFixes
             float amount = args.newHealth - args.oldHealth;
             if (amount < RuntimeFeatureState.MinimumHeal) return;
             if (args.unit.PlayerId == null) return;
+            // Suppress the fake full-health "heal" fired on spawn: the unit's Health field
+            // starts at 0, so the first server update produces oldHealth=0 → newHealth=maxHealth.
+            // Any heal event where oldHealth was 0 and the unit is brand-new is a spawn artifact.
+            if (args.oldHealth == 0f && Time.time - args.unit.CreationTime < 1f) return;
             if (args.unit.IsMyPlayer)
             {
                 if (!RuntimeFeatureState.ShowSelfHealing) return;
@@ -3511,32 +3515,44 @@ if ([bool]$MatchReplayRecorderConfig.enabled) {
         $MainMenuStartIl.InsertBefore($MainMenuStartFirst, $instruction)
     }
 
+    function Add-MatchReplayRecvRecorderHooks {
+        param(
+            [Parameter(Mandatory=$true)] [string] $ServiceFullName
+        )
+
+        $ServiceType = $Module.Types | Where-Object FullName -eq $ServiceFullName | Select-Object -First 1
+        if (-not $ServiceType) { throw "$ServiceFullName type not found." }
+
+        $PatchedMethods = 0
+        foreach ($RecvMethod in ($ServiceType.Methods | Where-Object { $_.Name -like "Recv_*" -and $_.HasBody -and $_.Parameters.Count -ge 1 })) {
+            $ReaderParameter = $RecvMethod.Parameters[0]
+            if ($ReaderParameter.ParameterType.FullName -ne "System.IO.BinaryReader") {
+                continue
+            }
+
+            $RecvIl = $RecvMethod.Body.GetILProcessor()
+            $RecvFirst = $RecvMethod.Body.Instructions | Select-Object -First 1
+            foreach ($instruction in @(
+                $RecvIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $RecvMethod.Name),
+                $RecvIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1),
+                $RecvIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedRecordMatchReplayPacket)
+            )) {
+                $RecvIl.InsertBefore($RecvFirst, $instruction)
+            }
+
+            $PatchedMethods++
+        }
+
+        if ($PatchedMethods -eq 0) {
+            throw "No $ServiceFullName Recv_* methods were patched for match replay recording."
+        }
+    }
+
     $ServiceZoneType = $Module.Types | Where-Object FullName -eq "Protocol.ServiceZone" | Select-Object -First 1
     if (-not $ServiceZoneType) { throw "Protocol.ServiceZone type not found." }
 
-    $PatchedRecorderMethods = 0
-    foreach ($RecvMethod in ($ServiceZoneType.Methods | Where-Object { $_.Name -like "Recv_*" -and $_.HasBody -and $_.Parameters.Count -ge 1 })) {
-        $ReaderParameter = $RecvMethod.Parameters[0]
-        if ($ReaderParameter.ParameterType.FullName -ne "System.IO.BinaryReader") {
-            continue
-        }
-
-        $RecvIl = $RecvMethod.Body.GetILProcessor()
-        $RecvFirst = $RecvMethod.Body.Instructions | Select-Object -First 1
-        foreach ($instruction in @(
-            $RecvIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $RecvMethod.Name),
-            $RecvIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1),
-            $RecvIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedRecordMatchReplayPacket)
-        )) {
-            $RecvIl.InsertBefore($RecvFirst, $instruction)
-        }
-
-        $PatchedRecorderMethods++
-    }
-
-    if ($PatchedRecorderMethods -eq 0) {
-        throw "No ServiceZone Recv_* methods were patched for match replay recording."
-    }
+    Add-MatchReplayRecvRecorderHooks -ServiceFullName "Protocol.ServiceZone"
+    Add-MatchReplayRecvRecorderHooks -ServiceFullName "Protocol.ServiceChat"
 
     if (-not $ImportedRecordLocalCast -or
         -not $ImportedRecordLocalProjectileInfo -or
