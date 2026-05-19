@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -45,6 +46,7 @@ namespace BnlCommunityFixes
         private readonly Dictionary<uint, GearInfo> gearInfoCache = new Dictionary<uint, GearInfo>();
         private readonly Dictionary<string, uint> deviceKeyHashByName = new Dictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, float> unitDropTimes = new Dictionary<string, float>();
+        private readonly Dictionary<string, float> unitCommonLandTimes = new Dictionary<string, float>();
         private readonly Dictionary<uint, UnitCardInfo> unitCardCache = new Dictionary<uint, UnitCardInfo>();
         private readonly List<BlockTimelineEvent> blockTimeline = new List<BlockTimelineEvent>();
         private readonly Dictionary<string, Protocol.BlockUpdate> initialBlockByCell = new Dictionary<string, Protocol.BlockUpdate>();
@@ -81,7 +83,6 @@ namespace BnlCommunityFixes
         private bool showDiagnosticPlayerHud;
         private bool showDebugWorldLabels;
         private bool replayModeLaunchChecked;
-        private bool replayModeEnabled; // true only when launched via replay launcher
         private bool fpCameraActive;
         private Camera fpCamera;
         private int fpMainCamOrigCullingMask;
@@ -136,12 +137,6 @@ namespace BnlCommunityFixes
         private void Update()
         {
             TryStartLauncherReplayMode();
-
-            // Skip all key handling if this is a normal game launch (not via replay launcher).
-            if (replayModeLaunchChecked && !replayModeEnabled)
-            {
-                return;
-            }
 
             if (Input.GetKeyDown(KeyCode.F7))
             {
@@ -417,6 +412,12 @@ namespace BnlCommunityFixes
                 {
                     merged.Resource = item.Resource;
                     merged.HasResource = true;
+                }
+                if (item.HasBombTimeoutEnd)
+                {
+                    merged.BombTimeoutEnd = item.BombTimeoutEnd;
+                    merged.HasBombTimeoutEnd = true;
+                    merged.BombTimeoutEventTime = item.Time;
                 }
                 if (item.HasDevices)
                 {
@@ -1141,6 +1142,22 @@ namespace BnlCommunityFixes
             return null;
         }
 
+        private UnitMarker FindMarkerByPlayerId(uint playerId)
+        {
+            string playerIdText = playerId.ToString(CultureInfo.InvariantCulture);
+            for (int i = 0; i < markers.Count; i++)
+            {
+                UnitMarker marker = markers[i];
+                if (marker != null && marker.Metadata != null &&
+                    string.Equals(marker.Metadata.PlayerId, playerIdText, StringComparison.Ordinal))
+                {
+                    return marker;
+                }
+            }
+
+            return null;
+        }
+
         private void SkipReplaySeconds(float seconds)
         {
             if (!loaded)
@@ -1222,6 +1239,7 @@ namespace BnlCommunityFixes
                 LoadPortalTeleportEvents();
                 LoadPickupTakenEvents();
                 LoadProjectileEvents();
+                AlignCastAndProjectileTimingToToolEvents();
                 LoadBlockTimeline();
                 CalculateTimeRange();
                 CreateMarkers();
@@ -1382,7 +1400,6 @@ namespace BnlCommunityFixes
             }
 
             replayModeLaunchChecked = true;
-            replayModeEnabled = true;
             Debug.Log("[BNL Replay] Starting one-shot launcher replay mode from " + requestPath);
             StartRealZoneSpectatorExperiment(true);
         }
@@ -2518,7 +2535,7 @@ namespace BnlCommunityFixes
                     unitMarker.DropTime = Mathf.Min(unitMarker.DropTime, blockDropTime);
                 }
                 float deathHoldUntil;
-                if (deathHoldUntilByUnitId.TryGetValue(track.UnitId, out deathHoldUntil))
+                if (IsPlayerUnit(metadata) && deathHoldUntilByUnitId.TryGetValue(track.UnitId, out deathHoldUntil))
                 {
                     unitMarker.DropTime = Mathf.Max(unitMarker.DropTime, deathHoldUntil);
                 }
@@ -2550,7 +2567,7 @@ namespace BnlCommunityFixes
                     unitMarker.DropTime = Mathf.Min(unitMarker.DropTime, blockDropTime);
                 }
                 float deathHoldUntil;
-                if (deathHoldUntilByUnitId.TryGetValue(unitId, out deathHoldUntil))
+                if (IsPlayerUnit(metadata) && deathHoldUntilByUnitId.TryGetValue(unitId, out deathHoldUntil))
                 {
                     unitMarker.DropTime = Mathf.Max(unitMarker.DropTime, deathHoldUntil);
                 }
@@ -3601,9 +3618,22 @@ namespace BnlCommunityFixes
                 if (!TryParseHexUInt(metadata.KeyHash, out keyHash)) return null;
 
                 UnitCardInfo cardInfo = FindOrCacheUnitCard(keyHash);
-                if (cardInfo == null || cardInfo.IsDropPoint) return null;
+                if (cardInfo == null)
+                {
+                    Debug.Log("[BNL Replay] SpawnNonHeroUnit: no card for " + metadata.KeyName + " hash=" + metadata.KeyHash);
+                    return null;
+                }
+                if (cardInfo.IsDropPoint)
+                {
+                    Debug.Log("[BNL Replay] SpawnNonHeroUnit: skipping drop-point unit " + metadata.KeyName);
+                    return null;
+                }
                 string prefabPath = !string.IsNullOrEmpty(cardInfo.Prefab) ? cardInfo.Prefab : FindSpecialUnitPrefab(metadata.KeyName);
-                if (string.IsNullOrEmpty(prefabPath)) return null;
+                if (string.IsNullOrEmpty(prefabPath))
+                {
+                    Debug.Log("[BNL Replay] SpawnNonHeroUnit: no prefab for " + metadata.KeyName + " cardType=" + cardInfo.UnitType);
+                    return null;
+                }
 
                 // Spawn only the visual model prefab — no Unit container, no OnUnitCreate broadcast.
                 // This avoids any game-logic components interfering with the hero or other systems.
@@ -3631,6 +3661,10 @@ namespace BnlCommunityFixes
                 Collider[] cols = go.GetComponentsInChildren<Collider>(true);
                 for (int i = 0; i < cols.Length; i++) cols[i].enabled = false;
                 DisableReplayLogicComponents(go);
+
+                // If the prefab contains a Unit component (supply crates, objectives), seed its
+                // health so DamagePrefabs and health-bar components have valid initial values.
+                // Health is driven each frame by ApplyNonHeroUnitHealth; no seeding needed here.
 
                 Debug.Log("[BNL Replay] Spawned unit visual " + metadata.KeyName + " prefab=" + prefabPath);
                 return go;
@@ -3662,7 +3696,13 @@ namespace BnlCommunityFixes
                 if (typeName == "UnitMotor" ||
                     typeName == "DeviceFallingMovement" ||
                     typeName == "ProjectileMovement" ||
-                    typeName == "UnitControl")
+                    typeName == "UnitControl" ||
+                    typeName == "DamagePrefabs" ||       // needs a live Unit on root — drives damage state manually
+                    typeName == "MakeObjectBar" ||        // tries Resources.Load and AddChild at Start
+                    typeName == "GuiHealthBarMaker" ||    // registers into GuiHealthbarPopulation without a valid Unit
+                    typeName == "GuiMinimapObjectPlayer" || // accesses transform on unit that isn't in UnitsRegistry
+                    typeName == "SkybeamLogic" ||         // tries to raycast-hit the zone as a real unit
+                    typeName == "UnitHandler")
                 {
                     behaviour.enabled = false;
                 }
@@ -3907,7 +3947,13 @@ namespace BnlCommunityFixes
                 key.IndexOf("base", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 key.IndexOf("shield", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 key.IndexOf("bomb", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                key.IndexOf("mine", StringComparison.OrdinalIgnoreCase) >= 0;
+                key.IndexOf("mine", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                key.IndexOf("supply_blockbuster", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                key.IndexOf("supply", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                key.IndexOf("pickup_blockbuster", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                key.IndexOf("pickup", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                key.IndexOf("hero_loot", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                key.IndexOf("boosted", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static bool IsObjectiveUiUnit(UnitMetadata metadata)
@@ -3921,7 +3967,8 @@ namespace BnlCommunityFixes
             return key.IndexOf("base", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 key.IndexOf("objective", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 key.IndexOf("core", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                key.IndexOf("cube", StringComparison.OrdinalIgnoreCase) >= 0;
+                key.IndexOf("cube", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                key.IndexOf("bomb", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private void LoadUnitMetadata()
@@ -4000,6 +4047,7 @@ namespace BnlCommunityFixes
             unitToolEvents.Clear();
             unitCastEvents.Clear();
             unitDropTimes.Clear();
+            unitCommonLandTimes.Clear();
             if (string.IsNullOrEmpty(replayPath)) return;
             FileInfo replayInfo = null;
             try { replayInfo = new FileInfo(replayPath); } catch { }
@@ -4297,6 +4345,15 @@ namespace BnlCommunityFixes
                         {
                             continue;
                         }
+                        if (type == 1) // UnitCommonLand
+                        {
+                            // Keep the earliest land time per unit (supplies only land once)
+                            float existing;
+                            if (!unitCommonLandTimes.TryGetValue(unitId, out existing) || time < existing)
+                                unitCommonLandTimes[unitId] = time;
+                            continue;
+                        }
+
                         if (type != 6 && type != 7 && type != 8)
                         {
                             continue;
@@ -4357,6 +4414,7 @@ namespace BnlCommunityFixes
 
                         UnitCastEvent evt = new UnitCastEvent();
                         evt.Time = time;
+                        evt.OriginalTime = time;
                         evt.ToolIndex = (byte)Mathf.Clamp(toolIndexInt, 0, 255);
                         evt.ShotOrigin = new Vector3(shotX, shotY, shotZ);
                         evt.Shots = ParseShotDataList(GetCsvField(fields, columns, "shots"));
@@ -4381,6 +4439,149 @@ namespace BnlCommunityFixes
             {
                 Debug.Log("[BNL Replay] LoadCastEventsFromCsv failed: " + ex.Message);
             }
+        }
+
+        private void AlignCastAndProjectileTimingToToolEvents()
+        {
+            if (unitCastEvents.Count == 0 || unitToolEvents.Count == 0)
+            {
+                return;
+            }
+
+            Dictionary<string, ProjectileReplayObject> projectileById = new Dictionary<string, ProjectileReplayObject>();
+            for (int i = 0; i < projectileObjects.Count; i++)
+            {
+                ProjectileReplayObject projectile = projectileObjects[i];
+                if (projectile != null && !string.IsNullOrEmpty(projectile.ProjectileId))
+                {
+                    projectileById[projectile.ProjectileId] = projectile;
+                }
+            }
+
+            int alignedCount = 0;
+            foreach (KeyValuePair<string, List<UnitCastEvent>> kv in unitCastEvents)
+            {
+                List<UnitToolEvent> tools;
+                if (!unitToolEvents.TryGetValue(kv.Key, out tools) || tools == null || tools.Count == 0)
+                {
+                    continue;
+                }
+
+                List<UnitCastEvent> casts = kv.Value;
+                for (int i = 0; i < casts.Count; i++)
+                {
+                    UnitCastEvent cast = casts[i];
+                    float alignedTime;
+                    if (!TryFindCastToolEventTime(cast, tools, out alignedTime))
+                    {
+                        continue;
+                    }
+
+                    alignedTime += 0.03f;
+                    if (alignedTime <= cast.Time + 0.005f)
+                    {
+                        continue;
+                    }
+
+                    float originalTime = cast.Time;
+                    float delay = Mathf.Clamp(alignedTime - originalTime, 0f, 0.45f);
+                    cast.Time = originalTime + delay;
+                    DelayCastProjectiles(cast, projectileById, delay);
+                    alignedCount++;
+                }
+            }
+
+            if (alignedCount > 0)
+            {
+                Debug.Log("[BNL Replay] Aligned " + alignedCount + " casts to tool animation events");
+            }
+        }
+
+        private static bool TryFindCastToolEventTime(UnitCastEvent cast, List<UnitToolEvent> tools, out float alignedTime)
+        {
+            alignedTime = 0f;
+            if (cast == null || tools == null)
+            {
+                return false;
+            }
+
+            float bestDelta = float.MaxValue;
+            for (int i = 0; i < tools.Count; i++)
+            {
+                UnitToolEvent tool = tools[i];
+                if (tool.ToolIndex != cast.ToolIndex)
+                {
+                    continue;
+                }
+                if (tool.IsHold || (tool.IsLoop && !tool.Active))
+                {
+                    continue;
+                }
+
+                float delta = tool.Time - cast.Time;
+                if (delta < -0.02f || delta > 0.35f)
+                {
+                    continue;
+                }
+                if (delta < bestDelta)
+                {
+                    bestDelta = delta;
+                    alignedTime = tool.Time;
+                }
+            }
+
+            return bestDelta < float.MaxValue;
+        }
+
+        private static void DelayCastProjectiles(UnitCastEvent cast, Dictionary<string, ProjectileReplayObject> projectileById, float delay)
+        {
+            if (cast == null || cast.Shots == null || projectileById == null || delay <= 0.001f)
+            {
+                return;
+            }
+
+            for (int i = 0; i < cast.Shots.Count; i++)
+            {
+                Protocol.ShotData shot = cast.Shots[i];
+                if (shot == null || shot.ShotId == null)
+                {
+                    continue;
+                }
+
+                ProjectileReplayObject projectile;
+                if (!projectileById.TryGetValue(shot.ShotId.Value.ToString(CultureInfo.InvariantCulture), out projectile) || projectile == null)
+                {
+                    continue;
+                }
+                if (Mathf.Abs(projectile.SpawnTime - cast.OriginalTime) > 0.5f)
+                {
+                    continue;
+                }
+
+                projectile.SpawnTime += delay;
+                projectile.DropTime += delay;
+                for (int j = 0; j < projectile.Points.Count; j++)
+                {
+                    projectile.Points[j] = CloneReplayPoint(projectile.Points[j], projectile.Points[j].Time + delay);
+                }
+            }
+        }
+
+        private static ReplayPoint CloneReplayPoint(ReplayPoint source, float time)
+        {
+            ReplayPoint copy = new ReplayPoint(time, source.Position);
+            copy.Rotation = source.Rotation;
+            copy.HasRotation = source.HasRotation;
+            copy.LocalVelocity = source.LocalVelocity;
+            copy.HasLocalVelocity = source.HasLocalVelocity;
+            copy.IsCrouch = source.IsCrouch;
+            copy.IsJump = source.IsJump;
+            copy.IsSprint = source.IsSprint;
+            copy.IsWallClimb = source.IsWallClimb;
+            copy.IsDash = source.IsDash;
+            copy.IsGroundSlam = source.IsGroundSlam;
+            copy.NoInterpolation = source.NoInterpolation;
+            return copy;
         }
 
         private void LoadBlockTimeline()
@@ -4770,6 +4971,12 @@ namespace BnlCommunityFixes
                             evt.Resource = value;
                             evt.HasResource = true;
                         }
+                        ulong? bombTimeoutEnd = ParseUlongOrNull(GetCsvField(fields, columns, "bomb_timeout_end"));
+                        if (bombTimeoutEnd.HasValue)
+                        {
+                            evt.BombTimeoutEnd = bombTimeoutEnd.Value;
+                            evt.HasBombTimeoutEnd = true;
+                        }
                         string devices = GetCsvField(fields, columns, "devices");
                         if (!string.IsNullOrEmpty(devices))
                         {
@@ -4789,7 +4996,7 @@ namespace BnlCommunityFixes
                             evt.HasBuffs = evt.Buffs.Count > 0;
                         }
 
-                        if (!evt.HasHealth && !evt.HasShield && !evt.HasResource && !evt.HasDevices && !evt.HasEffects && !evt.HasBuffs)
+                        if (!evt.HasHealth && !evt.HasShield && !evt.HasResource && !evt.HasBombTimeoutEnd && !evt.HasDevices && !evt.HasEffects && !evt.HasBuffs)
                         {
                             continue;
                         }
@@ -5454,6 +5661,25 @@ namespace BnlCommunityFixes
                     }
                 }
 
+                for (int i = 0; i < reloadEvents.Count; i++)
+                {
+                    ReloadReplayEvent start = reloadEvents[i];
+                    if (!start.IsStart)
+                    {
+                        continue;
+                    }
+
+                    for (int j = i + 1; j < reloadEvents.Count; j++)
+                    {
+                        ReloadReplayEvent end = reloadEvents[j];
+                        if (end.UnitId == start.UnitId && !end.IsStart && end.Time > start.Time)
+                        {
+                            start.ReloadTime = Mathf.Max(0.05f, end.Time - start.Time);
+                            break;
+                        }
+                    }
+                }
+
                 Debug.Log("[BNL Replay] Loaded " + reloadEvents.Count + " reload events");
             }
             catch (Exception ex)
@@ -5514,9 +5740,12 @@ namespace BnlCommunityFixes
                             TryParseInt(GetCsvField(fields, columns, "outside_y"), out outsideY) &&
                             TryParseInt(GetCsvField(fields, columns, "outside_z"), out outsideZ))
                         {
-                            evt.Inside = new Vector3s(ClampInt16(insideX), ClampInt16(insideY), ClampInt16(insideZ));
-                            evt.Outside = new Vector3s(ClampInt16(outsideX), ClampInt16(outsideY), ClampInt16(outsideZ));
-                            evt.HasSurface = true;
+                            if (insideX != 0 || insideY != 0 || insideZ != 0 || outsideX != 0 || outsideY != 0 || outsideZ != 0)
+                            {
+                                evt.Inside = new Vector3s(ClampInt16(insideX), ClampInt16(insideY), ClampInt16(insideZ));
+                                evt.Outside = new Vector3s(ClampInt16(outsideX), ClampInt16(outsideY), ClampInt16(outsideZ));
+                                evt.HasSurface = true;
+                            }
                         }
                         float x; float y; float z;
                         if (TryParseFloat(GetCsvField(fields, columns, "x"), out x) &&
@@ -5851,6 +6080,7 @@ namespace BnlCommunityFixes
                         }
 
                         impactEvents.Add(evt);
+                        TryCreateSyntheticProjectileFromImpact(evt, GetCsvField(fields, columns, "source_name"));
                     }
                 }
 
@@ -5860,6 +6090,133 @@ namespace BnlCommunityFixes
             {
                 Debug.Log("[BNL Replay] LoadImpactEvents failed: " + ex.Message);
             }
+        }
+
+        private void TryCreateSyntheticProjectileFromImpact(ImpactReplayEvent evt, string sourceName)
+        {
+            if (evt == null || string.IsNullOrEmpty(sourceName))
+            {
+                return;
+            }
+
+            if (sourceName.IndexOf("shuriken", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return;
+            }
+
+            if (projectileObjects.Count > 0)
+            {
+                return;
+            }
+
+            Vector3 origin = evt.ShotPos;
+            Vector3 target = evt.InsidePoint;
+            if (Vector3.Distance(origin, target) < 0.1f)
+            {
+                return;
+            }
+
+            uint projectileKeyHash = 0;
+            float speed = 60f;
+            if (evt.HasSourceKey)
+            {
+                TryResolveProjectileFromGear(evt.SourceKey, out projectileKeyHash, out speed);
+            }
+
+            float travelTime = Mathf.Clamp(Vector3.Distance(origin, target) / Mathf.Max(1f, speed), 0.04f, 1.0f);
+            ProjectileReplayObject projectile = new ProjectileReplayObject();
+            projectile.ProjectileId = "impact_" + projectileObjects.Count.ToString(CultureInfo.InvariantCulture);
+            projectile.KeyHash = projectileKeyHash;
+            projectile.SpawnTime = Mathf.Max(startTime, evt.Time - travelTime);
+            projectile.DropTime = evt.Time + 0.06f;
+            projectile.Speed = speed;
+            projectile.HasSpeed = true;
+
+            ReplayPoint start = new ReplayPoint(projectile.SpawnTime, origin);
+            ReplayPoint end = new ReplayPoint(evt.Time, target);
+            Quaternion look = Quaternion.LookRotation((target - origin).normalized, Vector3.up);
+            Vector3 rot = QuaternionToReplayRotation(look);
+            start.Rotation = rot;
+            start.HasRotation = true;
+            end.Rotation = rot;
+            end.HasRotation = true;
+            projectile.Points.Add(start);
+            projectile.Points.Add(end);
+            projectileObjects.Add(projectile);
+        }
+
+        private static bool TryResolveProjectileFromGear(Key gearKey, out uint projectileKeyHash, out float speed)
+        {
+            projectileKeyHash = 0;
+            speed = 60f;
+
+            try
+            {
+                Catalogue catalogue = Singleton<Catalogue>.Instance;
+                if (catalogue == null)
+                {
+                    return false;
+                }
+
+                Protocol.CardGear gear = catalogue.GetCard<Protocol.CardGear>(gearKey);
+                if (gear == null || gear.Tools == null)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < gear.Tools.Count; i++)
+                {
+                    Protocol.Tool tool = gear.Tools[i];
+                    Protocol.ToolShot shot = tool as Protocol.ToolShot;
+                    if (shot != null && TryResolveProjectileFromBullet(shot.Bullet, out projectileKeyHash, out speed))
+                    {
+                        return true;
+                    }
+
+                    Protocol.ToolBurst burst = tool as Protocol.ToolBurst;
+                    if (burst != null && burst.Bullet != null)
+                    {
+                        for (int j = 0; j < burst.Bullet.Count; j++)
+                        {
+                            if (TryResolveProjectileFromBullet(burst.Bullet[j], out projectileKeyHash, out speed))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            return false;
+        }
+
+        private static bool TryResolveProjectileFromBullet(Protocol.ToolBullet bullet, out uint projectileKeyHash, out float speed)
+        {
+            projectileKeyHash = 0;
+            speed = 60f;
+            if (bullet == null)
+            {
+                return false;
+            }
+
+            Protocol.ToolBulletProjectile projectile = bullet as Protocol.ToolBulletProjectile;
+            if (projectile != null)
+            {
+                projectileKeyHash = projectile.ProjectileKey.Hash;
+                speed = Mathf.Max(1f, projectile.MinSpeed);
+                return projectileKeyHash != 0;
+            }
+
+            Protocol.ToolBulletUnitProjectile unitProjectile = bullet as Protocol.ToolBulletUnitProjectile;
+            if (unitProjectile != null)
+            {
+                projectileKeyHash = unitProjectile.UnitProjectileKey.Hash;
+                speed = Mathf.Max(1f, unitProjectile.MinSpeed);
+                return projectileKeyHash != 0;
+            }
+
+            return false;
         }
 
         private static bool TryParseInt(string value, out int result)
@@ -6362,6 +6719,7 @@ namespace BnlCommunityFixes
                    k.IndexOf("pickup", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    k.IndexOf("hero_loot", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    k.IndexOf("boosted", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   k.IndexOf("supply", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    k.IndexOf("drop_point", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    k.IndexOf("blockbuster", StringComparison.OrdinalIgnoreCase) >= 0;
         }
@@ -6418,6 +6776,21 @@ namespace BnlCommunityFixes
         private static bool TryGetPlacementRotation(BuildReplayEvent placement, out Quaternion rotation)
         {
             rotation = Quaternion.identity;
+            if (placement == null)
+            {
+                return false;
+            }
+
+            if (placement.HasSurface)
+            {
+                int dy = placement.Inside.y - placement.Outside.y;
+                if (dy < 0)
+                {
+                    rotation = Direction2DRotation(placement.Direction);
+                    return true;
+                }
+            }
+
             Vector3 surfaceNormal;
             if (!TryGetPlacementSurfaceNormal(placement, out surfaceNormal))
             {
@@ -6435,19 +6808,30 @@ namespace BnlCommunityFixes
             return true;
         }
 
+        private static Quaternion Direction2DRotation(string direction)
+        {
+            if (string.Equals(direction, "Left", StringComparison.OrdinalIgnoreCase))
+            {
+                return Quaternion.Euler(0f, -90f, 0f);
+            }
+            if (string.Equals(direction, "Right", StringComparison.OrdinalIgnoreCase))
+            {
+                return Quaternion.Euler(0f, 90f, 0f);
+            }
+            if (string.Equals(direction, "Back", StringComparison.OrdinalIgnoreCase))
+            {
+                return Quaternion.Euler(0f, 180f, 0f);
+            }
+
+            return Quaternion.identity;
+        }
+
         private static Vector3 GetPlacementPosition(BuildReplayEvent placement)
         {
             Vector3 position = placement.Position;
             if (!placement.HasPosition)
             {
                 return position;
-            }
-
-            Vector3 surfaceNormal;
-            if (ShouldAlignDeviceUpToSurface(placement.DeviceName) &&
-                TryGetPlacementSurfaceNormal(placement, out surfaceNormal))
-            {
-                return position - surfaceNormal * 0.45f;
             }
 
             return position;
@@ -6501,6 +6885,7 @@ namespace BnlCommunityFixes
             }
 
             return deviceName.IndexOf("mine", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                deviceName.IndexOf("radar", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 deviceName.IndexOf("tiki", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 deviceName.IndexOf("trap", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 deviceName.IndexOf("caltrop", StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -6512,7 +6897,6 @@ namespace BnlCommunityFixes
             ApplyBlockTimeline();
             ApplyGlobalReplayEvents();
             ApplyCurrentPhaseClock();
-            UpdateProjectileObjects();
 
             for (int i = 0; i < markers.Count; i++)
             {
@@ -6566,8 +6950,35 @@ namespace BnlCommunityFixes
                     {
                         marker.GameObject.transform.rotation = RotationToQuaternion(sample.Rotation);
                     }
+
+                    // Fire OnUnitCommonMovementLand when replay crosses the recorded land time.
+                    // This dismisses the skybeam on supply drops (including blockbuster) at the
+                    // correct moment instead of leaving it visible for the rest of the replay.
+                    if (!marker.CommonLandFired && marker.UnitId != null)
+                    {
+                        float landTime;
+                        if (unitCommonLandTimes.TryGetValue(marker.UnitId, out landTime) && replayTime >= landTime)
+                        {
+                            marker.CommonLandFired = true;
+                            try
+                            {
+                                MessagesHandlerBehaviour[] handlers = marker.GameObject.GetComponentsInChildren<MessagesHandlerBehaviour>(true);
+                                for (int j = 0; j < handlers.Length; j++)
+                                {
+                                    try { handlers[j].OnUnitCommonMovementLand(); } catch { }
+                                }
+                                ScheduleReplayParachuteCleanup(marker.GameObject);
+                            }
+                            catch { }
+                        }
+                    }
+
+                    // Drive health on any Unit component so DamagePrefabs and health bars update.
+                    ApplyNonHeroUnitHealth(marker);
                 }
             }
+
+            UpdateProjectileObjects();
         }
 
         private bool IsUnitInDeathHold(UnitMarker marker)
@@ -6615,7 +7026,52 @@ namespace BnlCommunityFixes
                 {
                     projectile.GameObject.transform.rotation = RotationToQuaternion(sample.Rotation);
                 }
+                else
+                {
+                    Quaternion derivedRotation;
+                    if (TryGetProjectileDirectionRotation(projectile, replayTime, out derivedRotation))
+                    {
+                        projectile.GameObject.transform.rotation = derivedRotation;
+                    }
+                }
             }
+        }
+
+        private static bool TryGetProjectileDirectionRotation(ProjectileReplayObject projectile, float time, out Quaternion rotation)
+        {
+            rotation = Quaternion.identity;
+            if (projectile == null || projectile.Points.Count < 2)
+            {
+                return false;
+            }
+
+            ReplayPoint previous = projectile.Points[0];
+            ReplayPoint next = projectile.Points[projectile.Points.Count - 1];
+            for (int i = 0; i < projectile.Points.Count - 1; i++)
+            {
+                ReplayPoint a = projectile.Points[i];
+                ReplayPoint b = projectile.Points[i + 1];
+                if (time >= a.Time && time <= b.Time)
+                {
+                    previous = a;
+                    next = b;
+                    break;
+                }
+                if (time > b.Time)
+                {
+                    previous = a;
+                    next = b;
+                }
+            }
+
+            Vector3 direction = next.Position - previous.Position;
+            if (direction.sqrMagnitude < 0.0001f)
+            {
+                return false;
+            }
+
+            rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            return true;
         }
 
         private GameObject SpawnProjectileVisual(ProjectileReplayObject projectile)
@@ -6636,6 +7092,27 @@ namespace BnlCommunityFixes
                 catch (Exception ex)
                 {
                     Debug.Log("[BNL Replay] Projectile prefab spawn failed " + prefabPath + ": " + ex.Message);
+                }
+            }
+
+            if (go == null && projectile.KeyHash != 0)
+            {
+                try
+                {
+                    UnitCardInfo unitCard = FindOrCacheUnitCard(projectile.KeyHash);
+                    if (unitCard != null && !string.IsNullOrEmpty(unitCard.Prefab))
+                    {
+                        AssetCache assetCache = Singleton<AssetCache>.Instance;
+                        GameObject prefab = assetCache == null ? null : LoadPrefabWithFallbacks(assetCache, unitCard.Prefab);
+                        if (prefab != null)
+                        {
+                            go = UnityEngine.Object.Instantiate(prefab) as GameObject;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log("[BNL Replay] Unit projectile prefab spawn failed: " + ex.Message);
                 }
             }
 
@@ -6865,21 +7342,7 @@ namespace BnlCommunityFixes
                 ReloadReplayEvent evt = reloadEvents[i];
                 if (evt.Time > prevTime && evt.Time <= curTime)
                 {
-                    try
-                    {
-                        if (evt.IsStart)
-                        {
-                            listener.DoStartReload(evt.UnitId);
-                        }
-                        else
-                        {
-                            listener.DoEndReload(evt.UnitId);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.Log("[BNL Replay] Replay reload event failed: " + ex.Message);
-                    }
+                    ApplyReloadEvent(evt);
                 }
             }
 
@@ -6987,6 +7450,82 @@ namespace BnlCommunityFixes
             }
 
             lastGlobalEventTime = curTime;
+        }
+
+        private void ApplyReloadEvent(ReloadReplayEvent evt)
+        {
+            if (evt == null)
+            {
+                return;
+            }
+
+            try
+            {
+                UnitMarker marker = FindMarkerByUnitId(evt.UnitId.ToString(CultureInfo.InvariantCulture));
+                Unit unit = marker == null ? null : marker.RealUnit;
+                if (unit == null)
+                {
+                    UnitRegistrySafeGet(evt.UnitId, out unit);
+                }
+                if (unit == null)
+                {
+                    return;
+                }
+
+                if (evt.IsStart)
+                {
+                    unit.IsReloading = true;
+                    unit.ReloadStart = Time.time;
+                    unit.ReloadEnd = Time.time + Mathf.Max(0.05f, evt.ReloadTime);
+
+                    Protocol.Reload reload = unit.CurrentGear == null || unit.CurrentGear.Card == null ? null : unit.CurrentGear.Card.Reload;
+                    if (reload != null && reload.Type == Protocol.ReloadType.Partial)
+                    {
+                        Protocol.ReloadPartial partial = reload as Protocol.ReloadPartial;
+                        float reloadTime = evt.ReloadTime > 0.01f ? evt.ReloadTime : (partial == null ? 0.5f : partial.ReloadTime);
+                        UnitEventHelper.HandlePartialReload(unit, 0.05f, reloadTime, true);
+                    }
+                    else
+                    {
+                        Protocol.ReloadFullClip full = reload as Protocol.ReloadFullClip;
+                        float reloadTime = evt.ReloadTime > 0.01f ? evt.ReloadTime : (full == null ? 0.5f : full.ReloadTime);
+                        UnitEventHelper.HandleFullReload(unit, reloadTime);
+                    }
+                }
+                else
+                {
+                    unit.IsReloading = false;
+                    Protocol.Reload reload = unit.CurrentGear == null || unit.CurrentGear.Card == null ? null : unit.CurrentGear.Card.Reload;
+                    if (reload != null && reload.Type == Protocol.ReloadType.Partial)
+                    {
+                        UnitEventHelper.HandlePartialReload(unit, 0f, 0f, false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] Replay reload event failed: " + ex.Message);
+            }
+        }
+
+        private static bool UnitRegistrySafeGet(uint unitId, out Unit unit)
+        {
+            unit = null;
+            try
+            {
+                UnitsRegistry registry = Singleton<UnitsRegistry>.Instance;
+                if (registry == null)
+                {
+                    return false;
+                }
+
+                unit = registry.Get(unitId);
+                return unit != null;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void ApplyImpactEvent(ZoneServiceListener listener, ImpactReplayEvent evt)
@@ -7199,6 +7738,11 @@ namespace BnlCommunityFixes
                 Unit unit = registry == null ? null : registry.Get(unitId);
                 if (unit == null)
                 {
+                    UnitMarker marker = FindMarkerByUnitId(unitId.ToString(CultureInfo.InvariantCulture));
+                    if (marker != null && marker.GameObject != null)
+                    {
+                        TriggerReplayVisualDrop(marker);
+                    }
                     return;
                 }
 
@@ -7217,6 +7761,64 @@ namespace BnlCommunityFixes
             catch (Exception ex)
             {
                 Debug.Log("[BNL Replay] TriggerReplayUnitDropAnimation failed: " + ex.Message);
+            }
+        }
+
+        private void TriggerReplayVisualDrop(UnitMarker marker)
+        {
+            try
+            {
+                MessagesHandlerBehaviour[] handlers = marker.GameObject.GetComponentsInChildren<MessagesHandlerBehaviour>(true);
+                for (int i = 0; i < handlers.Length; i++)
+                {
+                    try { handlers[i].OnUnitDrop(); } catch { }
+                }
+
+                PlayReplayUnitDestroyMaterial(marker);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] TriggerReplayVisualDrop failed: " + ex.Message);
+            }
+        }
+
+        private void PlayReplayUnitDestroyMaterial(UnitMarker marker)
+        {
+            if (marker == null || marker.Metadata == null || string.IsNullOrEmpty(marker.Metadata.KeyHash) || marker.GameObject == null)
+            {
+                return;
+            }
+
+            try
+            {
+                uint keyHash;
+                if (!TryParseHexUInt(marker.Metadata.KeyHash, out keyHash))
+                {
+                    return;
+                }
+
+                Protocol.CardUnit card = Singleton<Catalogue>.Instance.GetCard<Protocol.CardUnit>(KeyFromHash(keyHash));
+                if (card == null)
+                {
+                    return;
+                }
+
+                Vector3 position = marker.GameObject.transform.position;
+                GlobalEffects effects = Singleton<GlobalEffects>.Instance;
+                if (effects != null)
+                {
+                    effects.MakeDestroyEffect(position, Vector3.zero, card.Material);
+                }
+
+                GlobalSounds sounds = Singleton<GlobalSounds>.Instance;
+                if (sounds != null)
+                {
+                    sounds.PostDestroy(position, card.Material);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] PlayReplayUnitDestroyMaterial failed: " + ex.Message);
             }
         }
 
@@ -7326,9 +7928,32 @@ namespace BnlCommunityFixes
         {
             try
             {
+                Key pickupKey = KeyFromHash(evt.PickupKeyHash);
+                bool applied = false;
                 if (listener != null && evt.PickupKeyHash != 0)
                 {
-                    listener.PickupTaken(evt.PlayerId, KeyFromHash(evt.PickupKeyHash));
+                    try
+                    {
+                        listener.PickupTaken(evt.PlayerId, pickupKey);
+                        applied = true;
+                    }
+                    catch
+                    {
+                        applied = false;
+                    }
+                }
+
+                if (!applied && evt.PickupKeyHash != 0)
+                {
+                    UnitMarker marker = FindMarkerByPlayerId(evt.PlayerId);
+                    if (marker != null && marker.RealUnit != null)
+                    {
+                        UnitHandler handler = marker.RealUnit.GetComponent<UnitHandler>();
+                        if (handler != null)
+                        {
+                            handler.PickupTaken(pickupKey);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -7679,6 +8304,7 @@ namespace BnlCommunityFixes
             marker.RealUnit = null;
             marker.Label = null;
             marker.LastEventTime = float.MinValue;
+            marker.CommonLandFired = false;
         }
 
         private void ApplyUnitEvents(UnitMarker marker)
@@ -7736,15 +8362,55 @@ namespace BnlCommunityFixes
 
                         if (evt.IsLoop)
                         {
-                            ReplayToolFireLoopSound(marker.RealUnit, evt.ToolIndex, evt.Active);
                         }
                         else if (evt.IsHold)
                         {
-                            ReplayToolHoldSound(marker.RealUnit, evt.ToolIndex, evt.Active);
                         }
                         else
                         {
-                            ReplayToolFireSound(marker.RealUnit, evt.ToolIndex);
+                        }
+                    }
+                }
+
+                // If the unit has already dropped, deactivate any loop/hold that fired Active=true
+                // but never has a corresponding Active=false in the recording (match ended while the
+                // player was still firing). Without this, effects like the block-buster beam persist
+                // forever because the loop-end packet is never recorded when the match ends mid-fire.
+                if (curTime >= marker.DropTime)
+                {
+                    Dictionary<byte, int> lastLoopOnIdx = new Dictionary<byte, int>();
+                    Dictionary<byte, int> lastHoldOnIdx = new Dictionary<byte, int>();
+                    for (int i = 0; i < toolEvts.Count; i++)
+                    {
+                        UnitToolEvent evt = toolEvts[i];
+                        if (evt.Time > curTime) continue;
+                        if (evt.IsLoop && evt.Active) lastLoopOnIdx[evt.ToolIndex] = i;
+                        else if (evt.IsHold && evt.Active) lastHoldOnIdx[evt.ToolIndex] = i;
+                    }
+                    foreach (var kv in lastLoopOnIdx)
+                    {
+                        bool hasEnd = false;
+                        for (int i = kv.Value + 1; i < toolEvts.Count; i++)
+                        {
+                            UnitToolEvent e = toolEvts[i];
+                            if (e.IsLoop && !e.Active && e.ToolIndex == kv.Key) { hasEnd = true; break; }
+                        }
+                        if (!hasEnd)
+                        {
+                            try { UnitEventHelper.HandleToolFireLoop(marker.RealUnit, kv.Key, false); } catch { }
+                        }
+                    }
+                    foreach (var kv in lastHoldOnIdx)
+                    {
+                        bool hasEnd = false;
+                        for (int i = kv.Value + 1; i < toolEvts.Count; i++)
+                        {
+                            UnitToolEvent e = toolEvts[i];
+                            if (e.IsHold && !e.Active && e.ToolIndex == kv.Key) { hasEnd = true; break; }
+                        }
+                        if (!hasEnd)
+                        {
+                            try { UnitEventHelper.HandleToolHold(marker.RealUnit, kv.Key, false); } catch { }
                         }
                     }
                 }
@@ -7846,31 +8512,342 @@ namespace BnlCommunityFixes
 
             try
             {
+                Vector3 visualOrigin = ResolveReplayShotOrigin(unit, evt);
+                Vector3 originDelta = visualOrigin - evt.ShotOrigin;
+                if (originDelta.sqrMagnitude > 0.0001f)
+                {
+                    AdjustProjectileStartsForCast(evt, visualOrigin);
+                }
+
                 Protocol.CastData data = new Protocol.CastData();
                 data.ToolIndex = evt.ToolIndex;
-                data.ShotPos = evt.ShotOrigin;
+                data.ShotPos = visualOrigin;
                 data.Shots = evt.Shots ?? new List<Protocol.ShotData>();
                 if (evt.HasProjectileSpeed)
                 {
                     data.UnitProjectileSpeed = evt.ProjectileSpeed;
                 }
 
-                try { UnitEventHelper.HandleToolCast(unit, data); } catch { }
-
-                ToolCastEventArgs args = new ToolCastEventArgs();
-                args.ToolIndex = evt.ToolIndex;
-                args.ShotOrigin = evt.ShotOrigin;
-                args.Shots = data.Shots;
-                GearSoundHandler[] handlers = unit.GetComponentsInChildren<GearSoundHandler>(true);
-                for (int i = 0; i < handlers.Length; i++)
+                List<MonoBehaviour> suppressedShotEffects = null;
+                List<bool> suppressedShotEffectStates = null;
+                if (ShouldSuppressReplayGearShotEffects(evt))
                 {
-                    try { handlers[i].ToolCast(args); } catch { }
+                    suppressedShotEffects = new List<MonoBehaviour>();
+                    suppressedShotEffectStates = new List<bool>();
+                    SuppressReplayShotBehaviours<GearModelShotEffect>(unit, suppressedShotEffects, suppressedShotEffectStates);
+                    SuppressReplayShotBehaviours<GearModelShotTraceEffect>(unit, suppressedShotEffects, suppressedShotEffectStates);
+                    SuppressReplayShotBehaviours<GearModelShotBulletEffect>(unit, suppressedShotEffects, suppressedShotEffectStates);
+                    SuppressReplayShotBehaviours<GearShotEventBeamEffect>(unit, suppressedShotEffects, suppressedShotEffectStates);
+                }
+
+                try { UnitEventHelper.HandleToolCast(unit, data); } catch { }
+                finally
+                {
+                    if (suppressedShotEffects != null && suppressedShotEffectStates != null)
+                    {
+                        for (int i = 0; i < suppressedShotEffects.Count; i++)
+                        {
+                            if (suppressedShotEffects[i] != null)
+                            {
+                                suppressedShotEffects[i].enabled = suppressedShotEffectStates[i];
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Debug.Log("[BNL Replay] ReplayToolCast failed: " + ex.Message);
             }
+        }
+
+        private static void SuppressReplayShotBehaviours<T>(Unit unit, List<MonoBehaviour> behaviours, List<bool> states) where T : MonoBehaviour
+        {
+            if (unit == null || behaviours == null || states == null)
+            {
+                return;
+            }
+
+            T[] found = unit.GetComponentsInChildren<T>(true);
+            for (int i = 0; i < found.Length; i++)
+            {
+                MonoBehaviour behaviour = found[i];
+                if (behaviour == null)
+                {
+                    continue;
+                }
+
+                behaviours.Add(behaviour);
+                states.Add(behaviour.enabled);
+                behaviour.enabled = false;
+            }
+        }
+
+        private bool ShouldSuppressReplayGearShotEffects(UnitCastEvent evt)
+        {
+            if (evt == null || evt.Shots == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < evt.Shots.Count; i++)
+            {
+                Protocol.ShotData shot = evt.Shots[i];
+                if (shot == null || shot.ShotId == null)
+                {
+                    continue;
+                }
+
+                ProjectileReplayObject projectile = FindProjectileById(shot.ShotId.Value.ToString(CultureInfo.InvariantCulture));
+                if (projectile == null || projectile.KeyHash == 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    Protocol.CardProjectile card = Singleton<Catalogue>.Instance.GetCard<Protocol.CardProjectile>(KeyFromHash(projectile.KeyHash));
+                    if (card != null && !string.IsNullOrEmpty(card.Id) &&
+                        card.Id.IndexOf("djinn_orbs_rocket", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return true;
+                    }
+                }
+                catch { }
+            }
+
+            return false;
+        }
+
+        private ProjectileReplayObject FindProjectileById(string projectileId)
+        {
+            for (int i = 0; i < projectileObjects.Count; i++)
+            {
+                ProjectileReplayObject projectile = projectileObjects[i];
+                if (projectile != null && string.Equals(projectile.ProjectileId, projectileId, StringComparison.Ordinal))
+                {
+                    return projectile;
+                }
+            }
+
+            return null;
+        }
+
+        private Vector3 ResolveReplayShotOrigin(Unit unit, UnitCastEvent evt)
+        {
+            Vector3 fallback = evt != null ? evt.ShotOrigin : Vector3.zero;
+            if (unit == null)
+            {
+                return fallback;
+            }
+
+            try
+            {
+                byte toolIndex = evt != null ? evt.ToolIndex : (byte)0;
+                Vector3 shotDirection = unit.transform.forward;
+                if (evt != null && evt.Shots != null && evt.Shots.Count > 0 && evt.Shots[0] != null)
+                {
+                    Vector3 targetDirection = evt.Shots[0].TargetPos - fallback;
+                    if (targetDirection.sqrMagnitude > 0.0001f)
+                    {
+                        shotDirection = targetDirection.normalized;
+                    }
+                }
+                else if (shotDirection.sqrMagnitude > 0.0001f)
+                {
+                    shotDirection = shotDirection.normalized;
+                }
+
+                Vector3 best = fallback;
+                float bestScore = float.PositiveInfinity;
+                bool found = false;
+
+                GearModelProjectileAnchor[] anchors = unit.GetComponentsInChildren<GearModelProjectileAnchor>(true);
+                for (int i = 0; i < anchors.Length; i++)
+                {
+                    GearModelProjectileAnchor anchor = anchors[i];
+                    if (anchor != null && anchor.Anchor != null)
+                    {
+                        ConsiderReplayShotOriginCandidate(anchor.Anchor.position, anchor.ToolIndex, toolIndex, fallback, shotDirection, -0.5f, ref best, ref bestScore, ref found);
+                    }
+                }
+
+                GearModelShotEffect[] shotEffects = unit.GetComponentsInChildren<GearModelShotEffect>(true);
+                for (int i = 0; i < shotEffects.Length; i++)
+                {
+                    GearModelShotEffect effect = shotEffects[i];
+                    if (effect != null && effect.Spot != null)
+                    {
+                        ConsiderReplayShotOriginCandidate(effect.Spot.position, effect.ToolIndex, toolIndex, fallback, shotDirection, 0f, ref best, ref bestScore, ref found);
+                    }
+                }
+
+                GearModelShotTraceEffect[] traceEffects = unit.GetComponentsInChildren<GearModelShotTraceEffect>(true);
+                for (int i = 0; i < traceEffects.Length; i++)
+                {
+                    GearModelShotTraceEffect effect = traceEffects[i];
+                    if (effect != null && effect.Spot != null)
+                    {
+                        ConsiderReplayShotOriginCandidate(effect.Spot.position, effect.ToolIndex, toolIndex, fallback, shotDirection, 0.2f, ref best, ref bestScore, ref found);
+                    }
+                }
+
+                GearModelShotBulletEffect[] bulletEffects = unit.GetComponentsInChildren<GearModelShotBulletEffect>(true);
+                for (int i = 0; i < bulletEffects.Length; i++)
+                {
+                    GearModelShotBulletEffect effect = bulletEffects[i];
+                    if (effect != null && effect.Spot != null)
+                    {
+                        ConsiderReplayShotOriginCandidate(effect.Spot.position, effect.ToolIndex, toolIndex, fallback, shotDirection, 0.4f, ref best, ref bestScore, ref found);
+                    }
+                }
+
+                if (found)
+                {
+                    return best;
+                }
+            }
+            catch { }
+
+            return fallback;
+        }
+
+        private static void ConsiderReplayShotOriginCandidate(Vector3 candidate, int candidateToolIndex, byte toolIndex, Vector3 fallback, Vector3 shotDirection, float typePenalty, ref Vector3 best, ref float bestScore, ref bool found)
+        {
+            Vector3 offset = candidate - fallback;
+            float distance = offset.magnitude;
+            float directionDot = 0f;
+            if (offset.sqrMagnitude > 0.0001f && shotDirection.sqrMagnitude > 0.0001f)
+            {
+                directionDot = Vector3.Dot(offset.normalized, shotDirection.normalized);
+            }
+
+            float score = distance + typePenalty;
+            if (candidateToolIndex >= 0 && candidateToolIndex != (int)toolIndex)
+            {
+                score += 25f;
+            }
+
+            if (directionDot < -0.1f)
+            {
+                score += 100f;
+            }
+
+            if (distance > 3.5f)
+            {
+                score += 50f;
+            }
+
+            if (!found || score < bestScore)
+            {
+                best = candidate;
+                bestScore = score;
+                found = true;
+            }
+        }
+
+        private void AdjustProjectileStartsForCast(UnitCastEvent evt, Vector3 visualOrigin)
+        {
+            if (evt == null || evt.Shots == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < evt.Shots.Count; i++)
+            {
+                Protocol.ShotData shot = evt.Shots[i];
+                if (shot == null || shot.ShotId == null)
+                {
+                    continue;
+                }
+
+                string projectileId = shot.ShotId.Value.ToString(CultureInfo.InvariantCulture);
+                for (int j = 0; j < projectileObjects.Count; j++)
+                {
+                    ProjectileReplayObject projectile = projectileObjects[j];
+                    if (projectile == null || !string.Equals(projectile.ProjectileId, projectileId, StringComparison.Ordinal) || projectile.MuzzleAdjusted)
+                    {
+                        continue;
+                    }
+
+                    if (projectile.Points.Count > 0 && (Mathf.Abs(projectile.SpawnTime - evt.Time) < 0.5f || Mathf.Abs(projectile.SpawnTime - evt.OriginalTime) < 0.5f))
+                    {
+                        ReplayPoint original = projectile.Points[0];
+                        ReplayPoint adjusted = new ReplayPoint(original.Time, visualOrigin);
+                        adjusted.Rotation = original.Rotation;
+                        adjusted.HasRotation = original.HasRotation;
+                        adjusted.LocalVelocity = original.LocalVelocity;
+                        adjusted.HasLocalVelocity = original.HasLocalVelocity;
+                        adjusted.IsCrouch = original.IsCrouch;
+                        adjusted.IsJump = original.IsJump;
+                        adjusted.IsSprint = original.IsSprint;
+                        adjusted.IsWallClimb = original.IsWallClimb;
+                        adjusted.IsDash = original.IsDash;
+                        adjusted.IsGroundSlam = original.IsGroundSlam;
+                        adjusted.NoInterpolation = original.NoInterpolation;
+                        projectile.Points[0] = adjusted;
+                        projectile.MuzzleAdjusted = true;
+                    }
+                    break;
+                }
+            }
+        }
+
+        private void ApplyNonHeroUnitHealth(UnitMarker marker)
+        {
+            if (marker == null || marker.GameObject == null || marker.UnitId == null) return;
+            try
+            {
+                UnitStateEvent state = GetUnitStateAt(marker.UnitId, replayTime);
+                if (state == null || !state.HasHealth) return;
+
+                float newHealth = state.Health;
+
+                // Update Unit component health so health-bar prefabs (if any) read the right value.
+                Unit unitComp = marker.GameObject.GetComponentInChildren<Unit>();
+                if (unitComp != null && Math.Abs(unitComp.Health - newHealth) > 0.01f)
+                {
+                    float oldHealth = unitComp.Health;
+                    unitComp.Health = newHealth;
+
+                    ZoneMessenger messenger = null;
+                    try { messenger = Singleton<ZoneMessenger>.Instance; } catch { }
+                    if (messenger != null)
+                    {
+                        try { messenger.OnUnitHealthChange(unitComp, oldHealth, newHealth); } catch { }
+                    }
+                }
+
+                // Drive DamagePrefabs damage-state children directly (DamagePrefabs.Update is
+                // disabled because it needs a live Unit on the root, which we don't have here).
+                DamagePrefabs[] dpArr = marker.GameObject.GetComponentsInChildren<DamagePrefabs>(true);
+                for (int d = 0; d < dpArr.Length; d++)
+                {
+                    DamagePrefabs dp = dpArr[d];
+                    if (dp == null || dp.DamageStates == null || dp.DamageStates.Length == 0) continue;
+                    int stateCount = dp.DamageStates.Length;
+                    int index;
+                    if (newHealth <= 0f)
+                    {
+                        index = stateCount - 1;
+                    }
+                    else if (unitComp != null && unitComp.MaxHealth > 0f)
+                    {
+                        float ratio = 1f - Mathf.Clamp01(newHealth / unitComp.MaxHealth);
+                        index = Mathf.RoundToInt((float)(stateCount - 2) * ratio);
+                    }
+                    else
+                    {
+                        index = 0;
+                    }
+                    for (int s = 0; s < stateCount; s++)
+                    {
+                        if (dp.DamageStates[s] != null)
+                            dp.DamageStates[s].SetActive(s == index);
+                    }
+                }
+            }
+            catch { }
         }
 
         private void ApplyReplayUnitState(UnitMarker marker)
@@ -7941,6 +8918,34 @@ namespace BnlCommunityFixes
                 }
             }
 
+            if (state.HasBombTimeoutEnd)
+            {
+                try
+                {
+                    ulong translatedTimeoutEnd = TranslateReplayBombTimeoutEnd(marker, state);
+                    if (marker.RealUnit.BombTimoutEnd != translatedTimeoutEnd)
+                    {
+                        Protocol.UnitUpdate bombUpdate = new Protocol.UnitUpdate();
+                        bombUpdate.BombTimeoutEnd = translatedTimeoutEnd;
+                        UnitHandler handler = marker.RealUnit.GetComponent<UnitHandler>();
+                        if (handler != null)
+                        {
+                            handler.UnitPreUpdate(bombUpdate);
+                            handler.UnitUpdate(bombUpdate);
+                            handler.UnitPostUpdate(bombUpdate);
+                        }
+                        else
+                        {
+                            marker.RealUnit.UpdateData(bombUpdate);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log("[BNL Replay] Unit.UpdateData bomb timeout failed: " + ex.Message);
+                }
+            }
+
             if (state.HasEffects || state.HasBuffs)
             {
                 try
@@ -7954,12 +8959,105 @@ namespace BnlCommunityFixes
                     {
                         update.Buffs = state.Buffs;
                     }
-                    marker.RealUnit.UpdateData(update);
+                    UnitHandler handler = marker.RealUnit.GetComponent<UnitHandler>();
+                    if (handler != null)
+                    {
+                        uint? originalPlayerId = marker.RealUnit.PlayerId;
+                        if (state.HasEffects)
+                        {
+                            marker.RealUnit.PlayerId = null;
+                        }
+                        try
+                        {
+                            handler.UnitPreUpdate(update);
+                            handler.UnitUpdate(update);
+                            handler.UnitPostUpdate(update);
+                        }
+                        finally
+                        {
+                            marker.RealUnit.PlayerId = originalPlayerId;
+                        }
+                    }
+                    else
+                    {
+                        marker.RealUnit.UpdateData(update);
+                    }
                 }
                 catch (Exception ex)
                 {
                     Debug.Log("[BNL Replay] Unit.UpdateData effects/buffs failed: " + ex.Message);
                 }
+            }
+        }
+
+        private ulong TranslateReplayBombTimeoutEnd(UnitMarker marker, UnitStateEvent state)
+        {
+            long now = 0L;
+            try
+            {
+                if (Singleton<IServerTime>.Instance != null)
+                {
+                    now = Singleton<IServerTime>.Instance.TimeMillis;
+                }
+            }
+            catch { }
+
+            if (now <= 0L)
+            {
+                now = (long)(Time.realtimeSinceStartup * 1000f);
+            }
+
+            float remainingSeconds = 0f;
+            try
+            {
+                if (marker != null && marker.RealUnit != null && marker.RealUnit.BombUnitData != null && marker.RealUnit.BombUnitData.Timeout > 0f)
+                {
+                    remainingSeconds = marker.RealUnit.BombUnitData.Timeout - Mathf.Max(0f, replayTime - state.BombTimeoutEventTime);
+                }
+            }
+            catch { }
+
+            if (remainingSeconds <= 0f)
+            {
+                remainingSeconds = 0f;
+            }
+
+            return (ulong)(now + (long)Mathf.CeilToInt(remainingSeconds * 1000f));
+        }
+
+        private void ScheduleReplayParachuteCleanup(GameObject root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            try
+            {
+                SupplyCrateAnimations[] animations = root.GetComponentsInChildren<SupplyCrateAnimations>(true);
+                for (int i = 0; i < animations.Length; i++)
+                {
+                    SupplyCrateAnimations animation = animations[i];
+                    if (animation != null && animation.Parachute != null)
+                    {
+                        float delay = Mathf.Max(0.35f, animation.TimeBeforeFadeout + 1.25f);
+                        StartCoroutine(ForceReplayParachuteCleanup(animation.Parachute, delay));
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private System.Collections.IEnumerator ForceReplayParachuteCleanup(GameObject parachute, float delay)
+        {
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+
+            if (parachute != null)
+            {
+                try { UnityEngine.Object.Destroy(parachute); } catch { }
             }
         }
 
@@ -7998,7 +9096,8 @@ namespace BnlCommunityFixes
             try
             {
                 Unit unit = marker.RealUnit;
-                unit.LocalVelocity = sample.HasLocalVelocity ? sample.LocalVelocity : Vector3.zero;
+                Vector3 sanitizedVelocity = GetSanitizedReplayVelocity(sample);
+                unit.LocalVelocity = sanitizedVelocity;
                 unit.IsCrouch = sample.IsCrouch.HasValue && sample.IsCrouch.Value;
                 unit.IsJump = sample.IsJump.HasValue && sample.IsJump.Value;
                 unit.IsSprint = sample.IsSprint.HasValue && sample.IsSprint.Value;
@@ -8006,7 +9105,6 @@ namespace BnlCommunityFixes
                 unit.IsDash = sample.IsDash.HasValue && sample.IsDash.Value;
                 unit.IsGroundSlam = sample.IsGroundSlam.HasValue && sample.IsGroundSlam.Value;
                 unit.IsCommonMovementActive = true;
-                unit.LocalVelocity = sample.HasLocalVelocity ? sample.LocalVelocity * 0.1f : Vector3.zero;
                 ApplyReplayAnimationState(unit, sample);
 
                 UnitMotor motor = unit.GetComponent<UnitMotor>();
@@ -8080,7 +9178,7 @@ namespace BnlCommunityFixes
                     animation.IsWallClimb = sample.IsWallClimb.HasValue && sample.IsWallClimb.Value;
                     animation.IsDash = sample.IsDash.HasValue && sample.IsDash.Value;
                     animation.IsGroundSlam = sample.IsGroundSlam.HasValue && sample.IsGroundSlam.Value;
-                    animation.LocalVelocity = sample.HasLocalVelocity ? sample.LocalVelocity * 0.1f : Vector3.zero;
+                    animation.LocalVelocity = GetSanitizedReplayVelocity(sample);
                 }
             }
             catch { }
@@ -8102,7 +9200,7 @@ namespace BnlCommunityFixes
                     return;
                 }
 
-                unit.LocalVelocity = point.HasLocalVelocity ? point.LocalVelocity : Vector3.zero;
+                unit.LocalVelocity = GetSanitizedReplayVelocity(point);
                 unit.IsCrouch = point.IsCrouch.HasValue && point.IsCrouch.Value;
                 unit.IsJump = point.IsJump.HasValue && point.IsJump.Value;
                 unit.IsSprint = point.IsSprint.HasValue && point.IsSprint.Value;
@@ -8137,7 +9235,7 @@ namespace BnlCommunityFixes
             Protocol.ZoneTransform transform = new Protocol.ZoneTransform();
             transform.Position = point.Position;
             transform.Rotation = point.HasRotation ? RotationToVector3s(point.Rotation) : Vector3s.zero;
-            transform.LocalVelocity = point.HasLocalVelocity ? VelocityToVector3s(point.LocalVelocity) : Vector3s.zero;
+            transform.LocalVelocity = VelocityToVector3s(GetSanitizedReplayVelocityRaw(point));
             transform.IsCrouch = point.IsCrouch.HasValue && point.IsCrouch.Value;
             transform.IsJump = point.IsJump.HasValue && point.IsJump.Value;
             transform.IsSprint = point.IsSprint.HasValue && point.IsSprint.Value;
@@ -8166,6 +9264,54 @@ namespace BnlCommunityFixes
             v.y = (short)Mathf.Clamp(Mathf.RoundToInt(velocity.y), short.MinValue, short.MaxValue);
             v.z = (short)Mathf.Clamp(Mathf.RoundToInt(velocity.z), short.MinValue, short.MaxValue);
             return v;
+        }
+
+        private static Vector3 GetSanitizedReplayVelocity(ReplaySample sample)
+        {
+            if (sample == null || !sample.HasLocalVelocity)
+            {
+                return Vector3.zero;
+            }
+
+            return SanitizeReplayVelocity(sample.LocalVelocity);
+        }
+
+        private static Vector3 GetSanitizedReplayVelocity(ReplayPoint point)
+        {
+            if (point == null || !point.HasLocalVelocity)
+            {
+                return Vector3.zero;
+            }
+
+            return SanitizeReplayVelocity(point.LocalVelocity);
+        }
+
+        private static Vector3 GetSanitizedReplayVelocityRaw(ReplayPoint point)
+        {
+            if (point == null || !point.HasLocalVelocity)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 scaled = SanitizeReplayVelocity(point.LocalVelocity);
+            return scaled * 10f;
+        }
+
+        private static Vector3 SanitizeReplayVelocity(Vector3 packedVelocity)
+        {
+            Vector3 velocity = packedVelocity * 0.1f;
+            Vector2 horizontal = new Vector2(velocity.x, velocity.z);
+            if (horizontal.sqrMagnitude < 0.04f)
+            {
+                velocity.x = 0f;
+                velocity.z = 0f;
+            }
+            if (Mathf.Abs(velocity.y) < 0.04f)
+            {
+                velocity.y = 0f;
+            }
+
+            return velocity;
         }
 
         private void UpdateLabels()
@@ -8220,6 +9366,11 @@ namespace BnlCommunityFixes
 
                 float span = Mathf.Max(0.001f, b.Time - a.Time);
                 float t = Mathf.Clamp01((time - a.Time) / span);
+                if (Vector3.Distance(a.Position, b.Position) > 4f)
+                {
+                    return ReplaySample.FromPoint(t < 0.5f ? a : b);
+                }
+
                 ReplaySample sample = new ReplaySample(Vector3.Lerp(a.Position, b.Position, t));
                 if (a.HasRotation && b.HasRotation)
                 {
@@ -8426,6 +9577,12 @@ namespace BnlCommunityFixes
             return Quaternion.Euler(0f, rotation.y / 10f, 0f);
         }
 
+        private static Vector3 QuaternionToReplayRotation(Quaternion rotation)
+        {
+            Vector3 euler = rotation.eulerAngles;
+            return new Vector3(euler.x * 10f, euler.y * 10f, euler.z * 10f);
+        }
+
         private void ResetPlayback()
         {
             if (!loaded)
@@ -8463,6 +9620,7 @@ namespace BnlCommunityFixes
             buildPlacementByUnitId.Clear();
             gearInfoCache.Clear();
             unitDropTimes.Clear();
+            unitCommonLandTimes.Clear();
             unitCardCache.Clear();
             blockTimeline.Clear();
             initialBlockByCell.Clear();
@@ -8603,6 +9761,7 @@ namespace BnlCommunityFixes
             public float SpawnTime = float.MinValue;
             public float DropTime = float.MaxValue;
             public bool IsStaticUnit; // no track — position is fixed at spawn position
+            public bool CommonLandFired;
         }
 
         private sealed class UnitMetadata
@@ -8665,6 +9824,7 @@ namespace BnlCommunityFixes
         private sealed class UnitCastEvent
         {
             public float Time;
+            public float OriginalTime;
             public byte ToolIndex;
             public Vector3 ShotOrigin;
             public List<Protocol.ShotData> Shots;
@@ -8691,6 +9851,9 @@ namespace BnlCommunityFixes
             public bool HasShield;
             public float Resource;
             public bool HasResource;
+            public ulong BombTimeoutEnd;
+            public bool HasBombTimeoutEnd;
+            public float BombTimeoutEventTime;
             public Dictionary<int, Protocol.DeviceData> Devices;
             public bool HasDevices;
             public Dictionary<Key, ulong?> Effects;
@@ -8736,6 +9899,7 @@ namespace BnlCommunityFixes
             public float Time;
             public uint UnitId;
             public bool IsStart;
+            public float ReloadTime;
         }
 
         private sealed class KillReplayEvent
@@ -8869,6 +10033,7 @@ namespace BnlCommunityFixes
             public bool HasSpeed;
             public readonly List<ReplayPoint> Points = new List<ReplayPoint>();
             public GameObject GameObject;
+            public bool MuzzleAdjusted;
         }
 
         private sealed class BlockTimelineEvent

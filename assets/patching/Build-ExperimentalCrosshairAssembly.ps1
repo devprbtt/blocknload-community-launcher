@@ -3338,14 +3338,44 @@ $HelperAssembly = [Mono.Cecil.AssemblyDefinition]::ReadAssembly($HelperOutputPat
 $MatchReplayRecorderRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.MatchReplayRecorderRuntime" | Select-Object -First 1
 $ImportedConfigureMatchReplayRecorder = $null
 $ImportedRecordMatchReplayPacket = $null
+$ImportedRecordLocalCast = $null
+$ImportedRecordLocalProjectileInfo = $null
+$ImportedRecordLocalProjectileMove = $null
+$ImportedRecordLocalProjectileDrop = $null
+$ImportedRecordLocalUnitMove = $null
+$ImportedRecordLocalUnitProjectileHit = $null
 if ($MatchReplayRecorderRuntimeType) {
     $ConfigureMatchReplayRecorderMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "Configure" -and $_.Parameters.Count -eq 6 } | Select-Object -First 1
     $RecordMatchReplayPacketMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "RecordPacket" -and $_.Parameters.Count -eq 2 } | Select-Object -First 1
+    $RecordLocalCastMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "RecordLocalCast" -and $_.Parameters.Count -eq 2 } | Select-Object -First 1
+    $RecordLocalProjectileInfoMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "RecordLocalProjectileInfo" -and $_.Parameters.Count -eq 3 } | Select-Object -First 1
+    $RecordLocalProjectileMoveMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "RecordLocalProjectileMove" -and $_.Parameters.Count -eq 4 } | Select-Object -First 1
+    $RecordLocalProjectileDropMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "RecordLocalProjectileDrop" -and $_.Parameters.Count -eq 2 } | Select-Object -First 1
+    $RecordLocalUnitMoveMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "RecordLocalUnitMove" -and $_.Parameters.Count -eq 4 } | Select-Object -First 1
+    $RecordLocalUnitProjectileHitMethod = $MatchReplayRecorderRuntimeType.Methods | Where-Object { $_.Name -eq "RecordLocalUnitProjectileHit" -and $_.Parameters.Count -eq 3 } | Select-Object -First 1
     if ($ConfigureMatchReplayRecorderMethod) {
         $ImportedConfigureMatchReplayRecorder = $Module.ImportReference($ConfigureMatchReplayRecorderMethod)
     }
     if ($RecordMatchReplayPacketMethod) {
         $ImportedRecordMatchReplayPacket = $Module.ImportReference($RecordMatchReplayPacketMethod)
+    }
+    if ($RecordLocalCastMethod) {
+        $ImportedRecordLocalCast = $Module.ImportReference($RecordLocalCastMethod)
+    }
+    if ($RecordLocalProjectileInfoMethod) {
+        $ImportedRecordLocalProjectileInfo = $Module.ImportReference($RecordLocalProjectileInfoMethod)
+    }
+    if ($RecordLocalProjectileMoveMethod) {
+        $ImportedRecordLocalProjectileMove = $Module.ImportReference($RecordLocalProjectileMoveMethod)
+    }
+    if ($RecordLocalProjectileDropMethod) {
+        $ImportedRecordLocalProjectileDrop = $Module.ImportReference($RecordLocalProjectileDropMethod)
+    }
+    if ($RecordLocalUnitMoveMethod) {
+        $ImportedRecordLocalUnitMove = $Module.ImportReference($RecordLocalUnitMoveMethod)
+    }
+    if ($RecordLocalUnitProjectileHitMethod) {
+        $ImportedRecordLocalUnitProjectileHit = $Module.ImportReference($RecordLocalUnitProjectileHitMethod)
     }
 }
 $DebugMenuRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.DebugMenuRuntime" | Select-Object -First 1
@@ -3507,6 +3537,61 @@ if ([bool]$MatchReplayRecorderConfig.enabled) {
     if ($PatchedRecorderMethods -eq 0) {
         throw "No ServiceZone Recv_* methods were patched for match replay recording."
     }
+
+    if (-not $ImportedRecordLocalCast -or
+        -not $ImportedRecordLocalProjectileInfo -or
+        -not $ImportedRecordLocalProjectileMove -or
+        -not $ImportedRecordLocalProjectileDrop -or
+        -not $ImportedRecordLocalUnitMove -or
+        -not $ImportedRecordLocalUnitProjectileHit) {
+        throw "MatchReplayRecorderRuntime local projectile helper methods not found."
+    }
+
+    function Insert-ServiceZoneRecorderCall {
+        param(
+            [Parameter(Mandatory=$true)] [Mono.Cecil.TypeDefinition] $Type,
+            [Parameter(Mandatory=$true)] [string] $MethodName,
+            [Parameter(Mandatory=$true)] [Mono.Cecil.MethodReference] $RecorderMethod,
+            [Parameter(Mandatory=$true)] [Mono.Cecil.Cil.Instruction[]] $ArgumentLoads
+        )
+
+        $Method = $Type.Methods | Where-Object { $_.Name -eq $MethodName -and $_.HasBody } | Select-Object -First 1
+        if (-not $Method) {
+            throw "ServiceZone.$MethodName not found for match replay recording."
+        }
+
+        $Il = $Method.Body.GetILProcessor()
+        $First = $Method.Body.Instructions | Select-Object -First 1
+        $Instructions = @($Il.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, "ServiceZone.$MethodName")) + $ArgumentLoads + @($Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $RecorderMethod))
+        foreach ($Instruction in $Instructions) {
+            $Il.InsertBefore($First, $Instruction)
+        }
+    }
+
+    Insert-ServiceZoneRecorderCall -Type $ServiceZoneType -MethodName "Cast" -RecorderMethod $ImportedRecordLocalCast -ArgumentLoads @(
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1))
+    )
+    Insert-ServiceZoneRecorderCall -Type $ServiceZoneType -MethodName "CreateProjectile" -RecorderMethod $ImportedRecordLocalProjectileInfo -ArgumentLoads @(
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1)),
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_2))
+    )
+    Insert-ServiceZoneRecorderCall -Type $ServiceZoneType -MethodName "MoveProjectile" -RecorderMethod $ImportedRecordLocalProjectileMove -ArgumentLoads @(
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1)),
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_2)),
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_3))
+    )
+    Insert-ServiceZoneRecorderCall -Type $ServiceZoneType -MethodName "DropProjectile" -RecorderMethod $ImportedRecordLocalProjectileDrop -ArgumentLoads @(
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1))
+    )
+    Insert-ServiceZoneRecorderCall -Type $ServiceZoneType -MethodName "UnitMove" -RecorderMethod $ImportedRecordLocalUnitMove -ArgumentLoads @(
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1)),
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_2)),
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_3))
+    )
+    Insert-ServiceZoneRecorderCall -Type $ServiceZoneType -MethodName "UnitProjectileHit" -RecorderMethod $ImportedRecordLocalUnitProjectileHit -ArgumentLoads @(
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1)),
+        ([Mono.Cecil.Cil.Instruction]::Create([Mono.Cecil.Cil.OpCodes]::Ldarg_2))
+    )
 }
 
 if ([bool]$DebugMenuConfig.enabled) {

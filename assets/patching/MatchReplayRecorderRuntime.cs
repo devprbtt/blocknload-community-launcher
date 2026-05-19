@@ -130,6 +130,237 @@ namespace BnlCommunityFixes
             }
         }
 
+        public static void RecordLocalCast(string eventName, Protocol.CastData data)
+        {
+            if (!CanRecordLocalEvent())
+            {
+                return;
+            }
+
+            try
+            {
+                string line = BeginLocalEvent(eventName);
+                if (data != null)
+                {
+                    line += ",\"toolIndex\":" + data.ToolIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    line += ",\"shotPos\":" + VectorJson(data.ShotPos);
+                    if (data.UnitProjectileSpeed != null)
+                    {
+                        line += ",\"unitProjectileSpeed\":" + FloatJson(data.UnitProjectileSpeed.Value);
+                    }
+
+                    line += ",\"shots\":[";
+                    if (data.Shots != null)
+                    {
+                        for (int i = 0; i < data.Shots.Count; i++)
+                        {
+                            if (i > 0) line += ",";
+                            Protocol.ShotData shot = data.Shots[i];
+                            line += "{\"target\":" + VectorJson(shot.TargetPos);
+                            if (shot.ShotId != null)
+                            {
+                                line += ",\"shotId\":" + shot.ShotId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                            }
+                            line += "}";
+                        }
+                    }
+                    line += "]";
+                }
+
+                WriteLine(line + "}");
+            }
+            catch (System.Exception ex)
+            {
+                RecordLocalFailure(ex);
+            }
+        }
+
+        public static void RecordLocalProjectileInfo(string eventName, ulong shotId, Protocol.ProjectileInfo info)
+        {
+            if (!CanRecordLocalEvent())
+            {
+                return;
+            }
+
+            try
+            {
+                string line = BeginLocalEvent(eventName) + ",\"shotId\":" + shotId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (info != null)
+                {
+                    if (info.ProjectileKey != null)
+                    {
+                        line += ",\"projectileKeyHash\":\"" + info.ProjectileKey.Hash.ToString("X8", System.Globalization.CultureInfo.InvariantCulture) + "\"";
+                    }
+                    line += ",\"speed\":" + FloatJson(info.Speed);
+                    line += ",\"ownerUnitId\":" + info.OwnerUnitId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    line += ",\"ownerTeam\":\"" + Escape(info.OwnerTeam.ToString()) + "\"";
+                    AppendTransformJson(ref line, info.Transform);
+                }
+
+                WriteLine(line + "}");
+            }
+            catch (System.Exception ex)
+            {
+                RecordLocalFailure(ex);
+            }
+        }
+
+        public static void RecordLocalProjectileMove(string eventName, ulong shotId, ulong serverTime, Protocol.ZoneTransform transform)
+        {
+            if (!CanRecordLocalEvent())
+            {
+                return;
+            }
+
+            try
+            {
+                string line = BeginLocalEvent(eventName) +
+                    ",\"shotId\":" + shotId.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                    ",\"serverTime\":" + serverTime.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                AppendTransformJson(ref line, transform);
+                WriteLine(line + "}");
+            }
+            catch (System.Exception ex)
+            {
+                RecordLocalFailure(ex);
+            }
+        }
+
+        public static void RecordLocalProjectileDrop(string eventName, ulong shotId)
+        {
+            if (!CanRecordLocalEvent())
+            {
+                return;
+            }
+
+            try
+            {
+                WriteLine(BeginLocalEvent(eventName) + ",\"shotId\":" + shotId.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
+            }
+            catch (System.Exception ex)
+            {
+                RecordLocalFailure(ex);
+            }
+        }
+
+        public static void RecordLocalUnitMove(string eventName, uint unitId, ulong serverTime, Protocol.ZoneTransform transform)
+        {
+            if (!CanRecordLocalEvent())
+            {
+                return;
+            }
+
+            try
+            {
+                string line = BeginLocalEvent(eventName) +
+                    ",\"unitId\":" + unitId.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                    ",\"serverTime\":" + serverTime.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                AppendTransformJson(ref line, transform);
+                WriteLine(line + "}");
+            }
+            catch (System.Exception ex)
+            {
+                RecordLocalFailure(ex);
+            }
+        }
+
+        public static void RecordLocalUnitProjectileHit(string eventName, uint unitId, Protocol.HitData data)
+        {
+            if (!CanRecordLocalEvent())
+            {
+                return;
+            }
+
+            try
+            {
+                string line = BeginLocalEvent(eventName) + ",\"unitId\":" + unitId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (data != null)
+                {
+                    line += ",\"hit\":" + HitJson(data);
+                }
+                WriteLine(line + "}");
+            }
+            catch (System.Exception ex)
+            {
+                RecordLocalFailure(ex);
+            }
+        }
+
+        private static bool CanRecordLocalEvent()
+        {
+            return enabled && failureCount <= 5 && !string.IsNullOrEmpty(outputPath);
+        }
+
+        private static string BeginLocalEvent(string eventName)
+        {
+            return "{\"kind\":\"local_replay_event\",\"utc\":\"" +
+                Escape(System.DateTime.UtcNow.ToString("o")) + "\",\"t\":" +
+                UnityEngine.Time.realtimeSinceStartup.ToString("R", System.Globalization.CultureInfo.InvariantCulture) +
+                ",\"event\":\"" + Escape(eventName) + "\"";
+        }
+
+        private static void AppendTransformJson(ref string line, Protocol.ZoneTransform transform)
+        {
+            if (transform == null)
+            {
+                return;
+            }
+
+            line += ",\"position\":" + VectorJson(transform.GetPosition());
+            UnityEngine.Vector3 rotation = transform.GetRotation().eulerAngles;
+            line += ",\"rotation\":" + VectorJson(rotation);
+        }
+
+        private static string HitJson(Protocol.HitData data)
+        {
+            string line = "{";
+            line += "\"insidePoint\":" + VectorJson(data.InsidePoint);
+            line += ",\"normal\":" + Vector3sJson(data.Normal);
+            line += ",\"outsideShift\":\"" + Escape(data.OutsideShift.ToString()) + "\"";
+            if (data.Direction != null)
+            {
+                line += ",\"direction\":\"" + Escape(data.Direction.Value.ToString()) + "\"";
+            }
+            if (data.TargetId != null)
+            {
+                line += ",\"targetId\":" + data.TargetId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            if (data.Crit != null)
+            {
+                line += ",\"crit\":" + (data.Crit.Value ? "true" : "false");
+            }
+            line += "}";
+            return line;
+        }
+
+        private static string VectorJson(UnityEngine.Vector3 value)
+        {
+            return "{\"x\":" + FloatJson(value.x) +
+                ",\"y\":" + FloatJson(value.y) +
+                ",\"z\":" + FloatJson(value.z) + "}";
+        }
+
+        private static string Vector3sJson(Vector3s value)
+        {
+            return "{\"x\":" + value.x.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                ",\"y\":" + value.y.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                ",\"z\":" + value.z.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}";
+        }
+
+        private static string FloatJson(float value)
+        {
+            return value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private static void RecordLocalFailure(System.Exception ex)
+        {
+            failureCount++;
+            if (failureCount <= 3)
+            {
+                UnityEngine.Debug.LogException(ex);
+            }
+        }
+
         private static void StartSession(string startEvent, string matchScope)
         {
             if (!string.IsNullOrEmpty(outputPath))

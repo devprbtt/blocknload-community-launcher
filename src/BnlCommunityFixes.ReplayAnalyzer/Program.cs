@@ -35,6 +35,7 @@ Console.WriteLine($"Units created: {result.UnitCreates.Count}");
 Console.WriteLine($"Moves: {result.UnitMoves.Count}");
 Console.WriteLine($"Damage events: {result.Damages.Count}");
 Console.WriteLine($"Channel events: {result.ChannelEvents.Count}  dash charges: {result.DashChargeEvents.Count}  pickups: {result.PickupTakenEvents.Count}  recalls: {result.RecallEvents.Count}  portal teleports: {result.PortalTeleports.Count}  kicks: {result.KickPlayerEvents.Count}");
+Console.WriteLine($"Local replay events: {result.LocalReplayEvents.Count}");
 Console.WriteLine($"Block updates: {result.BlockUpdates.Sum(static item => item.Count)} across {result.BlockUpdates.Count} packets");
 Console.WriteLine($"Output: {outputDir}");
 return 0;
@@ -120,6 +121,16 @@ internal sealed class ReplayAnalyzer
                 continue;
             }
 
+            if (string.Equals(kind, "local_replay_event", StringComparison.Ordinal))
+            {
+                analysis.LocalReplayEvents.Add(new LocalReplayEvent(
+                    root.GetDoubleOrDefault("t"),
+                    root.GetStringOrDefault("event") ?? "",
+                    root.GetRawText()));
+                DecodeLocalReplayEvent(root, analysis);
+                continue;
+            }
+
             if (!string.Equals(kind, "zone_packet", StringComparison.Ordinal))
             {
                 continue;
@@ -149,8 +160,53 @@ internal sealed class ReplayAnalyzer
 
         analysis.KeyNames = KeyNameResolver.Load(inputPath);
         analysis.BlockNames = BlockNameResolver.Load(inputPath);
+        LinkLocalCastsToProjectileOwners(analysis);
 
         return analysis;
+    }
+
+    private static void LinkLocalCastsToProjectileOwners(ReplayAnalysis analysis)
+    {
+        if (analysis.Casts.Count == 0)
+        {
+            return;
+        }
+
+        var ownerByShotId = analysis.ProjectileCreates
+            .Where(static item => item.Info.OwnerUnitId is not null)
+            .GroupBy(static item => item.ProjectileId)
+            .ToDictionary(static group => group.Key, static group => group.First().Info.OwnerUnitId!.Value);
+        var controlledPlayerUnits = analysis.UnitCreates
+            .Where(static item => item.Controlled && item.PlayerId is not null)
+            .Select(static item => item.UnitId)
+            .Distinct()
+            .ToArray();
+        var singleControlledPlayerUnit = controlledPlayerUnits.Length == 1 ? controlledPlayerUnits[0] : 0U;
+
+        for (var i = 0; i < analysis.Casts.Count; i++)
+        {
+            var cast = analysis.Casts[i];
+            if (cast.UnitId != 0)
+            {
+                continue;
+            }
+
+            var owner = cast.Data.Shots
+                .Select(static shot => shot.ShotId)
+                .Where(static shotId => shotId is not null)
+                .Select(shotId => ownerByShotId.TryGetValue(shotId!.Value, out var unitId) ? unitId : 0U)
+                .FirstOrDefault(static unitId => unitId != 0);
+
+            if (owner == 0 && singleControlledPlayerUnit != 0)
+            {
+                owner = singleControlledPlayerUnit;
+            }
+
+            if (owner != 0)
+            {
+                analysis.Casts[i] = cast with { UnitId = owner };
+            }
+        }
     }
 
     private static void DecodePacket(ReplayPacket packet, byte[] payload, ReplayAnalysis analysis)
@@ -316,6 +372,120 @@ internal sealed class ReplayAnalyzer
 
             analysis.DecodeErrors.Add(new DecodeError(packet.Time, packet.Event, exception.Message));
         }
+    }
+
+    private static void DecodeLocalReplayEvent(JsonElement root, ReplayAnalysis analysis)
+    {
+        try
+        {
+            var time = root.GetDoubleOrDefault("t");
+            var eventName = root.GetStringOrDefault("event") ?? "";
+            switch (eventName)
+            {
+                case "ServiceZone.Cast":
+                    analysis.Casts.Add(ReadLocalCast(root, time));
+                    break;
+                case "ServiceZone.CreateProjectile":
+                    analysis.ProjectileCreates.Add(ReadLocalProjectileCreate(root, time));
+                    break;
+                case "ServiceZone.MoveProjectile":
+                    analysis.ProjectileMoves.Add(ReadLocalProjectileMove(root, time));
+                    break;
+                case "ServiceZone.DropProjectile":
+                    analysis.ProjectileDrops.Add(ReadLocalProjectileDrop(root, time));
+                    break;
+            }
+        }
+        catch (Exception exception)
+        {
+            analysis.DecodeErrors.Add(new DecodeError(root.GetDoubleOrDefault("t"), root.GetStringOrDefault("event") ?? "local_replay_event", exception.Message));
+        }
+    }
+
+    private static CastEvent ReadLocalCast(JsonElement root, double time)
+    {
+        byte? toolIndex = root.TryGetProperty("toolIndex", out var toolElement) ? toolElement.GetByte() : null;
+        var shotPosition = TryReadJsonVector3f(root, "shotPos");
+        var shots = new List<ShotData>();
+        if (root.TryGetProperty("shots", out var shotsElement) && shotsElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var shotElement in shotsElement.EnumerateArray())
+            {
+                var target = TryReadJsonVector3f(shotElement, "target");
+                ulong? shotId = shotElement.TryGetProperty("shotId", out var shotIdElement) ? shotIdElement.GetUInt64() : null;
+                shots.Add(new ShotData(target, shotId));
+            }
+        }
+
+        float? unitProjectileSpeed = root.TryGetProperty("unitProjectileSpeed", out var speedElement) ? speedElement.GetSingle() : null;
+        return new CastEvent(time, 0, new CastData(toolIndex, shotPosition, shots, unitProjectileSpeed));
+    }
+
+    private static ProjectileCreateEvent ReadLocalProjectileCreate(JsonElement root, double time)
+    {
+        ulong projectileId = root.TryGetProperty("shotId", out var shotIdElement) ? shotIdElement.GetUInt64() : 0UL;
+        return new ProjectileCreateEvent(time, projectileId, new ProjectileInfoData(
+            TryReadHexHash(root, "projectileKeyHash"),
+            ReadLocalZoneTransform(root),
+            root.TryGetProperty("speed", out var speedElement) ? speedElement.GetSingle() : null,
+            root.TryGetProperty("ownerUnitId", out var ownerElement) ? ownerElement.GetUInt32() : null,
+            root.GetStringOrDefault("ownerTeam")));
+    }
+
+    private static ProjectileMoveEvent ReadLocalProjectileMove(JsonElement root, double time)
+    {
+        ulong projectileId = root.TryGetProperty("shotId", out var shotIdElement) ? shotIdElement.GetUInt64() : 0UL;
+        ulong serverTime = root.TryGetProperty("serverTime", out var serverTimeElement) ? serverTimeElement.GetUInt64() : 0UL;
+        return new ProjectileMoveEvent(time, projectileId, serverTime, ReadLocalZoneTransform(root) ?? new ZoneTransformData(null, null, null, null, null, null, null, null, null, null));
+    }
+
+    private static ProjectileDropEvent ReadLocalProjectileDrop(JsonElement root, double time)
+    {
+        ulong projectileId = root.TryGetProperty("shotId", out var shotIdElement) ? shotIdElement.GetUInt64() : 0UL;
+        return new ProjectileDropEvent(time, projectileId);
+    }
+
+    private static ZoneTransformData? ReadLocalZoneTransform(JsonElement root)
+    {
+        var position = TryReadJsonVector3f(root, "position");
+        var rotation = TryReadJsonVector3s(root, "rotation");
+        return position is null && rotation is null
+            ? null
+            : new ZoneTransformData(position, rotation, null, null, null, null, null, null, null, null);
+    }
+
+    private static Vector3f? TryReadJsonVector3f(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        return new Vector3f(
+            element.TryGetProperty("x", out var x) ? x.GetSingle() : 0f,
+            element.TryGetProperty("y", out var y) ? y.GetSingle() : 0f,
+            element.TryGetProperty("z", out var z) ? z.GetSingle() : 0f);
+    }
+
+    private static Vector3s? TryReadJsonVector3s(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var element) || element.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        return new Vector3s(
+            ToShort(element.TryGetProperty("x", out var x) ? x.GetSingle() * 10f : 0f),
+            ToShort(element.TryGetProperty("y", out var y) ? y.GetSingle() * 10f : 0f),
+            ToShort(element.TryGetProperty("z", out var z) ? z.GetSingle() * 10f : 0f));
+    }
+
+    private static short ToShort(float value) => (short)Math.Clamp((int)MathF.Round(value), short.MinValue, short.MaxValue);
+
+    private static uint? TryReadHexHash(JsonElement root, string propertyName)
+    {
+        var text = root.GetStringOrDefault(propertyName);
+        return uint.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var value) ? value : null;
     }
 
     private static void TryReadInitZone(BinaryReader reader, ReplayPacket packet, ReplayAnalysis analysis)
@@ -1761,6 +1931,7 @@ internal static class ReplayReportWriter
         WriteSummary(outputDir, analysis, mapVerification);
         WriteValidation(outputDir, analysis);
         WriteCsv(Path.Combine(outputDir, "packets.csv"), ["time", "event", "remaining", "payload_bytes"], analysis.Packets, static p => [p.TimeText, p.Event, p.Remaining.ToString(CultureInfo.InvariantCulture), p.PayloadBytes.ToString(CultureInfo.InvariantCulture)]);
+        WriteCsv(Path.Combine(outputDir, "local_replay_events.csv"), ["time", "event", "json"], analysis.LocalReplayEvents, static item => [item.TimeText, item.Event, item.Json]);
         WriteCsv(Path.Combine(outputDir, "map_spawn_points.csv"), ["team", "label", "direction", "x", "y", "z"], analysis.InitZone?.Map?.SpawnPoints ?? [], static item => [item.Team ?? "", item.Label ?? "", item.Direction ?? "", item.Position?.XText ?? "", item.Position?.YText ?? "", item.Position?.ZText ?? ""]);
         WriteCsv(Path.Combine(outputDir, "map_units.csv"), ["unit_key_hash", "unit_name", "team", "x", "y", "z", "rot_x", "rot_y", "rot_z"], analysis.InitZone?.Map?.Units ?? [], item => [item.UnitKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", ResolveKeyName(analysis, item.UnitKeyHash), item.Team ?? "", item.Position?.XText ?? "", item.Position?.YText ?? "", item.Position?.ZText ?? "", item.Rotation?.XText ?? "", item.Rotation?.YText ?? "", item.Rotation?.ZText ?? ""]);
         WriteCsv(Path.Combine(outputDir, "map_cameras.csv"), ["team", "labels", "x", "y", "z", "dir_x", "dir_y", "dir_z"], analysis.InitZone?.Map?.Cameras ?? [], static item => [item.Team ?? "", string.Join("|", item.Labels), item.Position?.XText ?? "", item.Position?.YText ?? "", item.Position?.ZText ?? "", item.Direction?.XText ?? "", item.Direction?.YText ?? "", item.Direction?.ZText ?? ""]);
@@ -1785,7 +1956,7 @@ internal static class ReplayReportWriter
         WriteCsv(Path.Combine(outputDir, "build_starts.csv"), ["time", "unit_id", "tool_index", "device_key_hash", "device_name", "inside_x", "inside_y", "inside_z", "outside_x", "outside_y", "outside_z", "direction", "show_ghost"], analysis.BuildStarts, item => [item.TimeText, item.UnitIdText, item.ToolIndex?.ToString(CultureInfo.InvariantCulture) ?? "", item.DeviceKeyHash?.ToString("X8", CultureInfo.InvariantCulture) ?? "", ResolveKeyName(analysis, item.DeviceKeyHash), item.InsidePosition?.XText ?? "", item.InsidePosition?.YText ?? "", item.InsidePosition?.ZText ?? "", item.OutsidePosition?.XText ?? "", item.OutsidePosition?.YText ?? "", item.OutsidePosition?.ZText ?? "", item.Direction ?? "", item.ShowGhost?.ToString() ?? ""]);
         WriteCsv(Path.Combine(outputDir, "build_cancels.csv"), ["time", "unit_id"], analysis.BuildCancels, static item => [item.TimeText, item.UnitIdText]);
         WriteCsv(Path.Combine(outputDir, "devices_built.csv"), ["time", "unit_id", "device_key_hash", "device_name", "x", "y", "z"], analysis.DevicesBuilt, item => [item.TimeText, item.UnitIdText, item.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.DeviceKeyHash), item.Position.XText, item.Position.YText, item.Position.ZText]);
-        WriteCsv(Path.Combine(outputDir, "build_placements.csv"), ["device_time", "build_start_time", "build_to_device_seconds", "builder_unit_id", "built_unit_id", "device_key_hash", "device_name", "cell_x", "cell_y", "cell_z", "x", "y", "z", "inside_x", "inside_y", "inside_z", "outside_x", "outside_y", "outside_z", "direction", "show_ghost", "block_time", "block_id", "block_name", "damage", "vdata", "vdata_low_byte", "vdata_high_byte", "slope_existing_corner_count", "slope_existing_corners", "slope_missing_corners", "ldata", "team_bits", "team", "ldata_flags", "footprint_updates"], buildPlacements, item => [item.DeviceBuilt.TimeText, item.BuildStart?.TimeText ?? "", item.BuildStart is null ? "" : (item.DeviceBuilt.Time - item.BuildStart.Time).ToString("0.000", CultureInfo.InvariantCulture), item.BuildStart?.UnitId.ToString(CultureInfo.InvariantCulture) ?? "", item.DeviceBuilt.UnitIdText, item.DeviceBuilt.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.DeviceBuilt.DeviceKeyHash), item.Cell.XText, item.Cell.YText, item.Cell.ZText, item.DeviceBuilt.Position.XText, item.DeviceBuilt.Position.YText, item.DeviceBuilt.Position.ZText, item.BuildStart?.InsidePosition?.XText ?? "", item.BuildStart?.InsidePosition?.YText ?? "", item.BuildStart?.InsidePosition?.ZText ?? "", item.BuildStart?.OutsidePosition?.XText ?? "", item.BuildStart?.OutsidePosition?.YText ?? "", item.BuildStart?.OutsidePosition?.ZText ?? "", item.BuildStart?.Direction ?? "", item.BuildStart?.ShowGhost?.ToString() ?? "", item.BlockUpdateTime?.ToString("0.000", CultureInfo.InvariantCulture) ?? "", item.BlockUpdate?.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.BlockUpdate?.Id is ushort id ? ResolveBlockName(analysis, id) : "", item.BlockUpdate?.Damage?.ToString(CultureInfo.InvariantCulture) ?? "", item.BlockUpdate?.Vdata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatVdataLowByte(item.BlockUpdate?.Vdata), FormatVdataHighByte(item.BlockUpdate?.Vdata), FormatSlopeExistingCornerCount(item.BlockUpdate?.Vdata), FormatSlopeExistingCorners(item.BlockUpdate?.Vdata), FormatSlopeMissingCorners(item.BlockUpdate?.Vdata), item.BlockUpdate?.Ldata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatTeamBits(item.BlockUpdate?.Ldata), FormatBlockTeam(item.BlockUpdate?.Ldata), FormatLdataFlags(item.BlockUpdate?.Ldata), item.FootprintUpdates.Count.ToString(CultureInfo.InvariantCulture)]);
+        WriteCsv(Path.Combine(outputDir, "build_placements.csv"), ["device_time", "build_start_time", "build_to_device_seconds", "builder_unit_id", "built_unit_id", "device_key_hash", "device_name", "cell_x", "cell_y", "cell_z", "x", "y", "z", "inside_x", "inside_y", "inside_z", "outside_x", "outside_y", "outside_z", "direction", "show_ghost", "block_time", "block_id", "block_name", "damage", "vdata", "vdata_low_byte", "vdata_high_byte", "slope_existing_corner_count", "slope_existing_corners", "slope_missing_corners", "ldata", "team_bits", "team", "ldata_flags", "footprint_updates"], buildPlacements, item => [item.DeviceBuilt.TimeText, item.BuildStart?.TimeText ?? "", item.BuildStart is null ? "" : (item.DeviceBuilt.Time - item.BuildStart.Time).ToString("0.000", CultureInfo.InvariantCulture), item.BuildStart?.UnitId.ToString(CultureInfo.InvariantCulture) ?? "", item.CreatedUnit?.UnitIdText ?? item.DeviceBuilt.UnitIdText, item.DeviceBuilt.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.DeviceBuilt.DeviceKeyHash), item.Cell.XText, item.Cell.YText, item.Cell.ZText, item.DeviceBuilt.Position.XText, item.DeviceBuilt.Position.YText, item.DeviceBuilt.Position.ZText, item.BuildStart?.InsidePosition?.XText ?? "", item.BuildStart?.InsidePosition?.YText ?? "", item.BuildStart?.InsidePosition?.ZText ?? "", item.BuildStart?.OutsidePosition?.XText ?? "", item.BuildStart?.OutsidePosition?.YText ?? "", item.BuildStart?.OutsidePosition?.ZText ?? "", item.BuildStart?.Direction ?? "", item.BuildStart?.ShowGhost?.ToString() ?? "", item.BlockUpdateTime?.ToString("0.000", CultureInfo.InvariantCulture) ?? "", item.BlockUpdate?.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.BlockUpdate?.Id is ushort id ? ResolveBlockName(analysis, id) : "", item.BlockUpdate?.Damage?.ToString(CultureInfo.InvariantCulture) ?? "", item.BlockUpdate?.Vdata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatVdataLowByte(item.BlockUpdate?.Vdata), FormatVdataHighByte(item.BlockUpdate?.Vdata), FormatSlopeExistingCornerCount(item.BlockUpdate?.Vdata), FormatSlopeExistingCorners(item.BlockUpdate?.Vdata), FormatSlopeMissingCorners(item.BlockUpdate?.Vdata), item.BlockUpdate?.Ldata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatTeamBits(item.BlockUpdate?.Ldata), FormatBlockTeam(item.BlockUpdate?.Ldata), FormatLdataFlags(item.BlockUpdate?.Ldata), item.FootprintUpdates.Count.ToString(CultureInfo.InvariantCulture)]);
         WriteCsv(Path.Combine(outputDir, "build_placement_footprints.csv"), ["device_time", "footprint_index", "block_time", "dt", "distance", "dx", "dy", "dz", "device_key_hash", "device_name", "cell_x", "cell_y", "cell_z", "block_x", "block_y", "block_z", "block_id", "block_name", "damage", "vdata", "vdata_low_byte", "vdata_high_byte", "slope_existing_corner_count", "slope_existing_corners", "slope_missing_corners", "ldata", "team_bits", "team", "ldata_flags"], buildPlacements.SelectMany(static placement => placement.FootprintUpdates.Select((update, index) => (placement, update, index))), item => [item.placement.DeviceBuilt.TimeText, item.index.ToString(CultureInfo.InvariantCulture), item.update.Time.ToString("0.000", CultureInfo.InvariantCulture), (item.update.Time - item.placement.DeviceBuilt.Time).ToString("0.000", CultureInfo.InvariantCulture), item.update.Distance.ToString(CultureInfo.InvariantCulture), item.update.Dx.ToString(CultureInfo.InvariantCulture), item.update.Dy.ToString(CultureInfo.InvariantCulture), item.update.Dz.ToString(CultureInfo.InvariantCulture), item.placement.DeviceBuilt.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.placement.DeviceBuilt.DeviceKeyHash), item.placement.Cell.XText, item.placement.Cell.YText, item.placement.Cell.ZText, item.update.Sample.Position.XText, item.update.Sample.Position.YText, item.update.Sample.Position.ZText, item.update.Sample.Id?.ToString(CultureInfo.InvariantCulture) ?? "", item.update.Sample.Id is ushort id ? ResolveBlockName(analysis, id) : "", item.update.Sample.Damage?.ToString(CultureInfo.InvariantCulture) ?? "", item.update.Sample.Vdata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatVdataLowByte(item.update.Sample.Vdata), FormatVdataHighByte(item.update.Sample.Vdata), FormatSlopeExistingCornerCount(item.update.Sample.Vdata), FormatSlopeExistingCorners(item.update.Sample.Vdata), FormatSlopeMissingCorners(item.update.Sample.Vdata), item.update.Sample.Ldata?.ToString(CultureInfo.InvariantCulture) ?? "", FormatTeamBits(item.update.Sample.Ldata), FormatBlockTeam(item.update.Sample.Ldata), FormatLdataFlags(item.update.Sample.Ldata)]);
         WriteCsv(Path.Combine(outputDir, "block_mined.csv"), ["time", "unit_id", "block_key_hash", "block_name"], analysis.BlockMined, item => [item.TimeText, item.UnitIdText, item.BlockKeyHash.ToString("X8", CultureInfo.InvariantCulture), ResolveKeyName(analysis, item.BlockKeyHash)]);
         WriteCsv(Path.Combine(outputDir, "barrier_updates.csv"), ["time", "labels"], analysis.BarrierUpdates, static item => [item.TimeText, string.Join("|", item.Labels)]);
@@ -1878,6 +2049,7 @@ internal static class ReplayReportWriter
             $"Projectiles dropped: {analysis.ProjectileDrops.Count}",
             $"Casts: {analysis.Casts.Count}",
             $"Ability casts: {analysis.AbilityCasts.Count}",
+            $"Local replay events: {analysis.LocalReplayEvents.Count}",
             $"Build starts: {analysis.BuildStarts.Count}",
             $"Build cancels: {analysis.BuildCancels.Count}",
             $"Devices built: {analysis.DevicesBuilt.Count}",
@@ -2629,7 +2801,7 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
                 buildStartTime = item.BuildStart is null ? (double?)null : Math.Round(item.BuildStart.Time, 3),
                 buildToDeviceSeconds = item.BuildStart is null ? (double?)null : Math.Round(item.DeviceBuilt.Time - item.BuildStart.Time, 3),
                 builderUnitId = item.BuildStart?.UnitId,
-                builtUnitId = item.DeviceBuilt.UnitId,
+                builtUnitId = item.CreatedUnit?.UnitId ?? item.DeviceBuilt.UnitId,
                 deviceKeyHash = item.DeviceBuilt.DeviceKeyHash.ToString("X8", CultureInfo.InvariantCulture),
                 deviceName = ResolveKeyName(analysis, item.DeviceBuilt.DeviceKeyHash),
                 cell = ToNormalizedVector(item.Cell),
@@ -3419,6 +3591,8 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
     {
         var starts = analysis.BuildStarts.OrderBy(static item => item.Time).ToList();
         var usedStarts = new HashSet<int>();
+        var unitCreates = analysis.UnitCreates.OrderBy(static item => item.Time).ToList();
+        var usedUnitCreates = new HashSet<uint>();
         var blockUpdates = analysis.BlockUpdates
             .SelectMany(static update => update.Updates.Select(sample => (time: update.Time, sample)))
             .ToList();
@@ -3437,7 +3611,13 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
 
             var blockUpdate = FindMatchingBlockUpdate(blockUpdates, device.Time, cell);
             var footprintUpdates = FindFootprintBlockUpdates(blockUpdates, device.Time, cell);
-            placements.Add(new BuildPlacementData(device, start, cell, blockUpdate?.time, blockUpdate?.sample, footprintUpdates));
+            var createdUnit = FindMatchingCreatedDeviceUnit(unitCreates, usedUnitCreates, device, cell);
+            if (createdUnit is not null)
+            {
+                usedUnitCreates.Add(createdUnit.UnitId);
+            }
+
+            placements.Add(new BuildPlacementData(device, start, createdUnit, cell, blockUpdate?.time, blockUpdate?.sample, footprintUpdates));
         }
 
         return placements;
@@ -3622,13 +3802,13 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
             }
 
             var hasPosition = IsNonZero(start.InsidePosition) || IsNonZero(start.OutsidePosition);
-            var positionMatches = PositionsMatch(start.InsidePosition, cell) || PositionsMatch(start.OutsidePosition, cell);
-            if (hasPosition && !positionMatches)
+            var cellDistance = MinBuildStartCellDistance(start, cell);
+            if (hasPosition && cellDistance > 1)
             {
                 continue;
             }
 
-            var score = delta + (positionMatches ? 0 : 4);
+            var score = delta + cellDistance;
             if (score < bestScore)
             {
                 bestScore = score;
@@ -3638,6 +3818,24 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
 
         return bestIndex;
     }
+
+    private static int MinBuildStartCellDistance(BuildStartEvent start, Vector3s cell)
+    {
+        var best = int.MaxValue;
+        if (start.InsidePosition.HasValue && IsNonZero(start.InsidePosition))
+        {
+            best = Math.Min(best, CellDistance(start.InsidePosition.Value, cell));
+        }
+        if (start.OutsidePosition.HasValue && IsNonZero(start.OutsidePosition))
+        {
+            best = Math.Min(best, CellDistance(start.OutsidePosition.Value, cell));
+        }
+
+        return best == int.MaxValue ? 0 : best;
+    }
+
+    private static int CellDistance(Vector3s left, Vector3s right) =>
+        Math.Max(Math.Abs(left.X - right.X), Math.Max(Math.Abs(left.Y - right.Y), Math.Abs(left.Z - right.Z)));
 
     private static (double time, BlockUpdateSample sample)? FindMatchingBlockUpdate(IReadOnlyList<(double time, BlockUpdateSample sample)> updates, double deviceTime, Vector3s cell)
     {
@@ -3660,6 +3858,60 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
             {
                 bestDelta = delta;
                 best = update;
+            }
+        }
+
+        return best;
+    }
+
+    private static UnitCreateEvent? FindMatchingCreatedDeviceUnit(IReadOnlyList<UnitCreateEvent> unitCreates, HashSet<uint> usedUnitCreates, DeviceBuiltEvent device, Vector3s cell)
+    {
+        UnitCreateEvent? best = null;
+        var bestScore = double.MaxValue;
+
+        foreach (var unitCreate in unitCreates)
+        {
+            if (usedUnitCreates.Contains(unitCreate.UnitId))
+            {
+                continue;
+            }
+
+            if (unitCreate.OwnerId.HasValue && unitCreate.OwnerId.Value != device.UnitId)
+            {
+                continue;
+            }
+
+            var delta = Math.Abs(unitCreate.Time - device.Time);
+            if (delta > 1)
+            {
+                continue;
+            }
+
+            if (unitCreate.Transform?.Position is not Vector3f position)
+            {
+                continue;
+            }
+
+            var createCell = ToBlockCell(position);
+            var cellDistance = Math.Max(
+                Math.Abs(createCell.X - cell.X),
+                Math.Max(Math.Abs(createCell.Y - cell.Y), Math.Abs(createCell.Z - cell.Z)));
+            if (cellDistance > 1)
+            {
+                continue;
+            }
+
+            var positionDistance = Distance(position, device.Position);
+            if (positionDistance > 1.25)
+            {
+                continue;
+            }
+
+            var score = delta + positionDistance + cellDistance;
+            if (score < bestScore)
+            {
+                bestScore = score;
+                best = unitCreate;
             }
         }
 
@@ -3702,6 +3954,14 @@ addEventListener('resize',resize); resize(); requestAnimationFrame(tick);
         (short)Math.Floor(position.X),
         (short)Math.Floor(position.Y),
         (short)Math.Floor(position.Z));
+
+    private static double Distance(Vector3f left, Vector3f right)
+    {
+        var dx = left.X - right.X;
+        var dy = left.Y - right.Y;
+        var dz = left.Z - right.Z;
+        return Math.Sqrt(dx * dx + dy * dy + dz * dz);
+    }
 
     private static bool PositionsMatch(Vector3s? position, Vector3s cell) =>
         position.HasValue && position.Value == cell;
@@ -3920,6 +4180,7 @@ internal sealed class ReplayAnalysis
     public List<ProjectileDropEvent> ProjectileDrops { get; } = [];
     public List<CastEvent> Casts { get; } = [];
     public List<AbilityCastEvent> AbilityCasts { get; } = [];
+    public List<LocalReplayEvent> LocalReplayEvents { get; } = [];
     public List<BuildStartEvent> BuildStarts { get; } = [];
     public List<BuildCancelEvent> BuildCancels { get; } = [];
     public List<DeviceBuiltEvent> DevicesBuilt { get; } = [];
@@ -4522,6 +4783,11 @@ internal sealed record CastEvent(double Time, uint UnitId, CastData Data)
     public string UnitIdText => UnitId.ToString(CultureInfo.InvariantCulture);
 }
 
+internal sealed record LocalReplayEvent(double Time, string Event, string Json)
+{
+    public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
+}
+
 internal sealed record AbilityCastEvent(double Time, uint UnitId, uint? AbilityKeyHash, Vector3f? ShotPosition, IReadOnlyList<ShotData> Shots)
 {
     public string TimeText => Time.ToString("0.000", CultureInfo.InvariantCulture);
@@ -4576,7 +4842,7 @@ internal sealed record DeviceBuiltEvent(double Time, uint UnitId, uint DeviceKey
     public string UnitIdText => UnitId.ToString(CultureInfo.InvariantCulture);
 }
 
-internal sealed record BuildPlacementData(DeviceBuiltEvent DeviceBuilt, BuildStartEvent? BuildStart, Vector3s Cell, double? BlockUpdateTime, BlockUpdateSample? BlockUpdate, IReadOnlyList<BuildPlacementFootprintUpdate> FootprintUpdates);
+internal sealed record BuildPlacementData(DeviceBuiltEvent DeviceBuilt, BuildStartEvent? BuildStart, UnitCreateEvent? CreatedUnit, Vector3s Cell, double? BlockUpdateTime, BlockUpdateSample? BlockUpdate, IReadOnlyList<BuildPlacementFootprintUpdate> FootprintUpdates);
 internal sealed record BuildPlacementFootprintUpdate(double Time, BlockUpdateSample Sample, int Dx, int Dy, int Dz, int Distance);
 internal readonly record struct BlockUpdateKey(double Time, Vector3s Position);
 internal sealed record MapStateTimelineItem(int Sequence, double Time, string Source, BlockUpdateSample Update, BuildPlacementData? Placement)

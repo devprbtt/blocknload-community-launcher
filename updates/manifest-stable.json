@@ -1,28 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.4.4",
+  "version": "2.4.5",
   "minimum_supported_version": "2.2.0",
-  "published_at": "2026-05-17T20:00:00.0000000+00:00",
-  "notes": "# BNL Community Fixes v2.4.4\n\nReplay lag fixes and single-instance launcher.\n\n## Changes\n- Fixed severe replay lag caused by thousands of per-frame exceptions during replay playback.\n- Patched `TeamFieldOfView.IsInVisionSector` and `IsVisibleTroughBlocks` to guard against destroyed Unity objects instead of crashing.\n- Patched `UnitGhostHandler.Update` to guard nullable `buildStartTime`/`buildEndTime` fields before accessing `.Value`.\n- Patched `GuiFollow.Update` to return early when `Camera.main` is null during replay.\n- Opening the launcher now automatically kills any other running launcher instances.\n- F8 in-game menu: map render preset and hide impact VFX settings now sync back to the launcher UI.\n- F8 in-game menu: removed debug force start match option.\n- WSI scale settings are now saved and loaded correctly in the launcher.",
+  "published_at": "2026-05-19T00:32:02.8343092+00:00",
+  "notes": "# BNL Community Fixes v2.4.5\n\nReplay fidelity fixes for devices, projectiles, supplies, and explosives.\n\n## Changes\n- Improved replay placement fidelity for wall-attached devices and build-finished device orientation.\n- Fixed several replay projectile paths and muzzle/orientation cases for Ninja, Sarge, and Djinn actions.\n- Added replay capture and playback support for local projectile events needed for accurate trajectories.\n- Fixed replay device health, destruction timing, placement sounds, and duplicate destruction visuals.\n- Fixed supply/blockbuster visibility, landing behavior, health, and pickup visibility.\n- Fixed supply crate parachutes staying attached after landing.\n- Fixed dynamite timer playback using the original in-game countdown UI.\n- Reduced false movement animation during replay idle/jitter states.\n",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.4/BnlCommunityFixes.exe",
-      "sha256": "149E58175C38F13ABD26F96F0EFD44C01AB3A8AA745BAC98B453184CC614E27C",
-      "size": 163334343
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.5/BnlCommunityFixes.exe",
+      "sha256": "F940B545E1C09BD327863A2FB7B75E16AC498F6BA65AE646C969C9555A6FA062",
+      "size": 163395783
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.4/BnlUpdater.exe",
-      "sha256": "aaf086ed0f2484d1215d72d0e43aafd18f13f6d76fcc15c5415899f65ed4f100",
-      "size": 67622130
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.5/BnlUpdater.exe",
+      "sha256": "11E8125A7D8C27DA227EF4670BBA3E92847305E39882095A900694FE9327E344",
+      "size": 67625714
     },
     "replay_analyzer_exe": {
       "file_name": "BnlCommunityFixes.ReplayAnalyzer.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.4/BnlCommunityFixes.ReplayAnalyzer.exe",
-      "sha256": "268563cbdc9d930c13abc3a4829168b27475a8420fb4d9fc8de2dc7651b4a064",
-      "size": 68170997
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.5/BnlCommunityFixes.ReplayAnalyzer.exe",
+      "sha256": "FD63312955D2F2990FAD4C573F9363B1212A9DD00CAFF23A537051CD3D630D26",
+      "size": 68179189
     }
   }
 }
