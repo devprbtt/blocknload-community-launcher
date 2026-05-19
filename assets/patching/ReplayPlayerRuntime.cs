@@ -6948,7 +6948,7 @@ namespace BnlCommunityFixes
                     marker.GameObject.transform.position = sample.Position;
                     if (sample.HasRotation)
                     {
-                        marker.GameObject.transform.rotation = RotationToQuaternion(sample.Rotation);
+                        marker.GameObject.transform.rotation = SampleRotationQuaternion(sample);
                     }
 
                     // Fire OnUnitCommonMovementLand when replay crosses the recorded land time.
@@ -7024,7 +7024,7 @@ namespace BnlCommunityFixes
                 projectile.GameObject.transform.position = sample.Position;
                 if (sample.HasRotation)
                 {
-                    projectile.GameObject.transform.rotation = RotationToQuaternion(sample.Rotation);
+                    projectile.GameObject.transform.rotation = SampleRotationQuaternion(sample);
                 }
                 else
                 {
@@ -9129,7 +9129,7 @@ namespace BnlCommunityFixes
                     unit.transform.position = sample.Position;
                     if (sample.HasRotation)
                     {
-                        unit.transform.rotation = RotationToYawQuaternion(sample.Rotation);
+                        unit.transform.rotation = SampleYawQuaternion(sample);
                     }
                 }
                 else
@@ -9138,7 +9138,7 @@ namespace BnlCommunityFixes
                     unit.transform.position = Vector3.Lerp(unit.transform.position, sample.Position, smoothing);
                     if (sample.HasRotation)
                     {
-                        unit.transform.rotation = Quaternion.Slerp(unit.transform.rotation, RotationToYawQuaternion(sample.Rotation), smoothing);
+                        unit.transform.rotation = Quaternion.Slerp(unit.transform.rotation, SampleYawQuaternion(sample), smoothing);
                     }
                 }
 
@@ -9374,7 +9374,9 @@ namespace BnlCommunityFixes
                 ReplaySample sample = new ReplaySample(Vector3.Lerp(a.Position, b.Position, t));
                 if (a.HasRotation && b.HasRotation)
                 {
-                    sample.Rotation = Vector3.Lerp(a.Rotation, b.Rotation, t);
+                    sample.RotationQuaternion = Quaternion.Slerp(RotationToQuaternion(a.Rotation), RotationToQuaternion(b.Rotation), t);
+                    sample.HasRotationQuaternion = true;
+                    sample.Rotation = QuaternionToReplayRotation(sample.RotationQuaternion);
                     sample.HasRotation = true;
                 }
                 else if (a.HasRotation)
@@ -9439,7 +9441,9 @@ namespace BnlCommunityFixes
                 ReplaySample sample = new ReplaySample(Vector3.Lerp(a.Position, b.Position, t));
                 if (a.HasRotation && b.HasRotation)
                 {
-                    sample.Rotation = Vector3.Lerp(a.Rotation, b.Rotation, t);
+                    sample.RotationQuaternion = Quaternion.Slerp(RotationToQuaternion(a.Rotation), RotationToQuaternion(b.Rotation), t);
+                    sample.HasRotationQuaternion = true;
+                    sample.Rotation = QuaternionToReplayRotation(sample.RotationQuaternion);
                     sample.HasRotation = true;
                 }
                 else if (a.HasRotation || b.HasRotation)
@@ -9572,9 +9576,25 @@ namespace BnlCommunityFixes
             return Quaternion.Euler(rotation.x / 10f, rotation.y / 10f, rotation.z / 10f);
         }
 
+        private static Quaternion SampleRotationQuaternion(ReplaySample sample)
+        {
+            if (sample != null && sample.HasRotationQuaternion)
+            {
+                return sample.RotationQuaternion;
+            }
+
+            return sample != null ? RotationToQuaternion(sample.Rotation) : Quaternion.identity;
+        }
+
         private static Quaternion RotationToYawQuaternion(Vector3 rotation)
         {
             return Quaternion.Euler(0f, rotation.y / 10f, 0f);
+        }
+
+        private static Quaternion SampleYawQuaternion(ReplaySample sample)
+        {
+            Quaternion rotation = SampleRotationQuaternion(sample);
+            return Quaternion.Euler(0f, rotation.eulerAngles.y, 0f);
         }
 
         private static Vector3 QuaternionToReplayRotation(Quaternion rotation)
@@ -9713,6 +9733,8 @@ namespace BnlCommunityFixes
             public Vector3 Position;
             public Vector3 Rotation;
             public bool HasRotation;
+            public Quaternion RotationQuaternion;
+            public bool HasRotationQuaternion;
             public Vector3 LocalVelocity;
             public bool HasLocalVelocity;
             public bool? IsCrouch;
@@ -9733,6 +9755,11 @@ namespace BnlCommunityFixes
                 ReplaySample sample = new ReplaySample(point.Position);
                 sample.Rotation = point.Rotation;
                 sample.HasRotation = point.HasRotation;
+                if (point.HasRotation)
+                {
+                    sample.RotationQuaternion = RotationToQuaternion(point.Rotation);
+                    sample.HasRotationQuaternion = true;
+                }
                 sample.LocalVelocity = point.LocalVelocity;
                 sample.HasLocalVelocity = point.HasLocalVelocity;
                 sample.IsCrouch = point.IsCrouch;
