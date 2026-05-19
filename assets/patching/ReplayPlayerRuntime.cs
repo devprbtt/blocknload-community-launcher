@@ -9096,16 +9096,18 @@ namespace BnlCommunityFixes
             try
             {
                 Unit unit = marker.RealUnit;
-                Vector3 sanitizedVelocity = GetSanitizedReplayVelocity(sample);
+                bool isReplayBuilding = IsReplayUnitBuilding(marker.Track.UnitId, replayTime);
+                Vector3 sanitizedVelocity = isReplayBuilding ? Vector3.zero : GetSanitizedReplayVelocity(sample);
                 unit.LocalVelocity = sanitizedVelocity;
                 unit.IsCrouch = sample.IsCrouch.HasValue && sample.IsCrouch.Value;
                 unit.IsJump = sample.IsJump.HasValue && sample.IsJump.Value;
-                unit.IsSprint = sample.IsSprint.HasValue && sample.IsSprint.Value;
+                unit.IsSprint = !isReplayBuilding && sample.IsSprint.HasValue && sample.IsSprint.Value;
                 unit.IsWallClimb = sample.IsWallClimb.HasValue && sample.IsWallClimb.Value;
                 unit.IsDash = sample.IsDash.HasValue && sample.IsDash.Value;
                 unit.IsGroundSlam = sample.IsGroundSlam.HasValue && sample.IsGroundSlam.Value;
+                unit.IsDeviceBuilding = isReplayBuilding;
                 unit.IsCommonMovementActive = true;
-                ApplyReplayAnimationState(unit, sample);
+                ApplyReplayAnimationState(unit, sample, isReplayBuilding);
 
                 UnitMotor motor = unit.GetComponent<UnitMotor>();
                 if (motor != null && motor.enabled)
@@ -9154,7 +9156,7 @@ namespace BnlCommunityFixes
             }
         }
 
-        private static void ApplyReplayAnimationState(Unit unit, ReplaySample sample)
+        private static void ApplyReplayAnimationState(Unit unit, ReplaySample sample, bool isReplayBuilding)
         {
             if (unit == null)
             {
@@ -9174,11 +9176,11 @@ namespace BnlCommunityFixes
 
                     animation.IsCrouch = sample.IsCrouch.HasValue && sample.IsCrouch.Value;
                     animation.IsJump = sample.IsJump.HasValue && sample.IsJump.Value;
-                    animation.IsSprint = sample.IsSprint.HasValue && sample.IsSprint.Value;
+                    animation.IsSprint = !isReplayBuilding && sample.IsSprint.HasValue && sample.IsSprint.Value;
                     animation.IsWallClimb = sample.IsWallClimb.HasValue && sample.IsWallClimb.Value;
                     animation.IsDash = sample.IsDash.HasValue && sample.IsDash.Value;
                     animation.IsGroundSlam = sample.IsGroundSlam.HasValue && sample.IsGroundSlam.Value;
-                    animation.LocalVelocity = GetSanitizedReplayVelocity(sample);
+                    animation.LocalVelocity = isReplayBuilding ? Vector3.zero : GetSanitizedReplayVelocity(sample);
                 }
             }
             catch { }
@@ -9189,8 +9191,14 @@ namespace BnlCommunityFixes
             try
             {
                 Unit unit = marker.RealUnit;
+                bool isReplayBuilding = IsReplayUnitBuilding(marker.Track.UnitId, point.Time);
                 Protocol.ZoneTransform transform = BuildZoneTransform(point);
                 transform.NoInterpolation = forceSnap || (point.NoInterpolation.HasValue && point.NoInterpolation.Value);
+                if (isReplayBuilding)
+                {
+                    transform.LocalVelocity = Vector3s.zero;
+                    transform.IsSprint = false;
+                }
 
                 ZoneServiceListener listener = Singleton<ZoneServiceListener>.Instance;
                 uint unitId;
@@ -9200,13 +9208,14 @@ namespace BnlCommunityFixes
                     return;
                 }
 
-                unit.LocalVelocity = GetSanitizedReplayVelocity(point);
+                unit.LocalVelocity = isReplayBuilding ? Vector3.zero : GetSanitizedReplayVelocity(point);
                 unit.IsCrouch = point.IsCrouch.HasValue && point.IsCrouch.Value;
                 unit.IsJump = point.IsJump.HasValue && point.IsJump.Value;
-                unit.IsSprint = point.IsSprint.HasValue && point.IsSprint.Value;
+                unit.IsSprint = !isReplayBuilding && point.IsSprint.HasValue && point.IsSprint.Value;
                 unit.IsWallClimb = point.IsWallClimb.HasValue && point.IsWallClimb.Value;
                 unit.IsDash = point.IsDash.HasValue && point.IsDash.Value;
                 unit.IsGroundSlam = point.IsGroundSlam.HasValue && point.IsGroundSlam.Value;
+                unit.IsDeviceBuilding = isReplayBuilding;
                 unit.transform.position = point.Position;
                 if (point.HasRotation)
                 {
@@ -9228,6 +9237,31 @@ namespace BnlCommunityFixes
             {
                 marker.RealUnit.transform.rotation = RotationToQuaternion(point.Rotation);
             }
+        }
+
+        private bool IsReplayUnitBuilding(string unitId, float time)
+        {
+            if (string.IsNullOrEmpty(unitId) || buildEvents.Count == 0)
+            {
+                return false;
+            }
+
+            uint parsedUnitId;
+            if (!uint.TryParse(unitId, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedUnitId))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < buildEvents.Count; i++)
+            {
+                BuildReplayEvent evt = buildEvents[i];
+                if (evt.BuilderUnitId == parsedUnitId && time >= evt.Time && time <= evt.DeviceTime + 0.05f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Protocol.ZoneTransform BuildZoneTransform(ReplayPoint point)
