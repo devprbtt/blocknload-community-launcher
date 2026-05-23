@@ -1,27 +1,27 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.4.6",
+  "version": "2.4.7",
   "minimum_supported_version": "2.2.0",
-  "published_at": "2026-05-19T00:00:00.0000000+00:00",
-  "notes": "# BNL Community Fixes v2.4.6\n\nReplay system fixes and damage/healing indicator improvement.\n\n## Changes\n- Fixed ESC menu opening and immediately closing during replay.\n- Fixed exit button in ESC menu not closing the game during replay.\n- Chat is now hidden by default in replay; press Enter to toggle it.\n- \n- \n- Smoother unit rotation playback using quaternion slerp sampling.\n- Suppressed locomotion animation while player is in building state during replay.\n- Fixed false full-health heal number appearing on screen every time a player spawns.\n",
+  "published_at": "2026-05-23T14:15:47.9801974+00:00",
+  "notes": "## Changes\\n\\nBuild preview modifications:\\n- Fix Assembly-CSharp build failure caused by game update (Block.BlockId renamed to Block.Id)\\n\\nReplay shortcuts:\\n- Disable replay shortcuts during regular matches",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.6/BnlCommunityFixes.exe",
-      "sha256": "3F046944DCB6AA8C41E10D686E06CCD9B1314B3FFF621B1D8FD78EF252DDD25D",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.7/BnlCommunityFixes.exe",
+      "sha256": "0432C7C831344A3984E4019518DE284E966A2326259B21834F18E1232624F746",
       "size": 163436743
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.6/BnlUpdater.exe",
-      "sha256": "34C2D32C508AF22043E75A1447B7531726F8A76E18BD089349EFB3B7A3770A48",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.7/BnlUpdater.exe",
+      "sha256": "0BBBB06C9AD4B273A76CF2EAB2571E5C778D6F69C53187B618CE0F2B6368F032",
       "size": 67625714
     },
     "replay_analyzer_exe": {
       "file_name": "BnlCommunityFixes.ReplayAnalyzer.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.6/BnlCommunityFixes.ReplayAnalyzer.exe",
-      "sha256": "8044C13424132187B75E5216F560CA0F390CE4471BB50A824AD74B8867B5A0A6",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.7/BnlCommunityFixes.ReplayAnalyzer.exe",
+      "sha256": "7960B1983097AC29261B47F7893FA6D82DE0DC860A8AC78869ECD9ADE93597C7",
       "size": 68191477
     }
   }
