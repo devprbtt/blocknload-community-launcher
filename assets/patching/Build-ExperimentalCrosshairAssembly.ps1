@@ -2775,7 +2775,7 @@ namespace BnlCommunityFixes
         private static PredictionManager manager;
         private static float instantCrateChainUntil;
 
-        private static readonly float PredictionTimeoutSeconds = $(Format-FloatLiteral ([double]$LocalBuildPreviewConfig.prediction_timeout_seconds));
+        private const float PredictionTimeoutSeconds = 3f;
 
         static LocalBuildPredictionRuntime()
         {
