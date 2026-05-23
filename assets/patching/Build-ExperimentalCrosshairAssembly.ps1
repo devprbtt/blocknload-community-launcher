@@ -2956,7 +2956,7 @@ namespace BnlCommunityFixes
                 if (blockCard != null && blockCard.BlockId != 0)
                 {
                     if (blockCard.BlockId == 58) ActivateInstantCrateChainWindow();
-                    Block newBlock = new Block(blockCard.BlockId);
+                    Block newBlock = new Block((ushort)blockCard.BlockId);
                     newBlock.Team = unit.Team;
                     System.Collections.Generic.Dictionary<Vector3s, BlockUpdate> updates = new System.Collections.Generic.Dictionary<Vector3s, BlockUpdate>();
                     updates[ri.BlockPosBuildIn] = newBlock.ToUpdate();
@@ -3040,7 +3040,7 @@ namespace BnlCommunityFixes
                     // If we're overwriting a prediction for the same block/unit,
                     // pass along the original world state (PreviousBlock) so
                     // we don't accidentally "resolve" to a predicted crate.
-                    if (entry.PreviousBlock == null || entry.PreviousBlock.BlockId == 0)
+                    if (entry.PreviousBlock == null || entry.PreviousBlock.Id == 0)
                     {
                         entry.PreviousBlock = current.PreviousBlock;
                     }
