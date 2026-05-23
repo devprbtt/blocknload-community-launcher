@@ -3035,7 +3035,17 @@ namespace BnlCommunityFixes
                 PredictionEntry current = this.entries[i];
                 bool sameBlock = !current.IsUnit && !entry.IsUnit && current.BlockPos.Equals(entry.BlockPos);
                 bool sameUnitSpot = current.IsUnit == entry.IsUnit && current.DeviceKey.Equals(entry.DeviceKey) && UnityEngine.Vector3.Distance(current.WorldPos, entry.WorldPos) <= 0.75f;
-                if (sameBlock || sameUnitSpot) this.RemoveAt(i, false);
+                if (sameBlock || sameUnitSpot)
+                {
+                    // If we're overwriting a prediction for the same block/unit,
+                    // pass along the original world state (PreviousBlock) so
+                    // we don't accidentally "resolve" to a predicted crate.
+                    if (entry.PreviousBlock == null || entry.PreviousBlock.BlockId == 0)
+                    {
+                        entry.PreviousBlock = current.PreviousBlock;
+                    }
+                    this.RemoveAt(i, false);
+                }
             }
             this.entries.Add(entry);
         }

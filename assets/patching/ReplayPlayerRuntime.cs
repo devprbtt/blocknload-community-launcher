@@ -142,17 +142,15 @@ namespace BnlCommunityFixes
         {
             TryStartLauncherReplayMode();
 
+            if (!loaded && !realZoneLoadPending)
+            {
+                return;
+            }
+
             if (Input.GetKeyDown(KeyCode.F7))
             {
-                if (!loaded)
-                {
-                    ShowStatus("Replay loading now starts from the launcher Replay Mode button");
-                }
-                else
-                {
-                    playing = !playing;
-                    ShowStatus(playing ? "Replay playback resumed" : "Replay playback paused");
-                }
+                playing = !playing;
+                ShowStatus(playing ? "Replay playback resumed" : "Replay playback paused");
             }
 
             if (Input.GetKeyDown(KeyCode.F8))
