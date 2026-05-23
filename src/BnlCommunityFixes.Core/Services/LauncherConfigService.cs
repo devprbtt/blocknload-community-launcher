@@ -82,6 +82,12 @@ public sealed class LauncherConfigService
         Save(context.CustomConfigPath, customConfig);
     }
 
+    public void SaveConfig(GameInstallInfo installInfo, LauncherConfig config)
+    {
+        var context = GetContext(installInfo);
+        Save(context.ConfigPath, config);
+    }
+
     public void SaveSelection(GameInstallInfo installInfo, LauncherConfig config, string selectedServerKey)
     {
         var context = GetContext(installInfo);
@@ -141,7 +147,8 @@ public sealed class LauncherConfigService
             AutoUpdateServerList = currentConfig.AutoUpdateServerList,
             SelectedServer = currentConfig.SelectedServer,
             Servers = mergedServers,
-            PatchConfigurations = mergedPatchConfigurations
+            PatchConfigurations = mergedPatchConfigurations,
+            TextureReplacementFolder = currentConfig.TextureReplacementFolder
         };
 
         if (string.IsNullOrWhiteSpace(mergedConfig.SelectedServer) || !mergedConfig.Servers.ContainsKey(mergedConfig.SelectedServer))

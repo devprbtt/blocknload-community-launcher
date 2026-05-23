@@ -2581,4 +2581,176 @@ namespace BnlCommunityFixes
             window.Toggle();
         }
     }
+
+    public sealed class TextureReplacementBootstrapper : UnityEngine.MonoBehaviour
+    {
+        private static TextureReplacementBootstrapper instance;
+
+        private static readonly string TexturesPathFile = System.IO.Path.Combine(
+            System.IO.Path.Combine(
+                System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                    "BNL-CommunityFixes"),
+                "app"),
+            System.IO.Path.Combine("patching", "textures-path.txt"));
+
+        private System.Collections.Generic.Dictionary<string, UnityEngine.Texture2D> replacements;
+        private float nextScanTime;
+        private const float ScanInterval = 1f;
+
+        private static System.Collections.Generic.Dictionary<string, UnityEngine.Sprite> spriteCache =
+            new System.Collections.Generic.Dictionary<string, UnityEngine.Sprite>();
+
+        public static UnityEngine.Sprite GetShopImageOverride(string iconName)
+        {
+            if (string.IsNullOrEmpty(iconName)) return null;
+            if (!System.IO.File.Exists(TexturesPathFile)) return null;
+
+            UnityEngine.Sprite cached;
+            if (spriteCache.TryGetValue(iconName, out cached)) return cached;
+
+            var folder = System.IO.File.ReadAllText(TexturesPathFile).Trim();
+            string[] exts = { ".png", ".jpg" };
+            foreach (var ext in exts)
+            {
+                var path = System.IO.Path.Combine(folder, iconName + ext);
+                if (!System.IO.File.Exists(path)) continue;
+                var bytes = System.IO.File.ReadAllBytes(path);
+                var tex = new UnityEngine.Texture2D(2, 2, UnityEngine.TextureFormat.RGBA32, false);
+                if (!tex.LoadImage(bytes)) continue;
+                tex.name = iconName;
+                var sprite = UnityEngine.Sprite.Create(
+                    tex,
+                    new UnityEngine.Rect(0f, 0f, tex.width, tex.height),
+                    new UnityEngine.Vector2(0.5f, 0.5f),
+                    100f);
+                sprite.name = iconName;
+                spriteCache[iconName] = sprite;
+                return sprite;
+            }
+            spriteCache[iconName] = null;
+            return null;
+        }
+
+        public static void EnsureInstance()
+        {
+            if (instance != null) return;
+
+            var go = UnityEngine.GameObject.Find("BNL_TEXTURE_REPLACEMENT");
+            if (go == null) go = new UnityEngine.GameObject("BNL_TEXTURE_REPLACEMENT");
+
+            instance = go.GetComponent<TextureReplacementBootstrapper>();
+            if (instance == null) instance = go.AddComponent<TextureReplacementBootstrapper>();
+        }
+
+        private void Awake()
+        {
+            if (instance != null && instance != this)
+            {
+                UnityEngine.Object.Destroy(gameObject);
+                return;
+            }
+            instance = this;
+            UnityEngine.Object.DontDestroyOnLoad(gameObject);
+            replacements = new System.Collections.Generic.Dictionary<string, UnityEngine.Texture2D>();
+            LoadReplacementTextures();
+            nextScanTime = UnityEngine.Time.realtimeSinceStartup + ScanInterval;
+        }
+
+        private void OnLevelWasLoaded(int level)
+        {
+            nextScanTime = UnityEngine.Time.realtimeSinceStartup + ScanInterval;
+        }
+
+        private void LoadReplacementTextures()
+        {
+            replacements.Clear();
+            if (!System.IO.File.Exists(TexturesPathFile))
+            {
+                UnityEngine.Debug.Log("[BNL] TextureReplacement: textures-path.txt not found, skipping.");
+                return;
+            }
+
+            var texturesFolder = System.IO.File.ReadAllText(TexturesPathFile).Trim();
+            if (!System.IO.Directory.Exists(texturesFolder))
+            {
+                UnityEngine.Debug.Log("[BNL] TextureReplacement: textures folder not found: " + texturesFolder);
+                return;
+            }
+
+            var allFiles = new System.Collections.Generic.List<string>();
+            allFiles.AddRange(System.IO.Directory.GetFiles(texturesFolder, "*.png"));
+            allFiles.AddRange(System.IO.Directory.GetFiles(texturesFolder, "*.jpg"));
+            foreach (var file in allFiles)
+            {
+                var bytes = System.IO.File.ReadAllBytes(file);
+                var tex = new UnityEngine.Texture2D(2, 2, UnityEngine.TextureFormat.RGBA32, false);
+                if (!tex.LoadImage(bytes)) continue;
+                var texName = System.IO.Path.GetFileNameWithoutExtension(file);
+                tex.name = texName;
+                replacements[texName] = tex;
+                UnityEngine.Debug.Log("[BNL] TextureReplacement: loaded replacement: " + texName);
+            }
+        }
+
+        private void Update()
+        {
+            if (replacements.Count == 0) return;
+            float now = UnityEngine.Time.realtimeSinceStartup;
+            if (now < nextScanTime) return;
+            nextScanTime = now + ScanInterval;
+            ApplyReplacements();
+        }
+
+        private void ApplyReplacements()
+        {
+            int replaced = 0;
+            foreach (var renderer in UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.Renderer>())
+            {
+                if (renderer == null) continue;
+                foreach (var mat in renderer.materials)
+                {
+                    if (mat == null || mat.mainTexture == null) continue;
+                    UnityEngine.Texture2D replacement;
+                    if (replacements.TryGetValue(mat.mainTexture.name, out replacement))
+                    {
+                        mat.mainTexture = replacement;
+                        replaced++;
+                    }
+                }
+            }
+            foreach (var image in UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.UI.Image>())
+            {
+                if (image == null || image.sprite == null) continue;
+                string spriteName = image.sprite.name;
+                if (image.sprite.texture == null) continue;
+                string texName = image.sprite.texture.name;
+                UnityEngine.Texture2D replacement;
+                if (replacements.TryGetValue(texName, out replacement))
+                {
+                    image.sprite = UnityEngine.Sprite.Create(
+                        replacement,
+                        new UnityEngine.Rect(0, 0, replacement.width, replacement.height),
+                        new UnityEngine.Vector2(0.5f, 0.5f));
+                    replaced++;
+                    UnityEngine.Debug.Log("[BNL] TextureReplacement: swapped sprite=" + spriteName);
+                }
+                else if (replacements.TryGetValue(spriteName, out replacement))
+                {
+                    image.sprite = UnityEngine.Sprite.Create(
+                        replacement,
+                        new UnityEngine.Rect(0, 0, replacement.width, replacement.height),
+                        new UnityEngine.Vector2(0.5f, 0.5f));
+                    replaced++;
+                    UnityEngine.Debug.Log("[BNL] TextureReplacement: swapped sprite=" + spriteName + " (by sprite name)");
+                }
+                else if ((spriteName.StartsWith("shop_perk") || spriteName.StartsWith("perk_")) && replacements.ContainsKey(spriteName) == false)
+                {
+                    UnityEngine.Debug.Log("[BNL] TextureReplacement: MISS sprite=" + spriteName + " tex=" + texName);
+                }
+            }
+            if (replaced > 0)
+                UnityEngine.Debug.Log("[BNL] TextureReplacement: replaced " + replaced + " texture(s).");
+        }
+    }
 }

@@ -29,6 +29,9 @@ public sealed class LauncherMainForm : Form
     private readonly CheckBox recordCustomReplaysCheckBox;
     private readonly CheckBox recordCasualReplaysCheckBox;
     private readonly CheckBox recordRankedReplaysCheckBox;
+    private readonly TextBox textureReplacementFolderBox;
+    private readonly Button textureReplacementBrowseButton;
+    private readonly Button textureReplacementClearButton;
     private readonly TextBox statusTextBox;
 
     private LauncherConfig? launcherConfig;
@@ -221,13 +224,48 @@ public sealed class LauncherMainForm : Form
         };
         recordRankedReplaysCheckBox.CheckedChanged += (_, _) => ToggleReplayRecording();
 
+        var textureReplacementLabel = new Label
+        {
+            Text = "Texture Replacements",
+            AutoSize = true,
+            Location = new System.Drawing.Point(24, 318),
+            Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold)
+        };
+
+        textureReplacementFolderBox = new TextBox
+        {
+            Location = new System.Drawing.Point(24, 338),
+            Size = new System.Drawing.Size(554, 22),
+            PlaceholderText = "Folder containing replacement textures (.png / .jpg)..."
+        };
+        textureReplacementFolderBox.TextChanged += (_, _) => SaveTextureReplacementFolder();
+
+        textureReplacementBrowseButton = new Button
+        {
+            Text = "Browse...",
+            Location = new System.Drawing.Point(584, 336),
+            Size = new System.Drawing.Size(72, 26)
+        };
+        textureReplacementBrowseButton.Click += (_, _) => BrowseTextureReplacementFolder();
+
+        textureReplacementClearButton = new Button
+        {
+            Text = "Clear",
+            Location = new System.Drawing.Point(662, 336),
+            Size = new System.Drawing.Size(72, 26)
+        };
+        textureReplacementClearButton.Click += (_, _) =>
+        {
+            textureReplacementFolderBox.Text = "";
+        };
+
         statusTextBox = new TextBox
         {
             Multiline = true,
             ReadOnly = true,
             ScrollBars = ScrollBars.Vertical,
-            Location = new System.Drawing.Point(24, 320),
-            Size = new System.Drawing.Size(712, 158),
+            Location = new System.Drawing.Point(24, 374),
+            Size = new System.Drawing.Size(712, 104),
             Font = new System.Drawing.Font("Consolas", 9F)
         };
 
@@ -251,6 +289,10 @@ public sealed class LauncherMainForm : Form
             recordCustomReplaysCheckBox,
             recordCasualReplaysCheckBox,
             recordRankedReplaysCheckBox,
+            textureReplacementLabel,
+            textureReplacementFolderBox,
+            textureReplacementBrowseButton,
+            textureReplacementClearButton,
             statusTextBox
         ]);
 
@@ -268,6 +310,8 @@ public sealed class LauncherMainForm : Form
 
             PopulateServerList();
             UpdateStatusSummary();
+            PopulateTextureReplacementFolder();
+            SyncTextureReplacementToPatching();
         }
         catch (Exception exception)
         {
@@ -634,6 +678,113 @@ public sealed class LauncherMainForm : Form
                 "Block N Load Community Fixes V2",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
+        }
+    }
+
+    private void PopulateTextureReplacementFolder()
+    {
+        var folder = launcherConfig?.TextureReplacementFolder ?? "";
+        if (textureReplacementFolderBox.Text != folder)
+            textureReplacementFolderBox.Text = folder;
+    }
+
+    private void SaveTextureReplacementFolder()
+    {
+        try
+        {
+            if (launcherConfig is null || !installInfo.IsDetected) return;
+            launcherConfig.TextureReplacementFolder = textureReplacementFolderBox.Text.Trim();
+            launcherConfigService.SaveConfig(installInfo, launcherConfig);
+            SyncTextureReplacementToPatching();
+        }
+        catch (Exception ex)
+        {
+            logger.Exception(ex, "SaveTextureReplacementFolder failed");
+        }
+    }
+
+    private void BrowseTextureReplacementFolder()
+    {
+        // ShowDialog() can hang indefinitely on systems with disconnected
+        // network drives, unresponsive mapped shares, or buggy shell
+        // extensions.  To prevent the UI from freezing we run ShowDialog()
+        // on a dedicated background STA thread with a 30-second timeout.
+        // If the COM dialog never initialises the user gets an error instead
+        // of a dead application window.
+        string? selectedPath = null;
+
+        try
+        {
+            using var dialog = new FolderBrowserDialog
+            {
+                Description = "Select folder containing replacement textures (.png / .jpg)",
+                UseDescriptionForTitle = true,
+                ShowNewFolderButton = true,
+                AutoUpgradeEnabled = true
+            };
+
+            Enabled = false;
+            try
+            {
+                var ready = new TaskCompletionSource<DialogResult>();
+                var worker = new Thread(() =>
+                {
+                    try { ready.TrySetResult(dialog.ShowDialog()); }
+                    catch (Exception ex) { ready.TrySetException(ex); }
+                })
+                {
+                    IsBackground = true
+                };
+                worker.SetApartmentState(ApartmentState.STA);
+                worker.Start();
+
+                const int timeoutMs = 30_000;
+                if (!ready.Task.Wait(timeoutMs))
+                {
+                    logger.Warning("BrowseTextureReplacementFolder: ShowDialog timed out after 30 s");
+                    MessageBox.Show(
+                        this,
+                        "The folder picker could not open.  This is usually caused by a disconnected network drive or a buggy shell extension on your system.",
+                        "Browse Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (ready.Task.Result == DialogResult.OK)
+                    selectedPath = dialog.SelectedPath;
+            }
+            finally
+            {
+                Enabled = true;
+                BringToFront();
+                Activate();
+            }
+
+            if (selectedPath is not null)
+                textureReplacementFolderBox.Text = selectedPath;
+        }
+        catch (Exception ex)
+        {
+            logger.Exception(ex, "BrowseTextureReplacementFolder failed");
+            MessageBox.Show($"Browse failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void SyncTextureReplacementToPatching()
+    {
+        var folder = launcherConfig?.TextureReplacementFolder ?? "";
+        var configFile = Path.Combine(paths.PatchingDir, "textures-path.txt");
+        try
+        {
+            if (string.IsNullOrWhiteSpace(folder))
+                File.Delete(configFile);
+            else
+                File.WriteAllText(configFile, folder.Trim(), System.Text.Encoding.UTF8);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning($"Could not write texture replacement path: {ex.Message}");
         }
     }
 

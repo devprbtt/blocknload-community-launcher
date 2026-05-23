@@ -1404,6 +1404,7 @@ namespace BnlCommunityFixes
                 $(Format-BoolLiteral $CrosshairHideEntirely),
                 "$CrosshairForceShapeLiteral");
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         public static bool ApplyHardHide(GuiCrosshairController controller)
@@ -1733,6 +1734,7 @@ namespace BnlCommunityFixes
             RuntimeFeatureState.SetSelfHealX($(Format-FloatLiteral $SelfHealX));
             RuntimeFeatureState.SetSelfHealY($(Format-FloatLiteral $SelfHealY));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         public static void AttachHealing(GuiDamageNumberDetector detector)
@@ -2273,6 +2275,7 @@ namespace BnlCommunityFixes
                 new Color($(Format-FloatLiteral $RuntimeFriendlyTeamColor.R), $(Format-FloatLiteral $RuntimeFriendlyTeamColor.G), $(Format-FloatLiteral $RuntimeFriendlyTeamColor.B), 1f),
                 new Color($(Format-FloatLiteral $RuntimeEnemyTeamColor.R), $(Format-FloatLiteral $RuntimeEnemyTeamColor.G), $(Format-FloatLiteral $RuntimeEnemyTeamColor.B), 1f));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         public static Color GetGuiFriendlyColor() { return RuntimeFeatureState.GetGuiFriendlyColor(); }
@@ -2295,6 +2298,7 @@ namespace BnlCommunityFixes
                 $(Format-BoolLiteral $BaseObjectiveBeamConfig.enabled),
                 $(Format-BoolLiteral ([bool]$BaseObjectiveBeamConfig.hide_beam)));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         public static bool ShouldHide()
@@ -2315,6 +2319,7 @@ namespace BnlCommunityFixes
                 $(Format-BoolLiteral ([bool]$HideImpactVfxConfig.hide_lava_water_plane)),
                 $(Format-BoolLiteral ([bool]$HideImpactVfxConfig.hide_falling_blocks)));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
             UnityEngine.Debug.Log("[BNL HideVfx] initialized — hideImpact=" + RuntimeFeatureState.HideImpactVfx + " hidePlane=" + RuntimeFeatureState.HideLavaWaterPlane + " hideFallingBlocks=" + RuntimeFeatureState.HideFallingBlocks);
             initialized = true;
         }
@@ -2362,6 +2367,7 @@ namespace BnlCommunityFixes
                 $(Format-BoolLiteral $UnitGuiScaleConfig.enabled),
                 $(Format-FloatLiteral ([double]$UnitGuiScaleConfig.scale_multiplier)));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
             UnityEngine.Debug.Log("[BNL UnitGuiScale] initialized — scale=" + RuntimeFeatureState.UnitGuiScaleMultiplier);
         }
 
@@ -2381,6 +2387,7 @@ namespace BnlCommunityFixes
                 $(Format-BoolLiteral $WsiConfig.scale_enabled),
                 $(Format-FloatLiteral ([double]$WsiConfig.scale_multiplier)));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
             UnityEngine.Debug.Log("[BNL WsiScale] initialized — scale=" + RuntimeFeatureState.WsiScaleMultiplier);
         }
 
@@ -2403,6 +2410,7 @@ namespace BnlCommunityFixes
                 $(Format-BoolLiteral $MapRenderConfig.enabled),
                 "$MapRenderPresetLiteral");
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
             UnityEngine.Debug.Log("[BNL MapRender] initialized — preset=" + RuntimeFeatureState.MapRenderOverride);
         }
 
@@ -2430,6 +2438,7 @@ namespace BnlCommunityFixes
         {
             RuntimeFeatureState.ConfigureDpsOverlay(true, false);
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
             SubscribePhaseUpdate();
             UnityEngine.Debug.Log("[BNL DpsOverlay] initialized");
         }
@@ -2525,6 +2534,7 @@ namespace BnlCommunityFixes
         {
             RuntimeFeatureState.ConfigureAimHealthbar($(Format-BoolLiteral $AimHealthbarConfig.enabled), $(Format-BoolLiteral $AimHealthbarConfig.enabled));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         public static bool ShouldShow(Unit healthbarUnit)
@@ -2550,6 +2560,7 @@ namespace BnlCommunityFixes
         {
             RuntimeFeatureState.ConfigureDeathCamHealthbar($(Format-BoolLiteral $DeathCamHealthbarConfig.enabled), $(Format-BoolLiteral $DeathCamHealthbarConfig.enabled));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         public static bool IsDeathCamFriendly(Unit healthbarUnit)
@@ -2669,6 +2680,7 @@ namespace BnlCommunityFixes
                 $(Format-FloatLiteral $HealAlertMinimumHeal),
                 $(Format-BoolLiteral $HealAlertShowDir));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         public static void AttachHealBridge(GuiHitAlertMaker maker)
@@ -2781,6 +2793,7 @@ namespace BnlCommunityFixes
         {
             RuntimeFeatureState.ConfigureLocalBuildPreview($(Format-BoolLiteral $LocalBuildPreviewConfig.enabled), true, PredictionTimeoutSeconds);
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         private static bool Enabled
@@ -3147,6 +3160,7 @@ namespace BnlCommunityFixes
         {
             RuntimeFeatureState.ConfigureAutoCasualQueue(true, $(Format-BoolLiteral $AutoCasualQueueConfig.enabled));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         public static void EnsureInstance()
@@ -3226,6 +3240,7 @@ namespace BnlCommunityFixes
         {
             RuntimeFeatureState.ConfigureTeammateHp(true, $(Format-BoolLiteral $TeammateHpEnabled));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         public static void UpdateTeammateHpText(GuiTeammate gui)
@@ -3273,6 +3288,7 @@ namespace BnlCommunityFixes
             configured = true;
             RuntimeFeatureState.ConfigureAutoCrouchDisable(true, $(Format-BoolLiteral $AutoCrouchEnabled));
             RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
         }
 
         // Returns true when auto-crouch should be suppressed (i.e. "ceiling check passes").
@@ -5550,6 +5566,42 @@ if ($UghType) {
             }
         }
         Write-Output "[NullGuard] Patched UnitGhostHandler.Update"
+    }
+}
+
+# Patch GuiSpriteResources.GetShopImage to call TextureReplacementBootstrapper.GetShopImageOverride first
+$GuiSpriteResourcesType = $Module.Types | Where-Object Name -eq "GuiSpriteResources" | Select-Object -First 1
+$HelperTextureType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.TextureReplacementBootstrapper" | Select-Object -First 1
+if ($GuiSpriteResourcesType -and $HelperTextureType) {
+    $GetShopImageMethod = $GuiSpriteResourcesType.Methods | Where-Object Name -eq "GetShopImage" | Select-Object -First 1
+    $GetShopImageOverrideMethod = $HelperTextureType.Methods | Where-Object Name -eq "GetShopImageOverride" | Select-Object -First 1
+    if ($GetShopImageMethod -and $GetShopImageOverrideMethod) {
+        $ImportedGetShopImageOverride = $Module.ImportReference($GetShopImageOverrideMethod)
+        $SpriteType = $GetShopImageMethod.ReturnType
+        $Il = $GetShopImageMethod.Body.GetILProcessor()
+        $FirstInstr = $GetShopImageMethod.Body.Instructions | Select-Object -First 1
+        # Add local variable to hold override result
+        $LocalVar = [Mono.Cecil.Cil.VariableDefinition]::new($SpriteType)
+        $GetShopImageMethod.Body.Variables.Add($LocalVar) | Out-Null
+        $GetShopImageMethod.Body.InitLocals = $true
+        # Build prefix: ldarg.0 -> call override -> stloc -> ldloc -> brfalse(skip) -> ldloc -> ret
+        $NopSkip = $Il.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+        $i1 = $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0)
+        $i2 = $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedGetShopImageOverride)
+        $i3 = $Il.Create([Mono.Cecil.Cil.OpCodes]::Stloc, $LocalVar)
+        $i4 = $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldloc, $LocalVar)
+        $i5 = $Il.Create([Mono.Cecil.Cil.OpCodes]::Brfalse_S, $NopSkip)
+        $i6 = $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldloc, $LocalVar)
+        $i7 = $Il.Create([Mono.Cecil.Cil.OpCodes]::Ret)
+        $Il.InsertBefore($FirstInstr, $i1)
+        $Il.InsertBefore($FirstInstr, $i2)
+        $Il.InsertBefore($FirstInstr, $i3)
+        $Il.InsertBefore($FirstInstr, $i4)
+        $Il.InsertBefore($FirstInstr, $i5)
+        $Il.InsertBefore($FirstInstr, $i6)
+        $Il.InsertBefore($FirstInstr, $i7)
+        $Il.InsertBefore($FirstInstr, $NopSkip)
+        Write-Output "[ShopImage] Patched GuiSpriteResources.GetShopImage"
     }
 }
 

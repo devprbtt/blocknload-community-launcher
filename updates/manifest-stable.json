@@ -1,26 +1,26 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.4.7",
+  "version": "2.4.8",
   "minimum_supported_version": "2.2.0",
-  "published_at": "2026-05-23T14:15:47.9801974+00:00",
-  "notes": "## Changes\\n\\nBuild preview modifications:\\n- Fix Assembly-CSharp build failure caused by game update (Block.BlockId renamed to Block.Id)\\n\\nReplay shortcuts:\\n- Disable replay shortcuts during regular matches",
+  "published_at": "2026-05-23T16:00:00.0000000+00:00",
+  "notes": "## Changes\\n\\nTexture replacement feature:\\n- Add launcher UI to configure a texture replacement folder\\n- Replace 3D mesh textures and UI perk/shop sprites by filename\\n- Patch GuiSpriteResources.GetShopImage to intercept perk icon loading at the source",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.7/BnlCommunityFixes.exe",
-      "sha256": "0432C7C831344A3984E4019518DE284E966A2326259B21834F18E1232624F746",
-      "size": 163436743
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.8/BnlCommunityFixes.exe",
+      "sha256": "8556098E4CC49879841F16510C24390FCB443DC7A01FE59D8BE15C2C0C3EE954",
+      "size": 155064800
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.7/BnlUpdater.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.8/BnlUpdater.exe",
       "sha256": "0BBBB06C9AD4B273A76CF2EAB2571E5C778D6F69C53187B618CE0F2B6368F032",
       "size": 67625714
     },
     "replay_analyzer_exe": {
       "file_name": "BnlCommunityFixes.ReplayAnalyzer.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.7/BnlCommunityFixes.ReplayAnalyzer.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.8/BnlCommunityFixes.ReplayAnalyzer.exe",
       "sha256": "7960B1983097AC29261B47F7893FA6D82DE0DC860A8AC78869ECD9ADE93597C7",
       "size": 68191477
     }

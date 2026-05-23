@@ -21,4 +21,7 @@ public sealed class LauncherConfig
 
     [JsonPropertyName("patch_configurations")]
     public Dictionary<string, PatchDefinition> PatchConfigurations { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    [JsonPropertyName("texture_replacement_folder")]
+    public string TextureReplacementFolder { get; set; } = "";
 }
