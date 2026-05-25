@@ -29,6 +29,7 @@ $HideImpactVfxConfigPath = Join-Path $PSScriptRoot "experimental-hide-impact-vfx
 $UnitGuiScaleConfigPath = Join-Path $PSScriptRoot "unit-gui-scale-config.json"
 $WsiConfigPath = Join-Path $PSScriptRoot "wsi-config.json"
 $MapRenderConfigPath = Join-Path $PSScriptRoot "experimental-map-render-config.json"
+$AudioReplacerConfigPath = Join-Path $PSScriptRoot "experimental-audio-replacer-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
 $SavedCopyPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.font-configured.dll"
 $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
@@ -38,6 +39,7 @@ $TrackingHelperSourcePath = Join-Path $PSScriptRoot "TrackingProjectileRuntime.c
 $RuntimeMenuSourcePath = Join-Path $PSScriptRoot "RuntimeMenu.cs"
 $MatchReplayRecorderSourcePath = Join-Path $PSScriptRoot "MatchReplayRecorderRuntime.cs"
 $ReplayPlayerSourcePath = Join-Path $PSScriptRoot "ReplayPlayerRuntime.cs"
+$AudioReplacerSourcePath = Join-Path $PSScriptRoot "AudioReplacerRuntime.cs"
 $ManagedDir = Join-Path $GameRoot "Win64\BlockNLoad_Data\Managed"
 $BackupPath = Join-Path $ManagedDir "Assembly-CSharp-backup.dll"
 $CecilPath = Join-Path $PSScriptRoot "Mono.Cecil.dll"
@@ -229,6 +231,55 @@ $MapRenderConfig = Get-JsonConfig -Path $MapRenderConfigPath -Default @{
 }
 [string]$MapRenderPreset = if (-not [string]::IsNullOrWhiteSpace([string]$MapRenderConfig.preset)) { [string]$MapRenderConfig.preset } else { "Default" }
 $MapRenderPresetLiteral = ($MapRenderPreset -replace '\\', '\\\\') -replace '"', '\"'
+
+$AudioReplacerConfig = Get-JsonConfig -Path $AudioReplacerConfigPath -Default @{
+    enabled = $false
+    log_all_events = $true
+    replacements = @{}
+    custom_audio = @{}
+    ignored_events = @()
+}
+[bool]$AudioReplacerEnabled = if ($null -ne $AudioReplacerConfig.enabled) { [bool]$AudioReplacerConfig.enabled } else { $false }
+[bool]$AudioReplacerLogAll = if ($null -ne $AudioReplacerConfig.log_all_events) { [bool]$AudioReplacerConfig.log_all_events } else { $true }
+[float]$AudioReplacerVolume = if ($null -ne $AudioReplacerConfig.volume) { [float][double]$AudioReplacerConfig.volume } else { 1.0 }
+if ($AudioReplacerVolume -lt 0.0) { $AudioReplacerVolume = 0.0 }
+if ($AudioReplacerVolume -gt 2.0) { $AudioReplacerVolume = 2.0 }
+$AudioReplacerReplacements = @{}
+if ($AudioReplacerConfig.replacements -is [System.Collections.IDictionary]) {
+    foreach ($key in $AudioReplacerConfig.replacements.Keys) {
+        $AudioReplacerReplacements[[string]$key] = [string]$AudioReplacerConfig.replacements[$key]
+    }
+} elseif ($AudioReplacerConfig.replacements -is [System.Management.Automation.PSCustomObject]) {
+    $AudioReplacerConfig.replacements.PSObject.Properties | ForEach-Object {
+        $AudioReplacerReplacements[$_.Name] = [string]$_.Value
+    }
+}
+$AudioReplacerCustomAudio = @{}
+if ($AudioReplacerConfig.custom_audio -is [System.Collections.IDictionary]) {
+    foreach ($key in $AudioReplacerConfig.custom_audio.Keys) {
+        $AudioReplacerCustomAudio[[string]$key] = [string]$AudioReplacerConfig.custom_audio[$key]
+    }
+} elseif ($AudioReplacerConfig.custom_audio -is [System.Management.Automation.PSCustomObject]) {
+    $AudioReplacerConfig.custom_audio.PSObject.Properties | ForEach-Object {
+        $AudioReplacerCustomAudio[$_.Name] = [string]$_.Value
+    }
+}
+$AudioReplacerIgnoredEvents = @{}
+if ($AudioReplacerConfig.ignored_events -is [array]) {
+    foreach ($eventName in $AudioReplacerConfig.ignored_events) {
+        $AudioReplacerIgnoredEvents[[string]$eventName] = $true
+    }
+}
+$AudioReplacerVolumes = @{}
+if ($AudioReplacerConfig.volumes -is [System.Collections.IDictionary]) {
+    foreach ($key in $AudioReplacerConfig.volumes.Keys) {
+        $AudioReplacerVolumes[[string]$key] = [float][double]$AudioReplacerConfig.volumes[$key]
+    }
+} elseif ($AudioReplacerConfig.volumes -is [System.Management.Automation.PSCustomObject]) {
+    $AudioReplacerConfig.volumes.PSObject.Properties | ForEach-Object {
+        $AudioReplacerVolumes[$_.Name] = [float][double]$_.Value
+    }
+}
 
 $AnyEnabled = @(
     [bool]$Config.enabled,
@@ -451,6 +502,7 @@ if ($MatchReplayRecorderMaxPayloadBytes -gt 1048576) { $MatchReplayRecorderMaxPa
 
 $HelperSource = @"
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -2128,6 +2180,11 @@ if (Test-Path $ReplayPlayerSourcePath) {
     $ReplayPlayerSource = Get-Content -Raw -LiteralPath $ReplayPlayerSourcePath
     $ReplayPlayerSource = [regex]::Replace($ReplayPlayerSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     $HelperSource += "`r`n" + $ReplayPlayerSource
+}
+if (Test-Path $AudioReplacerSourcePath) {
+    $AudioReplacerSource = Get-Content -Raw -LiteralPath $AudioReplacerSourcePath
+    $AudioReplacerSource = [regex]::Replace($AudioReplacerSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $HelperSource += "`r`n" + $AudioReplacerSource
 }
 
 $HelperSource += @"
@@ -5605,6 +5662,194 @@ if ($GuiSpriteResourcesType -and $HelperTextureType) {
     }
 }
 
+# -----------------------------------------------------------------------
+# Audio Replacer — hook AkSoundEngine.PostEvent for logging
+# -----------------------------------------------------------------------
+$AudioReplacerRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.AudioReplacerRuntime" | Select-Object -First 1
+if ($AudioReplacerRuntimeType) {
+    $LogAndResolvePostEventMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "LogAndResolvePostEvent" | Select-Object -First 1
+    $LogAndResolvePostEventWithFlagsMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "LogAndResolvePostEventWithFlags" | Select-Object -First 1
+    $ConfigureAudioReplacerMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "Configure" | Select-Object -First 1
+    $RegisterReplacementMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "RegisterReplacement" | Select-Object -First 1
+    $LogRegisteredReplacementsMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "LogRegisteredReplacements" | Select-Object -First 1
+    $RegisterCustomReplacementMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "RegisterCustomReplacement" | Select-Object -First 1
+    $RegisterEventVolumeMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "RegisterEventVolume" | Select-Object -First 1
+
+    if ($LogAndResolvePostEventMethod -and $LogAndResolvePostEventWithFlagsMethod -and $ConfigureAudioReplacerMethod -and $RegisterReplacementMethod -and $LogRegisteredReplacementsMethod) {
+        $ImportedLogAndResolvePostEvent = $Module.ImportReference($LogAndResolvePostEventMethod)
+        $ImportedLogAndResolvePostEventWithFlags = $Module.ImportReference($LogAndResolvePostEventWithFlagsMethod)
+        $ImportedConfigureAudioReplacer = $Module.ImportReference($ConfigureAudioReplacerMethod)
+        $ImportedRegisterReplacement = $Module.ImportReference($RegisterReplacementMethod)
+        $ImportedLogRegisteredReplacements = $Module.ImportReference($LogRegisteredReplacementsMethod)
+        $ImportedRegisterCustomReplacement = if ($RegisterCustomReplacementMethod) { $Module.ImportReference($RegisterCustomReplacementMethod) } else { $null }
+        $ImportedRegisterEventVolume = if ($RegisterEventVolumeMethod) { $Module.ImportReference($RegisterEventVolumeMethod) } else { $null }
+
+        # Import SetVolume from AudioReplacerManager
+        $AudioReplacerManagerType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.AudioReplacerManager" | Select-Object -First 1
+        $ImportedSetVolume = $null
+        if ($AudioReplacerManagerType) {
+            $SetVolumeMethod = $AudioReplacerManagerType.Methods | Where-Object Name -eq "SetVolume" | Select-Object -First 1
+            if ($SetVolumeMethod) {
+                $ImportedSetVolume = $Module.ImportReference($SetVolumeMethod)
+            }
+        }
+
+        # Patch all AkSoundEngine.PostEvent(string, ...) overloads to log AND resolve replacements
+        $AkSoundEngineType = $Module.Types | Where-Object Name -eq "AkSoundEngine" | Select-Object -First 1
+        if ($AkSoundEngineType) {
+            $PatchedPostEventCount = 0
+            foreach ($PostEventMethod in ($AkSoundEngineType.Methods | Where-Object { $_.Name -eq "PostEvent" -and $_.HasBody -and $_.Parameters.Count -ge 2 })) {
+                $FirstParam = $PostEventMethod.Parameters[0]
+                if ($FirstParam.ParameterType.FullName -ne "System.String") {
+                    continue
+                }
+
+                $Il = $PostEventMethod.Body.GetILProcessor()
+                $FirstInstr = $PostEventMethod.Body.Instructions | Select-Object -First 1
+                $NopContinue = $Il.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+
+                if ($PostEventMethod.Parameters.Count -ge 3) {
+                    $Instructions = @(
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldarga_S, $PostEventMethod.Parameters[0]),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_2),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedLogAndResolvePostEventWithFlags),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $NopContinue),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Ret),
+                        $NopContinue
+                    )
+                } else {
+                    $Instructions = @(
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldarga_S, $PostEventMethod.Parameters[0]),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedLogAndResolvePostEvent),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $NopContinue),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0),
+                        $Il.Create([Mono.Cecil.Cil.OpCodes]::Ret),
+                        $NopContinue
+                    )
+                }
+
+                foreach ($Instruction in $Instructions) {
+                    $Il.InsertBefore($FirstInstr, $Instruction)
+                }
+                $PatchedPostEventCount++
+            }
+            Write-Output "[AudioReplacer] Patched $PatchedPostEventCount AkSoundEngine.PostEvent(string, ...) overloads with replacement support."
+        } else {
+            Write-Output "[AudioReplacer] WARNING: AkSoundEngine type not found in assembly."
+        }
+
+        # Patch uint-based PostEvent overloads to check suppression flag
+        $ShouldSuppressUintMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "ShouldSuppressUint" | Select-Object -First 1
+        if ($ShouldSuppressUintMethod) {
+            $ImportedShouldSuppressUint = $Module.ImportReference($ShouldSuppressUintMethod)
+            $UintPatchedCount = 0
+            foreach ($PostEventMethod in ($AkSoundEngineType.Methods | Where-Object { $_.Name -eq "PostEvent" -and $_.HasBody -and $_.Parameters.Count -ge 2 })) {
+                $FirstParam = $PostEventMethod.Parameters[0]
+                if ($FirstParam.ParameterType.FullName -ne "System.UInt32") {
+                    continue
+                }
+
+                $Il = $PostEventMethod.Body.GetILProcessor()
+                $FirstInstr = $PostEventMethod.Body.Instructions | Select-Object -First 1
+                $NopContinue = $Il.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+
+                $Instructions = @(
+                    $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldSuppressUint),
+                    $Il.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $NopContinue),
+                    $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0),
+                    $Il.Create([Mono.Cecil.Cil.OpCodes]::Ret),
+                    $NopContinue
+                )
+                foreach ($Instruction in $Instructions) {
+                    $Il.InsertBefore($FirstInstr, $Instruction)
+                }
+                $UintPatchedCount++
+            }
+            Write-Output "[AudioReplacer] Patched $UintPatchedCount AkSoundEngine.PostEvent(uint, ...) overloads with suppression."
+        }
+
+        # Inject Configure, RegisterReplacement calls, and LogRegisteredReplacements at MainMenu.Start
+        $MainMenuType = $Module.Types | Where-Object Name -eq "MainMenu" | Select-Object -First 1
+        if ($MainMenuType) {
+            $MainMenuStartMethod = $MainMenuType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+            if ($MainMenuStartMethod -and $MainMenuStartMethod.HasBody) {
+                $MainMenuStartIl = $MainMenuStartMethod.Body.GetILProcessor()
+                $MainMenuStartFirst = $MainMenuStartMethod.Body.Instructions | Select-Object -First 1
+
+                # Configure(enableLogging)
+                $EnableLoggingLiteral = if ($AudioReplacerLogAll) { 1 } else { 0 }
+                $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                    $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $EnableLoggingLiteral))
+                $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                    $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedConfigureAudioReplacer))
+
+                # SetVolume(volume)
+                if ($ImportedSetVolume) {
+                    $VolumeLiteral = [float]$AudioReplacerVolume
+                    $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $VolumeLiteral))
+                    $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedSetVolume))
+                }
+
+                # RegisterReplacement calls for each Wwise swap config entry
+                $ReplacementCount = 0
+                foreach ($kvp in $AudioReplacerReplacements.GetEnumerator()) {
+                    $OrigLiteral = ($kvp.Key -replace '\\', '\\\\') -replace '"', '\"'
+                    $ReplLiteral = ($kvp.Value -replace '\\', '\\\\') -replace '"', '\"'
+                    $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $OrigLiteral))
+                    $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $ReplLiteral))
+                    $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                        $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedRegisterReplacement))
+                    $ReplacementCount++
+                }
+
+                # RegisterCustomReplacement calls for custom audio file entries
+                if ($ImportedRegisterCustomReplacement) {
+                    foreach ($kvp in $AudioReplacerCustomAudio.GetEnumerator()) {
+                        $OrigLiteral = ($kvp.Key -replace '\\', '\\\\') -replace '"', '\"'
+                        $FileLiteral = ($kvp.Value -replace '\\', '\\\\') -replace '"', '\"'
+                        $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                            $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $OrigLiteral))
+                        $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                            $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $FileLiteral))
+                        $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                            $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedRegisterCustomReplacement))
+                        $ReplacementCount++
+                    }
+                }
+
+                # LogRegisteredReplacements()
+                $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                    $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedLogRegisteredReplacements))
+
+                # RegisterEventVolume calls for per-event volumes
+                if ($ImportedRegisterEventVolume) {
+                    foreach ($kvp in $AudioReplacerVolumes.GetEnumerator()) {
+                        $EventLiteral = ($kvp.Key -replace '\\', '\\\\') -replace '"', '\"'
+                        $VolValue = [float]([float]$kvp.Value / 100.0)
+                        $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                            $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $EventLiteral))
+                        $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                            $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $VolValue))
+                        $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                            $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedRegisterEventVolume))
+                    }
+                }
+
+                Write-Output "[AudioReplacer] Injected Configure($($AudioReplacerLogAll)) + $ReplacementCount replacement(s) at MainMenu.Start."
+            }
+        }
+    } else {
+        Write-Output "[AudioReplacer] WARNING: AudioReplacerRuntime methods not found in helper assembly."
+    }
+}
+
 $Assembly.Write($OutputPath)
 $Assembly.Dispose()
 $HelperAssembly.Dispose()
@@ -5636,5 +5881,6 @@ if ($HideImpactVfxConfig.enabled) { $Features.Add("hide-impact-vfx") | Out-Null 
 if ($UnitGuiScaleConfig.enabled) { $Features.Add("unit-gui-scale") | Out-Null }
 if ($WsiConfig.scale_enabled) { $Features.Add("wsi-scale") | Out-Null }
 if ($MapRenderConfig.enabled) { $Features.Add("map-render-override") | Out-Null }
+$Features.Add("audio-replacer") | Out-Null
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash
 Write-Output "Experimental all-in-one DLL built. SHA1=$Hash features=$([string]::Join(',', $Features))"

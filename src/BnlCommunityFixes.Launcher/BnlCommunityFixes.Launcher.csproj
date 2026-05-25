@@ -36,6 +36,8 @@
     <EmbeddedResource Include="..\..\assets\patching\experimental-auto-crouch-config.json" LogicalName="Patching.experimental-auto-crouch-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\unit-gui-scale-config.json" LogicalName="Patching.unit-gui-scale-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-map-render-config.json" LogicalName="Patching.experimental-map-render-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\AudioReplacerRuntime.cs" LogicalName="Patching.AudioReplacerRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-audio-replacer-config.json" LogicalName="Patching.experimental-audio-replacer-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\Mono.Cecil.dll" LogicalName="Patching.Mono.Cecil.dll" />
   </ItemGroup>
 

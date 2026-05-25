@@ -23,6 +23,7 @@ public sealed class LauncherMainForm : Form
     private readonly Button featureSettingsButton;
     private readonly Button importExportButton;
     private readonly Button moreOptionsButton;
+    private readonly Button audioReplacerButton;
     private readonly Button openReplayFolderButton;
     private readonly Button analyzeReplayButton;
     private readonly CheckBox recordReplaysCheckBox;
@@ -171,6 +172,14 @@ public sealed class LauncherMainForm : Form
         };
         moreOptionsButton.Click += (_, _) => OpenMoreOptions();
 
+        audioReplacerButton = new Button
+        {
+            Text = "Audio Replacer",
+            Location = new System.Drawing.Point(392, 212),
+            Size = new System.Drawing.Size(120, 28)
+        };
+        audioReplacerButton.Click += (_, _) => OpenAudioReplacer();
+
         var replayLabel = new Label
         {
             Text = "Match Replays",
@@ -282,6 +291,7 @@ public sealed class LauncherMainForm : Form
             featureSettingsButton,
             importExportButton,
             moreOptionsButton,
+            audioReplacerButton,
             replayLabel,
             openReplayFolderButton,
             analyzeReplayButton,
@@ -498,6 +508,12 @@ public sealed class LauncherMainForm : Form
             ReloadConfig,
             ManageServers,
             VerifyGameFiles);
+        form.ShowDialog(this);
+    }
+
+    private void OpenAudioReplacer()
+    {
+        using var form = new AudioReplacerForm(paths, installInfo);
         form.ShowDialog(this);
     }
 
