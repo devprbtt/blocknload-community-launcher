@@ -3,19 +3,19 @@
   "channel": "stable",
   "version": "2.4.10",
   "minimum_supported_version": "2.4.10",
-  "published_at": "2026-05-27T22:57:06.7714179+00:00",
-  "notes": "## Bridge Release\n\nThis compatibility bridge exists so launchers older than `2.5.0` can still auto-update.\n\n- Includes `BnlCommunityFixes.exe`\n- Includes `BnlUpdater.exe` for older launchers that still require `updater_exe` in the manifest\n- Contains the new internal update-helper flow and embedded replay analyzer from the current launcher codebase\n\nAfter users move onto this bridge release, they can later move forward to the single-exe release line.\r\n",
+  "published_at": "2026-05-27T23:28:39.8958254+00:00",
+  "notes": "## Bridge Release\n\nThis compatibility bridge exists so launchers older than `2.5.0` can still auto-update.\n\n- Includes `BnlCommunityFixes.exe`\n- Includes `BnlUpdater.exe` for older launchers that still require `updater_exe` in the manifest\n- Contains the new internal update-helper flow and embedded replay analyzer from the current launcher codebase\n- Fixes required-update dialog bypass by blocking manual close on forced updates\n- Fixes bootstrap convergence so renamed launcher downloads like `BnlCommunityFixes (1).exe` still install and relaunch through the canonical `BnlCommunityFixes.exe`\n\nAfter users move onto this bridge release, they can later move forward to the single-exe release line.",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.10/BnlCommunityFixes.exe",
-      "sha256": "3FCCAD9E46B7E2786859AA0A643CB1259AED5BAC4D8BCC9439907809EED7A35F",
+      "sha256": "63558F5238866754AB9CD8F02D6B03504564FEB7730FBF56C488398BCF980498",
       "size": 164242622
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.10/BnlUpdater.exe",
-      "sha256": "78D5986CD0EE2D3ED74AC82D0ABDB23AF93E67BC250ED62D4ACCEDCD5124004F",
+      "sha256": "211AC716EFB8332697BA977459062289D5659FC6F888BF115429AB2C1FB7B40C",
       "size": 67633401
     }
   }

@@ -6,8 +6,12 @@ namespace BnlCommunityFixes.Launcher;
 
 public sealed class PatchNotesForm : Form
 {
+    private readonly bool forcedUpdate;
+
     public PatchNotesForm(UpdateManifest manifest, bool forcedUpdate)
     {
+        this.forcedUpdate = forcedUpdate;
+
         var title = forcedUpdate
             ? $"Required update — v{manifest.Version}"
             : $"Update available — v{manifest.Version}";
@@ -17,6 +21,7 @@ public sealed class PatchNotesForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
+        ControlBox = !forcedUpdate;
         ClientSize = new Size(560, 420);
 
         using var iconStream = typeof(PatchNotesForm).Assembly.GetManifestResourceStream("BnlCommunityFixes.Launcher.launcher-icon.ico");
@@ -91,6 +96,19 @@ public sealed class PatchNotesForm : Form
         CancelButton = forcedUpdate ? null : skipButton;
 
         Controls.AddRange([titleLabel, subLabel, notesBox, installButton, skipButton]);
+    }
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        if (forcedUpdate &&
+            DialogResult != DialogResult.Yes &&
+            e.CloseReason is CloseReason.UserClosing or CloseReason.None)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        base.OnFormClosing(e);
     }
 
     protected override void OnShown(EventArgs e)

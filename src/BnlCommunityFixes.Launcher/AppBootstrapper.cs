@@ -22,8 +22,10 @@ public sealed class AppBootstrapper
             ?? throw new InvalidOperationException("Could not resolve current process path.");
 
         var normalizedCurrent = Path.GetFullPath(currentExe);
-        var targetFileName = Path.GetFileName(normalizedCurrent);
-        var normalizedTarget = Path.GetFullPath(Path.Combine(paths.AppDir, targetFileName));
+        // Always converge on the canonical installed launcher path so renamed
+        // download copies like "BnlCommunityFixes (1).exe" do not create a
+        // parallel stale install inside the app directory.
+        var normalizedTarget = Path.GetFullPath(paths.LauncherPath);
         if (string.Equals(normalizedCurrent, normalizedTarget, StringComparison.OrdinalIgnoreCase))
         {
             TryRefreshBootstrapSources(normalizedCurrent);
