@@ -2,7 +2,7 @@
   "product": "BnlCommunityFixes",
   "channel": "stable",
   "version": "2.4.10",
-  "minimum_supported_version": "2.2.0",
+  "minimum_supported_version": "2.4.10",
   "published_at": "2026-05-27T22:57:06.7714179+00:00",
   "notes": "## Bridge Release\n\nThis compatibility bridge exists so launchers older than `2.5.0` can still auto-update.\n\n- Includes `BnlCommunityFixes.exe`\n- Includes `BnlUpdater.exe` for older launchers that still require `updater_exe` in the manifest\n- Contains the new internal update-helper flow and embedded replay analyzer from the current launcher codebase\n\nAfter users move onto this bridge release, they can later move forward to the single-exe release line.\r\n",
   "assets": {
