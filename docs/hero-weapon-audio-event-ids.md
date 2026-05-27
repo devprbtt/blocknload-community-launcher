@@ -2,7 +2,7 @@
 
 Use these event IDs in the audio replacer for actual weapon sounds. Any trailing marker like `{r}` from the original `.txtp` filename must be removed.
 
-These IDs were extracted from `J:\bnl audio backup\Windows\txtp` and focus on player weapon fire events (`Play_p_*`).
+These IDs focus on player weapon fire events (`Play_p_*`).
 
 ## AstroGirl
 
