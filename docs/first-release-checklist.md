@@ -38,7 +38,6 @@ Run:
 Expected outputs:
 
 - `v2/release/2.0.0/launcher/BnlCommunityFixes.exe`
-- `v2/release/2.0.0/updater/BnlUpdater.exe`
 - `v2/release/2.0.0/manifest-stable.json`
 
 ## Create GitHub Release
@@ -48,7 +47,6 @@ Expected outputs:
 2. Create GitHub release from that tag.
 3. Upload:
    - `BnlCommunityFixes.exe`
-   - `BnlUpdater.exe`
 
 ## Publish Stable Manifest
 
@@ -69,7 +67,6 @@ Then commit and push:
 1. Open the raw manifest URL in browser.
 2. Confirm it references:
    - `https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.0.0/BnlCommunityFixes.exe`
-   - `https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.0.0/BnlUpdater.exe`
 3. Run a local launcher build with the default settings and confirm it can see the manifest.
 
 ## After First Release

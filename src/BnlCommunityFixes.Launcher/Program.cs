@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Windows.Forms;
+using BnlCommunityFixes.ReplayAnalyzer;
 using BnlCommunityFixes.Core.Services;
+using BnlCommunityFixes.Core.Updating;
 
 namespace BnlCommunityFixes.Launcher;
 
@@ -28,18 +30,34 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
-        ApplicationConfiguration.Initialize();
-
         var paths = new AppPaths();
         paths.EnsureDirectories();
-        var runtimeOptions = LauncherRuntimeOptions.Parse(args);
-
         var logger = new Logger(paths.LauncherLogPath);
-        KillOtherLauncherInstances(logger);
-        logger.Info("Launcher starting.");
 
         try
         {
+            if (args.Length > 0 && string.Equals(args[0], "--analyze-replay", StringComparison.OrdinalIgnoreCase))
+            {
+                Environment.Exit(ReplayAnalyzerCli.Run(args.Skip(1).ToArray()));
+                return;
+            }
+
+            if (UpdaterArgumentParser.IsApplyUpdateMode(args))
+            {
+                var updaterArguments = UpdaterArgumentParser.Parse(args);
+                var updaterLogger = new Logger(updaterArguments.LogPath);
+                updaterLogger.Info("Launcher update helper starting.");
+                var installer = new UpdateInstaller(updaterLogger);
+                Environment.Exit(installer.RunAsync(updaterArguments).GetAwaiter().GetResult());
+                return;
+            }
+
+            ApplicationConfiguration.Initialize();
+
+            var runtimeOptions = LauncherRuntimeOptions.Parse(args);
+            KillOtherLauncherInstances(logger);
+            logger.Info("Launcher starting.");
+
             if (runtimeOptions.PortableMode)
             {
                 logger.Info("Portable launcher mode enabled; skipping bootstrap install/redirect.");

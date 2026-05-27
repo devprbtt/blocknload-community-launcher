@@ -5,10 +5,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$LauncherPath,
 
-    [Parameter(Mandatory = $true)]
-    [string]$UpdaterPath,
-
-    [string]$ReplayAnalyzerPath = "",
+    [string]$UpdaterPath = "",
 
     [Parameter(Mandatory = $true)]
     [string]$Repository,
@@ -43,20 +40,17 @@ if (-not [string]::IsNullOrWhiteSpace($NotesFile)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-    $OutputPath = "K:\BNL EXPORTED\v2\release\$Version\manifest-$Channel.json"
+    $OutputPath = Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..")).Path "release\$Version\manifest-$Channel.json"
 }
 
 $LauncherResolved = (Resolve-Path $LauncherPath).Path
-$UpdaterResolved = (Resolve-Path $UpdaterPath).Path
+$UpdaterResolved = $null
 $LauncherFileName = [IO.Path]::GetFileName($LauncherResolved)
-$UpdaterFileName = [IO.Path]::GetFileName($UpdaterResolved)
-$ReplayAnalyzerResolved = $null
-$ReplayAnalyzerFileName = $null
-if (-not [string]::IsNullOrWhiteSpace($ReplayAnalyzerPath)) {
-    $ReplayAnalyzerResolved = (Resolve-Path $ReplayAnalyzerPath).Path
-    $ReplayAnalyzerFileName = [IO.Path]::GetFileName($ReplayAnalyzerResolved)
+$UpdaterFileName = $null
+if (-not [string]::IsNullOrWhiteSpace($UpdaterPath)) {
+    $UpdaterResolved = (Resolve-Path $UpdaterPath).Path
+    $UpdaterFileName = [IO.Path]::GetFileName($UpdaterResolved)
 }
-
 $BaseUrl = "https://github.com/$Repository/releases/download/$ReleaseTag"
 
 $Manifest = [ordered]@{
@@ -73,21 +67,15 @@ $Manifest = [ordered]@{
             sha256 = (Get-FileHash -LiteralPath $LauncherResolved -Algorithm SHA256).Hash
             size = (Get-Item -LiteralPath $LauncherResolved).Length
         }
-        updater_exe = [ordered]@{
-            file_name = $UpdaterFileName
-            url = "$BaseUrl/$UpdaterFileName"
-            sha256 = (Get-FileHash -LiteralPath $UpdaterResolved -Algorithm SHA256).Hash
-            size = (Get-Item -LiteralPath $UpdaterResolved).Length
-        }
     }
 }
 
-if ($ReplayAnalyzerResolved) {
-    $Manifest.assets.replay_analyzer_exe = [ordered]@{
-        file_name = $ReplayAnalyzerFileName
-        url = "$BaseUrl/$ReplayAnalyzerFileName"
-        sha256 = (Get-FileHash -LiteralPath $ReplayAnalyzerResolved -Algorithm SHA256).Hash
-        size = (Get-Item -LiteralPath $ReplayAnalyzerResolved).Length
+if ($UpdaterResolved) {
+    $Manifest.assets.updater_exe = [ordered]@{
+        file_name = $UpdaterFileName
+        url = "$BaseUrl/$UpdaterFileName"
+        sha256 = (Get-FileHash -LiteralPath $UpdaterResolved -Algorithm SHA256).Hash
+        size = (Get-Item -LiteralPath $UpdaterResolved).Length
     }
 }
 

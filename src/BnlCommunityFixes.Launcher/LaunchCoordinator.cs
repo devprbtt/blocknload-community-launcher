@@ -36,6 +36,12 @@ public sealed class LaunchCoordinator
             throw new InvalidOperationException(steamError);
         }
 
+        var steamWarning = steamService.GetReadinessWarning();
+        if (!string.IsNullOrWhiteSpace(steamWarning))
+        {
+            logger.Warning(steamWarning + " Continuing launch anyway.");
+        }
+
         if (string.IsNullOrWhiteSpace(config.SelectedServer))
         {
             throw new InvalidOperationException("No server selected.");

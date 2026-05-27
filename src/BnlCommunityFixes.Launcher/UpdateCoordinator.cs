@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Windows.Forms;
 using BnlCommunityFixes.Core.Models;
 using BnlCommunityFixes.Core.Services;
+using BnlCommunityFixes.Core.Updating;
 
 namespace BnlCommunityFixes.Launcher;
 
@@ -31,7 +32,7 @@ public sealed class UpdateCoordinator
         try
         {
             logger.Info($"Checking manifest at {settings.ManifestUrl}.");
-            var manifest = await manifestService.FetchAsync(settings.ManifestUrl, settings.Product, cancellationToken);
+            var manifest = await manifestService.FetchAsync(settings.ManifestUrl, settings.Product, ["launcher_exe"], cancellationToken);
             var localVersion = LauncherVersion.GetCurrentVersion();
 
             result.RemoteVersion = manifest.Version;
@@ -111,10 +112,7 @@ public sealed class UpdateCoordinator
     private async Task DownloadAssetsAsync(UpdateManifest manifest, ProgressDialog? progressDialog, CancellationToken cancellationToken)
     {
         var launcherAsset = manifest.Assets["launcher_exe"];
-        var updaterAsset = manifest.Assets["updater_exe"];
-        manifest.Assets.TryGetValue("replay_analyzer_exe", out var replayAnalyzerAsset);
-
-        var totalBytes = (launcherAsset.Size ?? 0) + (updaterAsset.Size ?? 0) + (replayAnalyzerAsset?.Size ?? 0);
+        var totalBytes = launcherAsset.Size ?? 0;
         long downloadedBytes = 0;
 
         var progress = new Progress<long>(bytes =>
@@ -129,68 +127,36 @@ public sealed class UpdateCoordinator
 
         logger.Info($"Downloading launcher update from {launcherAsset.Url}.");
         await downloadService.DownloadFileAsync(launcherAsset.Url, paths.LauncherTempPath, progress, cancellationToken);
-
-        logger.Info($"Downloading updater update from {updaterAsset.Url}.");
-        await downloadService.DownloadFileAsync(updaterAsset.Url, paths.UpdaterTempPath, progress, cancellationToken);
-
-        if (replayAnalyzerAsset is not null)
-        {
-            logger.Info($"Downloading replay analyzer from {replayAnalyzerAsset.Url}.");
-            await downloadService.DownloadFileAsync(replayAnalyzerAsset.Url, paths.ReplayAnalyzerTempPath, progress, cancellationToken);
-        }
     }
 
     private async Task VerifyAssetsAsync(UpdateManifest manifest, CancellationToken cancellationToken)
     {
         var launcherAsset = manifest.Assets["launcher_exe"];
-        var updaterAsset = manifest.Assets["updater_exe"];
-        manifest.Assets.TryGetValue("replay_analyzer_exe", out var replayAnalyzerAsset);
 
         if (!await HashService.VerifySha256Async(paths.LauncherTempPath, launcherAsset.Sha256, cancellationToken))
         {
             throw new InvalidOperationException("Downloaded launcher hash verification failed.");
         }
-
-        if (!await HashService.VerifySha256Async(paths.UpdaterTempPath, updaterAsset.Sha256, cancellationToken))
-        {
-            throw new InvalidOperationException("Downloaded updater hash verification failed.");
-        }
-
-        if (replayAnalyzerAsset is not null &&
-            !await HashService.VerifySha256Async(paths.ReplayAnalyzerTempPath, replayAnalyzerAsset.Sha256, cancellationToken))
-        {
-            throw new InvalidOperationException("Downloaded replay analyzer hash verification failed.");
-        }
     }
 
     private void LaunchUpdater(UpdateManifest manifest)
     {
-        logger.Info("Launching updater.");
+        logger.Info("Launching launcher update helper.");
 
-        var updaterPath = File.Exists(paths.UpdaterTempPath) ? paths.UpdaterTempPath : paths.UpdaterPath;
+        File.Copy(paths.LauncherPath, paths.LauncherUpdateHelperPath, true);
         var launcherProcess = Process.GetCurrentProcess();
         var startInfo = new ProcessStartInfo
         {
-            FileName = updaterPath,
+            FileName = paths.LauncherUpdateHelperPath,
             UseShellExecute = false,
-            WorkingDirectory = Path.GetDirectoryName(updaterPath)!
+            WorkingDirectory = Path.GetDirectoryName(paths.LauncherUpdateHelperPath)!
         };
 
+        startInfo.ArgumentList.Add(UpdaterArgumentParser.ApplyUpdateSwitch);
         startInfo.ArgumentList.Add("--target");
         startInfo.ArgumentList.Add(paths.LauncherPath);
         startInfo.ArgumentList.Add("--source");
         startInfo.ArgumentList.Add(paths.LauncherTempPath);
-        startInfo.ArgumentList.Add("--updater-target");
-        startInfo.ArgumentList.Add(paths.UpdaterPath);
-        startInfo.ArgumentList.Add("--updater-source");
-        startInfo.ArgumentList.Add(paths.UpdaterTempPath);
-        if (manifest.Assets.ContainsKey("replay_analyzer_exe"))
-        {
-            startInfo.ArgumentList.Add("--replay-analyzer-target");
-            startInfo.ArgumentList.Add(paths.ReplayAnalyzerPath);
-            startInfo.ArgumentList.Add("--replay-analyzer-source");
-            startInfo.ArgumentList.Add(paths.ReplayAnalyzerTempPath);
-        }
         AddExternalLauncherTarget(startInfo);
         startInfo.ArgumentList.Add("--pid");
         startInfo.ArgumentList.Add(launcherProcess.Id.ToString());

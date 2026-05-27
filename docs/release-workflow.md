@@ -5,10 +5,9 @@
 Produce:
 
 - `BnlCommunityFixes.exe`
-- `BnlUpdater.exe`
 - `manifest-stable.json`
 
-The launcher downloads the manifest, compares versions, downloads the two binaries from GitHub Releases, verifies SHA256, then hands off to the updater.
+The launcher downloads the manifest, compares versions, downloads the launcher binary from GitHub Releases, verifies SHA256, then relaunches itself in an internal update-helper mode to replace the installed exe.
 
 ## Build Local Release Artifacts
 
@@ -26,7 +25,6 @@ Example:
 This writes:
 
 - `release\2.0.0\launcher\BnlCommunityFixes.exe`
-- `release\2.0.0\updater\BnlUpdater.exe`
 - `release\2.0.0\manifest-stable.json`
 
 ## Publish To GitHub Releases
@@ -34,7 +32,6 @@ This writes:
 1. Create a GitHub release tag such as `v2.0.0`
 2. Upload:
    - `BnlCommunityFixes.exe`
-   - `BnlUpdater.exe`
 3. Publish the release
 
 The generated manifest already points to:

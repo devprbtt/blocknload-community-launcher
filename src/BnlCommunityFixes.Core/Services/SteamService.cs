@@ -19,17 +19,22 @@ public sealed class SteamService
             return "Steam is not running. Please start Steam.";
         }
 
+        return null;
+    }
+
+    public string? GetReadinessWarning()
+    {
         try
         {
             var activeUserValue = Registry.GetValue(SteamActiveProcessRegistryPath, "ActiveUser", null);
             if (activeUserValue is null)
             {
-                return "Steam is running but no user is logged in.";
+                return "Steam is running but its logged-in user could not be verified.";
             }
 
             if (Convert.ToInt32(activeUserValue) == 0)
             {
-                return "Steam is running but no user is logged in.";
+                return "Steam is running but no logged-in Steam user was reported.";
             }
         }
         catch

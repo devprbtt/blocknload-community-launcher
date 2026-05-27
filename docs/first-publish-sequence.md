@@ -17,7 +17,6 @@ Run:
 That will:
 
 - publish `BnlCommunityFixes.exe`
-- publish `BnlUpdater.exe`
 - generate `release\2.0.0\manifest-stable.json`
 - include the text from `release-notes\v2.0.0.md`
 
@@ -30,7 +29,6 @@ Create a GitHub release:
 Upload:
 
 - `v2\release\2.0.0\launcher\BnlCommunityFixes.exe`
-- `v2\release\2.0.0\updater\BnlUpdater.exe`
 
 ## 3. Promote Manifest
 

@@ -4,65 +4,76 @@ using System.Text.RegularExpressions;
 using System.Text;
 using System.Text.Json;
 
-if (args.Length == 0 || args[0] is "-h" or "--help")
+namespace BnlCommunityFixes.ReplayAnalyzer;
+
+public static class ReplayAnalyzerCli
 {
-    Console.WriteLine("Usage: BnlCommunityFixes.ReplayAnalyzer <zone-capture.jsonl | replay-directory> [output-directory]");
-    return args.Length == 0 ? 1 : 0;
-}
-
-var inputPath = ResolveInputPath(args[0]);
-if (!File.Exists(inputPath))
-{
-    Console.Error.WriteLine($"Capture file not found: {inputPath}");
-    return 1;
-}
-
-var outputDir = args.Length >= 2
-    ? Path.GetFullPath(args[1])
-    : Path.Combine(Path.GetDirectoryName(inputPath)!, Path.GetFileNameWithoutExtension(inputPath) + "-analysis");
-
-Directory.CreateDirectory(outputDir);
-
-var analyzer = new ReplayAnalyzer(inputPath);
-var result = analyzer.Analyze();
-ReplayReportWriter.Write(outputDir, result);
-
-Console.WriteLine($"Capture: {inputPath}");
-Console.WriteLine($"Packets: {result.Packets.Count}");
-Console.WriteLine($"Duration: {result.DurationSeconds:0.000}s");
-Console.WriteLine($"InitZone: remaining={result.InitZoneRemainingBytes}, payload={result.InitZonePayloadBytes}, full={result.InitZoneFullyCaptured}");
-Console.WriteLine($"Units created: {result.UnitCreates.Count}");
-Console.WriteLine($"Moves: {result.UnitMoves.Count}");
-Console.WriteLine($"Damage events: {result.Damages.Count}");
-Console.WriteLine($"Channel events: {result.ChannelEvents.Count}  dash charges: {result.DashChargeEvents.Count}  pickups: {result.PickupTakenEvents.Count}  recalls: {result.RecallEvents.Count}  portal teleports: {result.PortalTeleports.Count}  kicks: {result.KickPlayerEvents.Count}");
-Console.WriteLine($"Chat messages: {result.ChatMessages.Count}");
-Console.WriteLine($"Local replay events: {result.LocalReplayEvents.Count}");
-Console.WriteLine($"Block updates: {result.BlockUpdates.Sum(static item => item.Count)} across {result.BlockUpdates.Count} packets");
-Console.WriteLine($"Output: {outputDir}");
-return 0;
-
-static string ResolveInputPath(string input)
-{
-    var path = Path.GetFullPath(input);
-    if (!Directory.Exists(path))
+    public static int Run(string[] args, TextWriter? stdout = null, TextWriter? stderr = null)
     {
-        return path;
+        stdout ??= Console.Out;
+        stderr ??= Console.Error;
+
+        if (args.Length == 0 || args[0] is "-h" or "--help")
+        {
+            stdout.WriteLine("Usage: BnlCommunityFixes.ReplayAnalyzer <zone-capture.jsonl | replay-directory> [output-directory]");
+            return args.Length == 0 ? 1 : 0;
+        }
+
+        var inputPath = ResolveInputPath(args[0]);
+        if (!File.Exists(inputPath))
+        {
+            stderr.WriteLine($"Capture file not found: {inputPath}");
+            return 1;
+        }
+
+        var outputDir = args.Length >= 2
+            ? Path.GetFullPath(args[1])
+            : Path.Combine(Path.GetDirectoryName(inputPath)!, Path.GetFileNameWithoutExtension(inputPath) + "-analysis");
+
+        Directory.CreateDirectory(outputDir);
+
+        var analyzer = new ReplayAnalyzer(inputPath);
+        var result = analyzer.Analyze();
+        ReplayReportWriter.Write(outputDir, result);
+
+        stdout.WriteLine($"Capture: {inputPath}");
+        stdout.WriteLine($"Packets: {result.Packets.Count}");
+        stdout.WriteLine($"Duration: {result.DurationSeconds:0.000}s");
+        stdout.WriteLine($"InitZone: remaining={result.InitZoneRemainingBytes}, payload={result.InitZonePayloadBytes}, full={result.InitZoneFullyCaptured}");
+        stdout.WriteLine($"Units created: {result.UnitCreates.Count}");
+        stdout.WriteLine($"Moves: {result.UnitMoves.Count}");
+        stdout.WriteLine($"Damage events: {result.Damages.Count}");
+        stdout.WriteLine($"Channel events: {result.ChannelEvents.Count}  dash charges: {result.DashChargeEvents.Count}  pickups: {result.PickupTakenEvents.Count}  recalls: {result.RecallEvents.Count}  portal teleports: {result.PortalTeleports.Count}  kicks: {result.KickPlayerEvents.Count}");
+        stdout.WriteLine($"Chat messages: {result.ChatMessages.Count}");
+        stdout.WriteLine($"Local replay events: {result.LocalReplayEvents.Count}");
+        stdout.WriteLine($"Block updates: {result.BlockUpdates.Sum(static item => item.Count)} across {result.BlockUpdates.Count} packets");
+        stdout.WriteLine($"Output: {outputDir}");
+        return 0;
     }
 
-    var newestCapture = Directory
-        .EnumerateFiles(path, "zone-capture-*.jsonl.gz", SearchOption.TopDirectoryOnly)
-        .Concat(Directory.EnumerateFiles(path, "zone-capture-*.jsonl", SearchOption.TopDirectoryOnly))
-        .Select(static file => new FileInfo(file))
-        .Where(static file => file.Length > 0)
-        .OrderByDescending(static file => file.LastWriteTimeUtc)
-        .FirstOrDefault();
-
-    if (newestCapture is null)
+    private static string ResolveInputPath(string input)
     {
-        return Path.Combine(path, "zone-capture-*.jsonl");
-    }
+        var path = Path.GetFullPath(input);
+        if (!Directory.Exists(path))
+        {
+            return path;
+        }
 
-    return newestCapture.FullName;
+        var newestCapture = Directory
+            .EnumerateFiles(path, "zone-capture-*.jsonl.gz", SearchOption.TopDirectoryOnly)
+            .Concat(Directory.EnumerateFiles(path, "zone-capture-*.jsonl", SearchOption.TopDirectoryOnly))
+            .Select(static file => new FileInfo(file))
+            .Where(static file => file.Length > 0)
+            .OrderByDescending(static file => file.LastWriteTimeUtc)
+            .FirstOrDefault();
+
+        if (newestCapture is null)
+        {
+            return Path.Combine(path, "zone-capture-*.jsonl");
+        }
+
+        return newestCapture.FullName;
+    }
 }
 
 internal sealed class ReplayAnalyzer

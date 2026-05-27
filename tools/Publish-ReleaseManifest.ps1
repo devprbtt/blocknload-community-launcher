@@ -4,10 +4,14 @@ param(
 
     [string]$Channel = "stable",
 
-    [string]$DestinationRoot = "K:\BNL EXPORTED\v2\updates"
+    [string]$DestinationRoot = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($DestinationRoot)) {
+    $DestinationRoot = Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..")).Path "updates"
+}
 
 $SourceResolved = (Resolve-Path $SourceManifestPath).Path
 $DestinationPath = Join-Path $DestinationRoot "manifest-$Channel.json"

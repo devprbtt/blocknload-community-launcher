@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using BnlCommunityFixes.Core.Services;
 
-namespace BnlCommunityFixes.Updater;
+namespace BnlCommunityFixes.Core.Updating;
 
 public sealed class UpdateInstaller
 {
@@ -19,7 +19,6 @@ public sealed class UpdateInstaller
             await WaitForProcessExitAsync(arguments.ProcessId, cancellationToken);
             InstallLauncher(arguments);
             InstallExternalLauncher(arguments);
-            StageUpdater(arguments);
 
             if (arguments.Restart)
             {
@@ -108,20 +107,6 @@ public sealed class UpdateInstaller
         {
             logger.Warning($"Could not update external launcher copy '{arguments.ExternalTargetPath}': {exception.Message}");
         }
-    }
-
-    private void StageUpdater(UpdaterArguments arguments)
-    {
-        if (string.IsNullOrWhiteSpace(arguments.UpdaterTargetPath) ||
-            string.IsNullOrWhiteSpace(arguments.UpdaterSourcePath) ||
-            !File.Exists(arguments.UpdaterSourcePath))
-        {
-            return;
-        }
-
-        var pendingPath = arguments.UpdaterTargetPath + ".pending";
-        File.Copy(arguments.UpdaterSourcePath, pendingPath, true);
-        logger.Info($"Staged updater replacement at {pendingPath}.");
     }
 
     private void RestartLauncher(string targetPath, IReadOnlyList<string> restartArguments)

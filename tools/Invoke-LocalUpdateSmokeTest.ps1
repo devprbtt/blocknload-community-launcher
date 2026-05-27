@@ -1,14 +1,16 @@
 param(
     [string]$VersionFrom = "2.0.0",
     [string]$VersionTo = "2.0.1",
-    [string]$TestRoot = "K:\BNL EXPORTED\v2\test-output\smoke"
+    [string]$TestRoot = ""
 )
 
 $ErrorActionPreference = "Stop"
 
-$RepoRoot = "K:\BNL EXPORTED\v2"
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+if ([string]::IsNullOrWhiteSpace($TestRoot)) {
+    $TestRoot = Join-Path $RepoRoot "test-output\smoke"
+}
 $LauncherProject = Join-Path $RepoRoot "src\BnlCommunityFixes.Launcher\BnlCommunityFixes.Launcher.csproj"
-$UpdaterProject = Join-Path $RepoRoot "src\BnlCommunityFixes.Updater\BnlCommunityFixes.Updater.csproj"
 $PublishRoot = Join-Path $TestRoot "publish"
 $InstallRoot = Join-Path $TestRoot "install-root"
 $ManifestPath = Join-Path $TestRoot "manifest-local.json"
@@ -21,9 +23,7 @@ New-Item -ItemType Directory -Force -Path $PublishRoot | Out-Null
 $FromDir = Join-Path $PublishRoot $VersionFrom
 $ToDir = Join-Path $PublishRoot $VersionTo
 $FromLauncherDir = Join-Path $FromDir "launcher"
-$FromUpdaterDir = Join-Path $FromDir "updater"
 $ToLauncherDir = Join-Path $ToDir "launcher"
-$ToUpdaterDir = Join-Path $ToDir "updater"
 $PublishArgs = @(
     "-c", "Release",
     "-r", "win-x64",
@@ -33,20 +33,16 @@ $PublishArgs = @(
 )
 
 dotnet publish $LauncherProject @PublishArgs -o $FromLauncherDir -p:Version=$VersionFrom -p:AssemblyVersion=$VersionFrom -p:FileVersion=$VersionFrom | Out-Null
-dotnet publish $UpdaterProject @PublishArgs -o $FromUpdaterDir -p:Version=$VersionFrom -p:AssemblyVersion=$VersionFrom -p:FileVersion=$VersionFrom | Out-Null
 dotnet publish $LauncherProject @PublishArgs -o $ToLauncherDir -p:Version=$VersionTo -p:AssemblyVersion=$VersionTo -p:FileVersion=$VersionTo | Out-Null
-dotnet publish $UpdaterProject @PublishArgs -o $ToUpdaterDir -p:Version=$VersionTo -p:AssemblyVersion=$VersionTo -p:FileVersion=$VersionTo | Out-Null
 
 $ToLauncherExe = Join-Path $ToLauncherDir "BnlCommunityFixes.exe"
-$ToUpdaterExe = Join-Path $ToUpdaterDir "BnlUpdater.exe"
-& (Join-Path $RepoRoot "tools\New-LocalUpdateManifest.ps1") -LauncherPath $ToLauncherExe -UpdaterPath $ToUpdaterExe -Version $VersionTo -OutputPath $ManifestPath | Out-Null
+& (Join-Path $RepoRoot "tools\New-LocalUpdateManifest.ps1") -LauncherPath $ToLauncherExe -Version $VersionTo -OutputPath $ManifestPath | Out-Null
 
 $AppDir = Join-Path $InstallRoot "app"
 $DataDir = Join-Path $InstallRoot "data"
 New-Item -ItemType Directory -Force -Path $AppDir, $DataDir | Out-Null
 
 Copy-Item -LiteralPath (Join-Path $FromLauncherDir "BnlCommunityFixes.exe") -Destination (Join-Path $AppDir "BnlCommunityFixes.exe") -Force
-Copy-Item -LiteralPath (Join-Path $FromUpdaterDir "BnlUpdater.exe") -Destination (Join-Path $AppDir "BnlUpdater.exe") -Force
 
 $Settings = @"
 {
@@ -86,4 +82,4 @@ if (-not (Test-Path $LogUpdater)) {
 Write-Output "Smoke test passed."
 Write-Output "Install root: $InstallRoot"
 Write-Output "Launcher log: $LogLauncher"
-Write-Output "Updater log: $LogUpdater"
+Write-Output "Update helper log: $LogUpdater"

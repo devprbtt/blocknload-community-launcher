@@ -59,18 +59,6 @@ public sealed class AppBootstrapper
         paths.EnsureDirectories();
         File.Copy(normalizedCurrent, normalizedTarget, true);
 
-        var localUpdaterSource = Path.Combine(Path.GetDirectoryName(normalizedCurrent)!, "BnlUpdater.exe");
-        if (File.Exists(localUpdaterSource) && !string.Equals(Path.GetFullPath(localUpdaterSource), Path.GetFullPath(paths.UpdaterPath), StringComparison.OrdinalIgnoreCase))
-        {
-            File.Copy(localUpdaterSource, paths.UpdaterPath, true);
-        }
-
-        var localReplayAnalyzerSource = Path.Combine(Path.GetDirectoryName(normalizedCurrent)!, "BnlCommunityFixes.ReplayAnalyzer.exe");
-        if (File.Exists(localReplayAnalyzerSource) && !string.Equals(Path.GetFullPath(localReplayAnalyzerSource), Path.GetFullPath(paths.ReplayAnalyzerPath), StringComparison.OrdinalIgnoreCase))
-        {
-            File.Copy(localReplayAnalyzerSource, paths.ReplayAnalyzerPath, true);
-        }
-
         var startInfo = new ProcessStartInfo
         {
             FileName = normalizedTarget,

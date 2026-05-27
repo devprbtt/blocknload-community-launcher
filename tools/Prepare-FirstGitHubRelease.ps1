@@ -8,7 +8,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$RepoRoot = "K:\BNL EXPORTED\v2"
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $NotesFile = Join-Path $RepoRoot "release-notes\v$Version.md"
 
 if (-not (Test-Path $NotesFile)) {
@@ -31,7 +31,6 @@ Write-Output "Next steps:"
 Write-Output "1. Create GitHub release tag: $ReleaseTag"
 Write-Output "2. Upload:"
 Write-Output "   - $ReleaseRoot\launcher\BnlCommunityFixes.exe"
-Write-Output "   - $ReleaseRoot\updater\BnlUpdater.exe"
 Write-Output "3. Publish manifest:"
 Write-Output "   & `"$RepoRoot\tools\Publish-ReleaseManifest.ps1`" -SourceManifestPath `"$ManifestPath`" -Channel `"$Channel`""
 Write-Output "4. Commit and push: v2\updates\manifest-$Channel.json"

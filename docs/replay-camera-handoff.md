@@ -250,7 +250,7 @@ Always use the Bash tool (PowerShell tool fails silently on dotnet):
 cd "k:\BNL EXPORTED\v2"
 dotnet publish src/BnlCommunityFixes.Launcher/BnlCommunityFixes.Launcher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=2.4.1 -o release/2.4.1/launcher
 dotnet publish src/BnlCommunityFixes.Updater/BnlCommunityFixes.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=2.4.1 -o release/2.4.1/updater
-dotnet publish src/BnlCommunityFixes.ReplayAnalyzer/BnlCommunityFixes.ReplayAnalyzer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=2.4.1 -o release/2.4.1/analyzer
+`BnlCommunityFixes.exe --analyze-replay <capture-or-directory> [output-directory]`
 ```
 
 ## Game Log Location

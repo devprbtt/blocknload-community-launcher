@@ -54,7 +54,7 @@ When the game catalogue cache is available at `<BlockNLoad>\Cache\cdb`, the anal
 Usage:
 
 ```powershell
-K:\BNL EXPORTED\v2\release\replay-analyzer-test\BnlCommunityFixes.ReplayAnalyzer.exe `
+K:\BNL EXPORTED\v2\release\replay-analyzer-test\BnlCommunityFixes.exe --analyze-replay `
   "H:\Programas\Steam\steamapps\common\BlockNLoad\Win64\BlockNLoad_Data\bnl-match-replays" `
   "K:\BNL EXPORTED\v2\test-output\replay-analysis-latest"
 ```
@@ -167,7 +167,7 @@ The launcher has a Match Replays section with:
 
 The replay browser shows all `zone-capture-*.jsonl` files and supports:
 
-- `Analyze`: runs `BnlCommunityFixes.ReplayAnalyzer.exe` against the selected capture.
+- `Analyze`: runs the embedded replay analyzer inside `BnlCommunityFixes.exe` against the selected capture.
 - Analysis shows an indeterminate progress bar while the analyzer is running.
 - `Open Location`: selects the capture file in Explorer.
 - `Delete Selected`: deletes the selected capture file or files.
@@ -176,9 +176,7 @@ The replay browser shows all `zone-capture-*.jsonl` files and supports:
 
 Selected replay analysis output is written per capture under `%LOCALAPPDATA%\BNL-CommunityFixes\data\replay-analysis\<capture-name>`. The old quick latest output still exists at `%LOCALAPPDATA%\BNL-CommunityFixes\data\replay-analysis\latest`.
 
-Release builds publish `BnlCommunityFixes.ReplayAnalyzer.exe` beside `BnlCommunityFixes.exe` and include it in the update manifest as `replay_analyzer_exe`, so users do not need to download the analyzer separately.
-
-If a user updated from an older launcher that did not know about the analyzer asset yet, `Analyze Latest` can fetch `replay_analyzer_exe` from the current manifest on demand before analyzing the replay.
+Release builds now ship only `BnlCommunityFixes.exe`. Replay analysis runs through an internal launcher mode instead of a separate analyzer executable.
 
 Portable test builds under `release\replay-launcher-test-*` include `portable-launcher.flag`. When this flag is present, the launcher skips bootstrap redirection and skips update checks, so a lower-version replay test build can run beside a newer installed launcher.
 

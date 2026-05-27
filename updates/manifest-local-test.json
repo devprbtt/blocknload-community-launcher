@@ -12,11 +12,5 @@
                                         "sha256":  "4BFED4BC27C946BBA944EBBBD6F0C59C308B07968ED185E392B88476F4F511D5",
                                         "size":  162649294
                                     },
-                   "updater_exe":  {
-                                       "file_name":  "BnlUpdater.exe",
-                                       "url":  "file:///K:/BNL%20EXPORTED/v2/publish/updater/BnlUpdater.exe",
-                                       "sha256":  "38E781E5FEBFEF16368CD7DEF8629DF7B3DC21EF309B2FE07F25E840F801DC89",
-                                       "size":  67608313
-                                   }
                }
 }

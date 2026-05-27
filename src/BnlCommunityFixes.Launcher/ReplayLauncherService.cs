@@ -13,16 +13,12 @@ public sealed class ReplayLauncherService
     private readonly AppPaths paths;
     private readonly Logger logger;
     private readonly LauncherSettings settings;
-    private readonly DownloadService downloadService;
-    private readonly ManifestService manifestService;
 
     public ReplayLauncherService(AppPaths paths, Logger logger, LauncherSettings settings, HttpClient httpClient)
     {
         this.paths = paths;
         this.logger = logger;
         this.settings = settings;
-        downloadService = new DownloadService(httpClient);
-        manifestService = new ManifestService(httpClient);
     }
 
     public string GetReplayDirectory(GameInstallInfo installInfo) =>
@@ -250,7 +246,7 @@ public sealed class ReplayLauncherService
             throw new FileNotFoundException($"No replay captures were found in {replayDirectory}");
         }
 
-        var analyzerPath = await EnsureAnalyzerAvailableAsync(cancellationToken).ConfigureAwait(false);
+        var analyzerPath = ResolveAnalyzerHostPath();
 
         Directory.CreateDirectory(LatestAnalysisDirectory);
 
@@ -263,6 +259,7 @@ public sealed class ReplayLauncherService
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        process.StartInfo.ArgumentList.Add("--analyze-replay");
         process.StartInfo.ArgumentList.Add(replayDirectory);
         process.StartInfo.ArgumentList.Add(LatestAnalysisDirectory);
 
@@ -291,7 +288,7 @@ public sealed class ReplayLauncherService
             throw new FileNotFoundException("Replay capture not found.", capture.FullName);
         }
 
-        var analyzerPath = await EnsureAnalyzerAvailableAsync(cancellationToken).ConfigureAwait(false);
+        var analyzerPath = ResolveAnalyzerHostPath();
         var outputDirectory = GetAnalysisDirectory(capture);
         Directory.CreateDirectory(outputDirectory);
 
@@ -304,6 +301,7 @@ public sealed class ReplayLauncherService
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        process.StartInfo.ArgumentList.Add("--analyze-replay");
         process.StartInfo.ArgumentList.Add(capture.FullName);
         process.StartInfo.ArgumentList.Add(outputDirectory);
 
@@ -334,44 +332,23 @@ public sealed class ReplayLauncherService
         });
     }
 
-    private string? ResolveAnalyzerPath()
+    private string ResolveAnalyzerHostPath()
     {
-        var appDirectory = AppContext.BaseDirectory;
         var candidates = new[]
         {
-            Path.Combine(appDirectory, "BnlCommunityFixes.ReplayAnalyzer.exe"),
-            paths.ReplayAnalyzerPath,
-            Path.Combine(Environment.CurrentDirectory, "release", "replay-analyzer-test", "BnlCommunityFixes.ReplayAnalyzer.exe")
+            Environment.ProcessPath,
+            paths.LauncherPath
         };
 
-        return candidates.FirstOrDefault(File.Exists);
-    }
-
-    private async Task<string> EnsureAnalyzerAvailableAsync(CancellationToken cancellationToken)
-    {
-        var analyzerPath = ResolveAnalyzerPath();
-        if (analyzerPath is not null)
+        foreach (var candidate in candidates)
         {
-            return analyzerPath;
+            if (!string.IsNullOrWhiteSpace(candidate) && File.Exists(candidate))
+            {
+                return candidate;
+            }
         }
 
-        logger.Info("Replay analyzer executable was not found locally. Checking manifest for replay_analyzer_exe.");
-        var manifest = await manifestService.FetchAsync(settings.ManifestUrl, settings.Product, cancellationToken).ConfigureAwait(false);
-        if (!manifest.Assets.TryGetValue("replay_analyzer_exe", out var asset))
-        {
-            throw new FileNotFoundException(
-                "Replay analyzer executable was not found locally, and the current update manifest does not include replay_analyzer_exe.");
-        }
-
-        await downloadService.DownloadFileAsync(asset.Url, paths.ReplayAnalyzerTempPath, null, cancellationToken).ConfigureAwait(false);
-        if (!await HashService.VerifySha256Async(paths.ReplayAnalyzerTempPath, asset.Sha256, cancellationToken).ConfigureAwait(false))
-        {
-            throw new InvalidOperationException("Downloaded replay analyzer hash verification failed.");
-        }
-
-        File.Move(paths.ReplayAnalyzerTempPath, paths.ReplayAnalyzerPath, true);
-        logger.Info($"Downloaded replay analyzer to {paths.ReplayAnalyzerPath}.");
-        return paths.ReplayAnalyzerPath;
+        throw new FileNotFoundException("Could not resolve the launcher executable to run embedded replay analysis.");
     }
 
     private ReplayCaptureInfo CreateCaptureInfo(FileInfo capture)

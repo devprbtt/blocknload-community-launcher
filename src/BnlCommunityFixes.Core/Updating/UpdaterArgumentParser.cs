@@ -1,7 +1,12 @@
-namespace BnlCommunityFixes.Updater;
+namespace BnlCommunityFixes.Core.Updating;
 
 public static class UpdaterArgumentParser
 {
+    public const string ApplyUpdateSwitch = "--apply-update";
+
+    public static bool IsApplyUpdateMode(string[] args) =>
+        args.Any(static arg => string.Equals(arg, ApplyUpdateSwitch, StringComparison.OrdinalIgnoreCase));
+
     public static UpdaterArguments Parse(string[] args)
     {
         var parsed = new UpdaterArguments();
@@ -11,17 +16,13 @@ public static class UpdaterArgumentParser
             var arg = args[i];
             switch (arg)
             {
+                case ApplyUpdateSwitch:
+                    break;
                 case "--target":
                     parsed.TargetPath = ReadValue(args, ref i, arg);
                     break;
                 case "--source":
                     parsed.SourcePath = ReadValue(args, ref i, arg);
-                    break;
-                case "--updater-target":
-                    parsed.UpdaterTargetPath = ReadValue(args, ref i, arg);
-                    break;
-                case "--updater-source":
-                    parsed.UpdaterSourcePath = ReadValue(args, ref i, arg);
                     break;
                 case "--external-target":
                     parsed.ExternalTargetPath = ReadValue(args, ref i, arg);

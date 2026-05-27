@@ -14,7 +14,7 @@ public sealed class ManifestService
         this.httpClient = httpClient;
     }
 
-    public async Task<UpdateManifest> FetchAsync(string manifestUrl, string expectedProduct, CancellationToken cancellationToken = default)
+    public async Task<UpdateManifest> FetchAsync(string manifestUrl, string expectedProduct, IEnumerable<string>? requiredAssetKeys = null, CancellationToken cancellationToken = default)
     {
         var json = await ReadManifestJsonAsync(manifestUrl, cancellationToken);
         var manifest = JsonSerializer.Deserialize<UpdateManifest>(json, new JsonSerializerOptions
@@ -27,11 +27,11 @@ public sealed class ManifestService
             throw new InvalidOperationException("Manifest could not be parsed.");
         }
 
-        Validate(manifest, expectedProduct);
+        Validate(manifest, expectedProduct, requiredAssetKeys);
         return manifest;
     }
 
-    private static void Validate(UpdateManifest manifest, string expectedProduct)
+    private static void Validate(UpdateManifest manifest, string expectedProduct, IEnumerable<string>? requiredAssetKeys)
     {
         if (!string.Equals(manifest.Product, expectedProduct, StringComparison.Ordinal))
         {
@@ -43,8 +43,10 @@ public sealed class ManifestService
             throw new InvalidOperationException("Manifest version is missing.");
         }
 
-        ValidateAsset(manifest, "launcher_exe");
-        ValidateAsset(manifest, "updater_exe");
+        foreach (var requiredAssetKey in requiredAssetKeys ?? [])
+        {
+            ValidateAsset(manifest, requiredAssetKey);
+        }
     }
 
     private static void ValidateAsset(UpdateManifest manifest, string key)

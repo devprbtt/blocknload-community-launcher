@@ -2,8 +2,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$LauncherPath,
 
-    [Parameter(Mandatory = $true)]
-    [string]$UpdaterPath,
+    [string]$UpdaterPath = "",
 
     [string]$Version = "2.0.1",
 
@@ -11,7 +10,10 @@ param(
 )
 
 $LauncherResolved = (Resolve-Path $LauncherPath).Path
-$UpdaterResolved = (Resolve-Path $UpdaterPath).Path
+$UpdaterResolved = $null
+if (-not [string]::IsNullOrWhiteSpace($UpdaterPath)) {
+    $UpdaterResolved = (Resolve-Path $UpdaterPath).Path
+}
 
 $Manifest = [ordered]@{
     product = "BnlCommunityFixes"
@@ -27,12 +29,15 @@ $Manifest = [ordered]@{
             sha256 = (Get-FileHash -LiteralPath $LauncherResolved -Algorithm SHA256).Hash
             size = (Get-Item -LiteralPath $LauncherResolved).Length
         }
-        updater_exe = [ordered]@{
-            file_name = [IO.Path]::GetFileName($UpdaterResolved)
-            url = ([Uri]$UpdaterResolved).AbsoluteUri
-            sha256 = (Get-FileHash -LiteralPath $UpdaterResolved -Algorithm SHA256).Hash
-            size = (Get-Item -LiteralPath $UpdaterResolved).Length
-        }
+    }
+}
+
+if ($UpdaterResolved) {
+    $Manifest.assets.updater_exe = [ordered]@{
+        file_name = [IO.Path]::GetFileName($UpdaterResolved)
+        url = ([Uri]$UpdaterResolved).AbsoluteUri
+        sha256 = (Get-FileHash -LiteralPath $UpdaterResolved -Algorithm SHA256).Hash
+        size = (Get-Item -LiteralPath $UpdaterResolved).Length
     }
 }
 

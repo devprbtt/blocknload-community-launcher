@@ -11,12 +11,6 @@
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v0.0.0/BnlCommunityFixes.exe",
       "sha256": "REPLACE_WITH_REAL_SHA256",
       "size": 0
-    },
-    "updater_exe": {
-      "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v0.0.0/BnlUpdater.exe",
-      "sha256": "REPLACE_WITH_REAL_SHA256",
-      "size": 0
     }
   }
 }

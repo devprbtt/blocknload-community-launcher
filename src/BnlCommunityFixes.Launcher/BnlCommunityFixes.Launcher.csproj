@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BnlCommunityFixes.Core\BnlCommunityFixes.Core.csproj" />
+    <ProjectReference Include="..\BnlCommunityFixes.ReplayAnalyzer\BnlCommunityFixes.ReplayAnalyzer.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -10,7 +11,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>2.4.9</Version>
+    <Version>2.5.0</Version>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Launcher</RootNamespace>
