@@ -19,6 +19,8 @@ public sealed class UpdateInstaller
             await WaitForProcessExitAsync(arguments.ProcessId, cancellationToken);
             InstallLauncher(arguments);
             InstallExternalLauncher(arguments);
+            InstallReplayAnalyzer(arguments);
+            StageUpdater(arguments);
 
             if (arguments.Restart)
             {
@@ -125,6 +127,34 @@ public sealed class UpdateInstaller
         }
 
         Process.Start(startInfo);
+    }
+
+    private void InstallReplayAnalyzer(UpdaterArguments arguments)
+    {
+        if (string.IsNullOrWhiteSpace(arguments.ReplayAnalyzerTargetPath) ||
+            string.IsNullOrWhiteSpace(arguments.ReplayAnalyzerSourcePath) ||
+            !File.Exists(arguments.ReplayAnalyzerSourcePath))
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(arguments.ReplayAnalyzerTargetPath)!);
+        File.Move(arguments.ReplayAnalyzerSourcePath, arguments.ReplayAnalyzerTargetPath, true);
+        logger.Info($"Installed replay analyzer to {arguments.ReplayAnalyzerTargetPath}.");
+    }
+
+    private void StageUpdater(UpdaterArguments arguments)
+    {
+        if (string.IsNullOrWhiteSpace(arguments.UpdaterTargetPath) ||
+            string.IsNullOrWhiteSpace(arguments.UpdaterSourcePath) ||
+            !File.Exists(arguments.UpdaterSourcePath))
+        {
+            return;
+        }
+
+        var pendingPath = arguments.UpdaterTargetPath + ".pending";
+        File.Copy(arguments.UpdaterSourcePath, pendingPath, true);
+        logger.Info($"Staged updater replacement at {pendingPath}.");
     }
 
     private void TryRollback(UpdaterArguments arguments)
