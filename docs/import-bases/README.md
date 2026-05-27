@@ -6,4 +6,4 @@ These archives are bundled as reference material for building replacement packs.
 - `Mesh.rar`
 - `Texture2D.rar`
 
-They were copied from `J:\bnlexports` and are intended as starter material for audio, mesh, and texture imports.
+They are intended as starter material for audio, mesh, and texture imports.
