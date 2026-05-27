@@ -1,16 +1,22 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.5.0",
+  "version": "2.4.10",
   "minimum_supported_version": "2.2.0",
-  "published_at": "2026-05-27T22:46:54.1614430+00:00",
-  "notes": "## Changes\n\n- Simplify releases to a single `BnlCommunityFixes.exe`\n- Move the replay analyzer into the launcher itself via `--analyze-replay`\n- Remove the need to ship `BnlUpdater.exe` and `BnlCommunityFixes.ReplayAnalyzer.exe` in the public release\n- Keep self-update support using an internal launcher update-helper mode\n- Relax Steam login-state validation so launch is only blocked when Steam is not running\n- Continue shipping the recent audio, mesh, texture, and importer UX improvements\r\n",
+  "published_at": "2026-05-27T22:57:06.7714179+00:00",
+  "notes": "## Bridge Release\n\nThis compatibility bridge exists so launchers older than `2.5.0` can still auto-update.\n\n- Includes `BnlCommunityFixes.exe`\n- Includes `BnlUpdater.exe` for older launchers that still require `updater_exe` in the manifest\n- Contains the new internal update-helper flow and embedded replay analyzer from the current launcher codebase\n\nAfter users move onto this bridge release, they can later move forward to the single-exe release line.\r\n",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.5.0/BnlCommunityFixes.exe",
-      "sha256": "D6FFE25C293DA840843D6C744D0063775E50BB1C853DF2BE1DF80D109C775B1C",
-      "size": 164242610
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.10/BnlCommunityFixes.exe",
+      "sha256": "3FCCAD9E46B7E2786859AA0A643CB1259AED5BAC4D8BCC9439907809EED7A35F",
+      "size": 164242622
+    },
+    "updater_exe": {
+      "file_name": "BnlUpdater.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.10/BnlUpdater.exe",
+      "sha256": "78D5986CD0EE2D3ED74AC82D0ABDB23AF93E67BC250ED62D4ACCEDCD5124004F",
+      "size": 67633401
     }
   }
 }
