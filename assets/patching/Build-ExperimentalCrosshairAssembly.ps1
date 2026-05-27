@@ -30,6 +30,7 @@ $UnitGuiScaleConfigPath = Join-Path $PSScriptRoot "unit-gui-scale-config.json"
 $WsiConfigPath = Join-Path $PSScriptRoot "wsi-config.json"
 $MapRenderConfigPath = Join-Path $PSScriptRoot "experimental-map-render-config.json"
 $AudioReplacerConfigPath = Join-Path $PSScriptRoot "experimental-audio-replacer-config.json"
+$MeshReplacerConfigPath = Join-Path $PSScriptRoot "experimental-mesh-replacer-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
 $SavedCopyPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.font-configured.dll"
 $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
@@ -40,6 +41,7 @@ $RuntimeMenuSourcePath = Join-Path $PSScriptRoot "RuntimeMenu.cs"
 $MatchReplayRecorderSourcePath = Join-Path $PSScriptRoot "MatchReplayRecorderRuntime.cs"
 $ReplayPlayerSourcePath = Join-Path $PSScriptRoot "ReplayPlayerRuntime.cs"
 $AudioReplacerSourcePath = Join-Path $PSScriptRoot "AudioReplacerRuntime.cs"
+$MeshReplacerSourcePath = Join-Path $PSScriptRoot "MeshReplacerRuntime.cs"
 $ManagedDir = Join-Path $GameRoot "Win64\BlockNLoad_Data\Managed"
 $BackupPath = Join-Path $ManagedDir "Assembly-CSharp-backup.dll"
 $CecilPath = Join-Path $PSScriptRoot "Mono.Cecil.dll"
@@ -240,7 +242,7 @@ $AudioReplacerConfig = Get-JsonConfig -Path $AudioReplacerConfigPath -Default @{
     ignored_events = @()
 }
 [bool]$AudioReplacerEnabled = if ($null -ne $AudioReplacerConfig.enabled) { [bool]$AudioReplacerConfig.enabled } else { $false }
-[bool]$AudioReplacerLogAll = if ($null -ne $AudioReplacerConfig.log_all_events) { [bool]$AudioReplacerConfig.log_all_events } else { $true }
+[bool]$AudioReplacerLogAll = if ($null -ne $AudioReplacerConfig.log_all_events) { [bool]$AudioReplacerConfig.log_all_events } else { $false }
 [float]$AudioReplacerVolume = if ($null -ne $AudioReplacerConfig.volume) { [float][double]$AudioReplacerConfig.volume } else { 1.0 }
 if ($AudioReplacerVolume -lt 0.0) { $AudioReplacerVolume = 0.0 }
 if ($AudioReplacerVolume -gt 2.0) { $AudioReplacerVolume = 2.0 }
@@ -278,6 +280,35 @@ if ($AudioReplacerConfig.volumes -is [System.Collections.IDictionary]) {
 } elseif ($AudioReplacerConfig.volumes -is [System.Management.Automation.PSCustomObject]) {
     $AudioReplacerConfig.volumes.PSObject.Properties | ForEach-Object {
         $AudioReplacerVolumes[$_.Name] = [float][double]$_.Value
+    }
+}
+
+$MeshReplacerConfig = Get-JsonConfig -Path $MeshReplacerConfigPath -Default @{
+    enabled = $false
+    meshes = @{}
+    transformFixes = @{}
+}
+[bool]$MeshReplacerEnabled = if ($null -ne $MeshReplacerConfig.enabled) { [bool]$MeshReplacerConfig.enabled } else { $false }
+$MeshReplacerMeshes = @{}
+if ($MeshReplacerConfig.meshes -is [System.Collections.IDictionary]) {
+    foreach ($key in $MeshReplacerConfig.meshes.Keys) {
+        $MeshReplacerMeshes[[string]$key] = [string]$MeshReplacerConfig.meshes[$key]
+    }
+} elseif ($MeshReplacerConfig.meshes -is [System.Management.Automation.PSCustomObject]) {
+    $MeshReplacerConfig.meshes.PSObject.Properties | ForEach-Object {
+        $MeshReplacerMeshes[$_.Name] = [string]$_.Value
+    }
+}
+# transformFixes: { "GameObjectName": [ { "path": "...", "position": [x,y,z], "rotation": [x,y,z,w], "scale": [x,y,z] }, ... ] }
+$MeshReplacerTransformFixes = @{}
+$rawFixes = $MeshReplacerConfig.transformFixes
+if ($rawFixes -is [System.Collections.IDictionary]) {
+    foreach ($goName in $rawFixes.Keys) {
+        $MeshReplacerTransformFixes[[string]$goName] = $rawFixes[$goName]
+    }
+} elseif ($rawFixes -is [System.Management.Automation.PSCustomObject]) {
+    $rawFixes.PSObject.Properties | ForEach-Object {
+        $MeshReplacerTransformFixes[$_.Name] = $_.Value
     }
 }
 
@@ -2185,6 +2216,11 @@ if (Test-Path $AudioReplacerSourcePath) {
     $AudioReplacerSource = Get-Content -Raw -LiteralPath $AudioReplacerSourcePath
     $AudioReplacerSource = [regex]::Replace($AudioReplacerSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
     $HelperSource += "`r`n" + $AudioReplacerSource
+}
+if (Test-Path $MeshReplacerSourcePath) {
+    $MeshReplacerSource = Get-Content -Raw -LiteralPath $MeshReplacerSourcePath
+    $MeshReplacerSource = [regex]::Replace($MeshReplacerSource, '^(using\s+[^\r\n]+;\s*)+', '', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $HelperSource += "`r`n" + $MeshReplacerSource
 }
 
 $HelperSource += @"
@@ -5670,15 +5706,17 @@ if ($AudioReplacerRuntimeType) {
     $LogAndResolvePostEventMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "LogAndResolvePostEvent" | Select-Object -First 1
     $LogAndResolvePostEventWithFlagsMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "LogAndResolvePostEventWithFlags" | Select-Object -First 1
     $ConfigureAudioReplacerMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "Configure" | Select-Object -First 1
+    $BeginAudioBootstrapMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "BeginBootstrap" | Select-Object -First 1
     $RegisterReplacementMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "RegisterReplacement" | Select-Object -First 1
     $LogRegisteredReplacementsMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "LogRegisteredReplacements" | Select-Object -First 1
     $RegisterCustomReplacementMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "RegisterCustomReplacement" | Select-Object -First 1
     $RegisterEventVolumeMethod = $AudioReplacerRuntimeType.Methods | Where-Object Name -eq "RegisterEventVolume" | Select-Object -First 1
 
-    if ($LogAndResolvePostEventMethod -and $LogAndResolvePostEventWithFlagsMethod -and $ConfigureAudioReplacerMethod -and $RegisterReplacementMethod -and $LogRegisteredReplacementsMethod) {
+    if ($LogAndResolvePostEventMethod -and $LogAndResolvePostEventWithFlagsMethod -and $ConfigureAudioReplacerMethod -and $BeginAudioBootstrapMethod -and $RegisterReplacementMethod -and $LogRegisteredReplacementsMethod) {
         $ImportedLogAndResolvePostEvent = $Module.ImportReference($LogAndResolvePostEventMethod)
         $ImportedLogAndResolvePostEventWithFlags = $Module.ImportReference($LogAndResolvePostEventWithFlagsMethod)
         $ImportedConfigureAudioReplacer = $Module.ImportReference($ConfigureAudioReplacerMethod)
+        $ImportedBeginAudioBootstrap = $Module.ImportReference($BeginAudioBootstrapMethod)
         $ImportedRegisterReplacement = $Module.ImportReference($RegisterReplacementMethod)
         $ImportedLogRegisteredReplacements = $Module.ImportReference($LogRegisteredReplacementsMethod)
         $ImportedRegisterCustomReplacement = if ($RegisterCustomReplacementMethod) { $Module.ImportReference($RegisterCustomReplacementMethod) } else { $null }
@@ -5757,6 +5795,7 @@ if ($AudioReplacerRuntimeType) {
                 $NopContinue = $Il.Create([Mono.Cecil.Cil.OpCodes]::Nop)
 
                 $Instructions = @(
+                    $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_1),
                     $Il.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedShouldSuppressUint),
                     $Il.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $NopContinue),
                     $Il.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4_0),
@@ -5779,12 +5818,14 @@ if ($AudioReplacerRuntimeType) {
                 $MainMenuStartIl = $MainMenuStartMethod.Body.GetILProcessor()
                 $MainMenuStartFirst = $MainMenuStartMethod.Body.Instructions | Select-Object -First 1
 
-                # Configure(enableLogging)
                 $EnableLoggingLiteral = if ($AudioReplacerLogAll) { 1 } else { 0 }
+                $AudioBootstrapContinue = $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
                 $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
                     $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $EnableLoggingLiteral))
                 $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
-                    $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedConfigureAudioReplacer))
+                    $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedBeginAudioBootstrap))
+                $MainMenuStartIl.InsertBefore($MainMenuStartFirst,
+                    $MainMenuStartIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $AudioBootstrapContinue))
 
                 # SetVolume(volume)
                 if ($ImportedSetVolume) {
@@ -5842,11 +5883,301 @@ if ($AudioReplacerRuntimeType) {
                     }
                 }
 
-                Write-Output "[AudioReplacer] Injected Configure($($AudioReplacerLogAll)) + $ReplacementCount replacement(s) at MainMenu.Start."
+                $MainMenuStartIl.InsertBefore($MainMenuStartFirst, $AudioBootstrapContinue)
+
+                Write-Output "[AudioReplacer] Injected bootstrap + $ReplacementCount replacement(s) at MainMenu.Start."
+            }
+        }
+
+        $GearModelTypeAudio = $Module.Types | Where-Object Name -eq "GearModel" | Select-Object -First 1
+        if ($GearModelTypeAudio) {
+            $GearAwakeAudio = $GearModelTypeAudio.Methods | Where-Object Name -eq "Awake" | Select-Object -First 1
+            if ($GearAwakeAudio -and $GearAwakeAudio.HasBody) {
+                $GAIl = $GearAwakeAudio.Body.GetILProcessor()
+                $GAFirst = $GearAwakeAudio.Body.Instructions | Select-Object -First 1
+                $AudioBootstrapContinue2 = $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+                $EnableLoggingLiteral = if ($AudioReplacerLogAll) { 1 } else { 0 }
+                $GAIl.InsertBefore($GAFirst,
+                    $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_I4, $EnableLoggingLiteral))
+                $GAIl.InsertBefore($GAFirst,
+                    $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedBeginAudioBootstrap))
+                $GAIl.InsertBefore($GAFirst,
+                    $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $AudioBootstrapContinue2))
+
+                if ($ImportedSetVolume) {
+                    $VolumeLiteral = [float]$AudioReplacerVolume
+                    $GAIl.InsertBefore($GAFirst,
+                        $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $VolumeLiteral))
+                    $GAIl.InsertBefore($GAFirst,
+                        $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedSetVolume))
+                }
+
+                foreach ($kvp in $AudioReplacerReplacements.GetEnumerator()) {
+                    $OrigLiteral = ($kvp.Key -replace '\\', '\\\\') -replace '"', '\"'
+                    $ReplLiteral = ($kvp.Value -replace '\\', '\\\\') -replace '"', '\"'
+                    $GAIl.InsertBefore($GAFirst,
+                        $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $OrigLiteral))
+                    $GAIl.InsertBefore($GAFirst,
+                        $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $ReplLiteral))
+                    $GAIl.InsertBefore($GAFirst,
+                        $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedRegisterReplacement))
+                }
+
+                if ($ImportedRegisterCustomReplacement) {
+                    foreach ($kvp in $AudioReplacerCustomAudio.GetEnumerator()) {
+                        $OrigLiteral = ($kvp.Key -replace '\\', '\\\\') -replace '"', '\"'
+                        $FileLiteral = ($kvp.Value -replace '\\', '\\\\') -replace '"', '\"'
+                        $GAIl.InsertBefore($GAFirst,
+                            $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $OrigLiteral))
+                        $GAIl.InsertBefore($GAFirst,
+                            $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $FileLiteral))
+                        $GAIl.InsertBefore($GAFirst,
+                            $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedRegisterCustomReplacement))
+                    }
+                }
+
+                $GAIl.InsertBefore($GAFirst,
+                    $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedLogRegisteredReplacements))
+
+                if ($ImportedRegisterEventVolume) {
+                    foreach ($kvp in $AudioReplacerVolumes.GetEnumerator()) {
+                        $EventLiteral = ($kvp.Key -replace '\\', '\\\\') -replace '"', '\"'
+                        $VolValue = [float]([float]$kvp.Value / 100.0)
+                        $GAIl.InsertBefore($GAFirst,
+                            $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $EventLiteral))
+                        $GAIl.InsertBefore($GAFirst,
+                            $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $VolValue))
+                        $GAIl.InsertBefore($GAFirst,
+                            $GAIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedRegisterEventVolume))
+                    }
+                }
+
+                $GAIl.InsertBefore($GAFirst, $AudioBootstrapContinue2)
+                Write-Output "[AudioReplacer] Injected bootstrap fallback at GearModel.Awake."
             }
         }
     } else {
         Write-Output "[AudioReplacer] WARNING: AudioReplacerRuntime methods not found in helper assembly."
+    }
+}
+
+# -----------------------------------------------------------------------
+# Mesh Replacer — inject EnsureInstance + RegisterReplacement at MainMenu.Start
+# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Mesh Replacer — event-driven hooks into GearModel.Awake and UnitView.UpdateUnit
+# -----------------------------------------------------------------------
+$MeshReplacerManagerType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.MeshReplacerManager" | Select-Object -First 1
+if ($MeshReplacerManagerType -and $MeshReplacerMeshes.Count -gt 0) {
+    $EnsureMeshInstanceMethod  = $MeshReplacerManagerType.Methods | Where-Object Name -eq "EnsureInstance"           | Select-Object -First 1
+    $BeginMeshBootstrapMethod  = $MeshReplacerManagerType.Methods | Where-Object Name -eq "BeginBootstrap"          | Select-Object -First 1
+    $RegisterMeshMethod        = $MeshReplacerManagerType.Methods | Where-Object Name -eq "RegisterReplacement"      | Select-Object -First 1
+    $OnGameObjectMethod        = $MeshReplacerManagerType.Methods | Where-Object Name -eq "OnGameObjectInstantiated" | Select-Object -First 1
+
+    $RegisterTransformFixMethod = $MeshReplacerManagerType.Methods | Where-Object Name -eq "RegisterTransformFix" | Select-Object -First 1
+
+    if ($EnsureMeshInstanceMethod -and $BeginMeshBootstrapMethod -and $RegisterMeshMethod -and $OnGameObjectMethod -and $RegisterTransformFixMethod) {
+        $ImportedEnsureMesh          = $Module.ImportReference($EnsureMeshInstanceMethod)
+        $ImportedBeginMeshBootstrap  = $Module.ImportReference($BeginMeshBootstrapMethod)
+        $ImportedRegisterMesh        = $Module.ImportReference($RegisterMeshMethod)
+        $ImportedOnGameObject        = $Module.ImportReference($OnGameObjectMethod)
+        $ImportedRegisterTransformFix = $Module.ImportReference($RegisterTransformFixMethod)
+
+        # --- 1. Inject EnsureInstance + RegisterReplacement + RegisterTransformFix calls at MainMenu.Start ---
+        $MainMenuType2 = $Module.Types | Where-Object Name -eq "MainMenu" | Select-Object -First 1
+        if ($MainMenuType2) {
+            $MainMenuStart2 = $MainMenuType2.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+            if ($MainMenuStart2 -and $MainMenuStart2.HasBody) {
+                $MIl = $MainMenuStart2.Body.GetILProcessor()
+                $MFirst = $MainMenuStart2.Body.Instructions | Select-Object -First 1
+
+                $MeshBootstrapContinue = $MIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+                $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedBeginMeshBootstrap))
+                $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $MeshBootstrapContinue))
+
+                $MeshRegCount = 0
+                foreach ($kvp in $MeshReplacerMeshes.GetEnumerator()) {
+                    $MeshNameLit = ($kvp.Key   -replace '\\', '\\\\') -replace '"', '\"'
+                    $FileNameLit = ($kvp.Value -replace '\\', '\\\\') -replace '"', '\"'
+                    $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $MeshNameLit))
+                    $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $FileNameLit))
+                    $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedRegisterMesh))
+                    $MeshRegCount++
+                }
+
+                $TransformFixCount = 0
+                foreach ($goName in $MeshReplacerTransformFixes.Keys) {
+                    $fixes = $MeshReplacerTransformFixes[$goName]
+                    if ($fixes -isnot [System.Collections.IEnumerable]) { $fixes = @($fixes) }
+                    foreach ($fix in $fixes) {
+                        $goLit   = ([string]$goName  -replace '\\', '\\\\') -replace '"', '\"'
+                        $fixPath = if ($fix.path) { [string]$fix.path } else { '' }
+                        $pathLit = ($fixPath -replace '\\', '\\\\') -replace '"', '\"'
+
+                        $nan = [float]::NaN
+                        $px = if ($fix.position -and $fix.position.Count -ge 3) { [float]$fix.position[0] } else { $nan }
+                        $py = if ($fix.position -and $fix.position.Count -ge 3) { [float]$fix.position[1] } else { $nan }
+                        $pz = if ($fix.position -and $fix.position.Count -ge 3) { [float]$fix.position[2] } else { $nan }
+                        $rx = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[0] } else { $nan }
+                        $ry = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[1] } else { $nan }
+                        $rz = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[2] } else { $nan }
+                        $rw = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[3] } else { $nan }
+                        $sx = if ($fix.scale    -and $fix.scale.Count    -ge 3) { [float]$fix.scale[0]    } else { $nan }
+                        $sy = if ($fix.scale    -and $fix.scale.Count    -ge 3) { [float]$fix.scale[1]    } else { $nan }
+                        $sz = if ($fix.scale    -and $fix.scale.Count    -ge 3) { [float]$fix.scale[2]    } else { $nan }
+
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $goLit))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $pathLit))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $px))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $py))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $pz))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $rx))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $ry))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $rz))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $rw))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $sx))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $sy))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $sz))
+                        $MIl.InsertBefore($MFirst, $MIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedRegisterTransformFix))
+                        $TransformFixCount++
+                    }
+                }
+                $MIl.InsertBefore($MFirst, $MeshBootstrapContinue)
+                Write-Output "[MeshReplacer] Injected bootstrap + $MeshRegCount RegisterReplacement + $TransformFixCount RegisterTransformFix call(s) at MainMenu.Start."
+            }
+        }
+
+        # Load UnityEngine once for get_gameObject resolution
+        $UeModule = ([Mono.Cecil.AssemblyDefinition]::ReadAssembly($UnityEngineDll)).MainModule
+        $GetGoMethod = ($UeModule.Types | Where-Object Name -eq "Component" | Select-Object -First 1).Methods | Where-Object Name -eq "get_gameObject" | Select-Object -First 1
+        $ImportedGetGo = $Module.ImportReference($GetGoMethod)
+
+        # --- 2. Hook GearModel.Awake — fires when any weapon is instantiated ---
+        $GearModelType = $Module.Types | Where-Object Name -eq "GearModel" | Select-Object -First 1
+        if ($GearModelType) {
+            $GearAwake = $GearModelType.Methods | Where-Object Name -eq "Awake" | Select-Object -First 1
+            if ($GearAwake -and $GearAwake.HasBody) {
+                $GIl = $GearAwake.Body.GetILProcessor()
+                $GFirst = $GearAwake.Body.Instructions | Select-Object -First 1
+                $MeshBootstrapContinue2 = $GIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+                $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedBeginMeshBootstrap))
+                $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $MeshBootstrapContinue2))
+                foreach ($kvp in $MeshReplacerMeshes.GetEnumerator()) {
+                    $MeshNameLit = ($kvp.Key   -replace '\\', '\\\\') -replace '"', '\"'
+                    $FileNameLit = ($kvp.Value -replace '\\', '\\\\') -replace '"', '\"'
+                    $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $MeshNameLit))
+                    $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $FileNameLit))
+                    $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedRegisterMesh))
+                }
+                foreach ($goName in $MeshReplacerTransformFixes.Keys) {
+                    $fixes = $MeshReplacerTransformFixes[$goName]
+                    if ($fixes -isnot [System.Collections.IEnumerable]) { $fixes = @($fixes) }
+                    foreach ($fix in $fixes) {
+                        $goLit   = ([string]$goName  -replace '\\', '\\\\') -replace '"', '\"'
+                        $fixPath = if ($fix.path) { [string]$fix.path } else { '' }
+                        $pathLit = ($fixPath -replace '\\', '\\\\') -replace '"', '\"'
+
+                        $nan = [float]::NaN
+                        $px = if ($fix.position -and $fix.position.Count -ge 3) { [float]$fix.position[0] } else { $nan }
+                        $py = if ($fix.position -and $fix.position.Count -ge 3) { [float]$fix.position[1] } else { $nan }
+                        $pz = if ($fix.position -and $fix.position.Count -ge 3) { [float]$fix.position[2] } else { $nan }
+                        $rx = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[0] } else { $nan }
+                        $ry = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[1] } else { $nan }
+                        $rz = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[2] } else { $nan }
+                        $rw = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[3] } else { $nan }
+                        $sx = if ($fix.scale    -and $fix.scale.Count    -ge 3) { [float]$fix.scale[0]    } else { $nan }
+                        $sy = if ($fix.scale    -and $fix.scale.Count    -ge 3) { [float]$fix.scale[1]    } else { $nan }
+                        $sz = if ($fix.scale    -and $fix.scale.Count    -ge 3) { [float]$fix.scale[2]    } else { $nan }
+
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $goLit))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $pathLit))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $px))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $py))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $pz))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $rx))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $ry))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $rz))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $rw))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $sx))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $sy))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $sz))
+                        $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedRegisterTransformFix))
+                    }
+                }
+                $GIl.InsertBefore($GFirst, $MeshBootstrapContinue2)
+                $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+                $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedGetGo))
+                $GIl.InsertBefore($GFirst, $GIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedOnGameObject))
+                Write-Output "[MeshReplacer] Hooked GearModel.Awake."
+            }
+        } else {
+            Write-Output "[MeshReplacer] WARNING: GearModel not found."
+        }
+
+        # --- 3. Hook UnitView.UpdateUnit — fires when a character/skin is loaded ---
+        $UnitViewType = $Module.Types | Where-Object Name -eq "UnitView" | Select-Object -First 1
+        if ($UnitViewType) {
+            $UpdateUnit = $UnitViewType.Methods | Where-Object Name -eq "UpdateUnit" | Select-Object -First 1
+            if ($UpdateUnit -and $UpdateUnit.HasBody) {
+                $UIl = $UpdateUnit.Body.GetILProcessor()
+                $UFirst = $UpdateUnit.Body.Instructions | Select-Object -First 1
+                $MeshBootstrapContinue3 = $UIl.Create([Mono.Cecil.Cil.OpCodes]::Nop)
+                $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedBeginMeshBootstrap))
+                $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Brfalse, $MeshBootstrapContinue3))
+                foreach ($kvp in $MeshReplacerMeshes.GetEnumerator()) {
+                    $MeshNameLit = ($kvp.Key   -replace '\\', '\\\\') -replace '"', '\"'
+                    $FileNameLit = ($kvp.Value -replace '\\', '\\\\') -replace '"', '\"'
+                    $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $MeshNameLit))
+                    $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $FileNameLit))
+                    $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedRegisterMesh))
+                }
+                foreach ($goName in $MeshReplacerTransformFixes.Keys) {
+                    $fixes = $MeshReplacerTransformFixes[$goName]
+                    if ($fixes -isnot [System.Collections.IEnumerable]) { $fixes = @($fixes) }
+                    foreach ($fix in $fixes) {
+                        $goLit   = ([string]$goName  -replace '\\', '\\\\') -replace '"', '\"'
+                        $fixPath = if ($fix.path) { [string]$fix.path } else { '' }
+                        $pathLit = ($fixPath -replace '\\', '\\\\') -replace '"', '\"'
+
+                        $nan = [float]::NaN
+                        $px = if ($fix.position -and $fix.position.Count -ge 3) { [float]$fix.position[0] } else { $nan }
+                        $py = if ($fix.position -and $fix.position.Count -ge 3) { [float]$fix.position[1] } else { $nan }
+                        $pz = if ($fix.position -and $fix.position.Count -ge 3) { [float]$fix.position[2] } else { $nan }
+                        $rx = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[0] } else { $nan }
+                        $ry = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[1] } else { $nan }
+                        $rz = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[2] } else { $nan }
+                        $rw = if ($fix.rotation -and $fix.rotation.Count -ge 4) { [float]$fix.rotation[3] } else { $nan }
+                        $sx = if ($fix.scale    -and $fix.scale.Count    -ge 3) { [float]$fix.scale[0]    } else { $nan }
+                        $sy = if ($fix.scale    -and $fix.scale.Count    -ge 3) { [float]$fix.scale[1]    } else { $nan }
+                        $sz = if ($fix.scale    -and $fix.scale.Count    -ge 3) { [float]$fix.scale[2]    } else { $nan }
+
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $goLit))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldstr, $pathLit))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $px))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $py))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $pz))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $rx))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $ry))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $rz))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $rw))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $sx))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $sy))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldc_R4, $sz))
+                        $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedRegisterTransformFix))
+                    }
+                }
+                $UIl.InsertBefore($UFirst, $MeshBootstrapContinue3)
+                $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+                $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedGetGo))
+                $UIl.InsertBefore($UFirst, $UIl.Create([Mono.Cecil.Cil.OpCodes]::Call,  $ImportedOnGameObject))
+                Write-Output "[MeshReplacer] Hooked UnitView.UpdateUnit."
+            }
+        } else {
+            Write-Output "[MeshReplacer] WARNING: UnitView not found."
+        }
+
+    } else {
+        Write-Output "[MeshReplacer] WARNING: MeshReplacerManager methods not found in helper assembly (EnsureInstance=$([bool]$EnsureMeshInstanceMethod) RegisterReplacement=$([bool]$RegisterMeshMethod) OnGameObjectInstantiated=$([bool]$OnGameObjectMethod) RegisterTransformFix=$([bool]$RegisterTransformFixMethod))."
     }
 }
 
@@ -5882,5 +6213,6 @@ if ($UnitGuiScaleConfig.enabled) { $Features.Add("unit-gui-scale") | Out-Null }
 if ($WsiConfig.scale_enabled) { $Features.Add("wsi-scale") | Out-Null }
 if ($MapRenderConfig.enabled) { $Features.Add("map-render-override") | Out-Null }
 $Features.Add("audio-replacer") | Out-Null
+if ($MeshReplacerEnabled -and $MeshReplacerMeshes.Count -gt 0) { $Features.Add("mesh-replacer") | Out-Null }
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash
 Write-Output "Experimental all-in-one DLL built. SHA1=$Hash features=$([string]::Join(',', $Features))"

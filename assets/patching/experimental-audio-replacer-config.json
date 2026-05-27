@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "log_all_events": true,
+  "log_all_events": false,
   "replacements": {},
   "custom_audio": {
     "Play_Hunter_Primary_Fire": "test_shot.wav"

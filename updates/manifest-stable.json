@@ -1,27 +1,27 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.4.8",
+  "version": "2.4.9",
   "minimum_supported_version": "2.2.0",
-  "published_at": "2026-05-23T16:00:00.0000000+00:00",
-  "notes": "## Changes\\n\\nTexture replacement feature:\\n- Add launcher UI to configure a texture replacement folder\\n- Replace 3D mesh textures and UI perk/shop sprites by filename\\n- Patch GuiSpriteResources.GetShopImage to intercept perk icon loading at the source",
+  "published_at": "2026-05-27T04:51:02.2261059+00:00",
+  "notes": "## Changes\n\n- Add table-based texture replacer UI and move it onto the same launcher row as audio and mesh replacers\n- Add recursive `Import folder...` support to audio, mesh, and texture replacers with automatic row generation by filename\n- Improve audio replacer playback, suppression, pooling, preload behavior, and startup bootstrap handling\n- Improve mesh replacer startup/bootstrap behavior and queue replacements that appear before assets finish loading\n- Fix WinForms clipboard copy crashes when using `Ctrl+C` in replacement grids\n- Add reference import archives and hero weapon audio event ID documentation\r\n",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.8/BnlCommunityFixes.exe",
-      "sha256": "8556098E4CC49879841F16510C24390FCB443DC7A01FE59D8BE15C2C0C3EE954",
-      "size": 155064800
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.9/BnlCommunityFixes.exe",
+      "sha256": "6C492185E351AFAB503D33E29843C5A0B0055CD8D8F40FD8EE7B87769CCC6C74",
+      "size": 163556039
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.8/BnlUpdater.exe",
-      "sha256": "0BBBB06C9AD4B273A76CF2EAB2571E5C778D6F69C53187B618CE0F2B6368F032",
-      "size": 67625714
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.9/BnlUpdater.exe",
+      "sha256": "50BA5E5912EC84E0498BF4E15B36D1C4614CD81BC73906F6AEA52D5EF21BBD6C",
+      "size": 67626226
     },
     "replay_analyzer_exe": {
       "file_name": "BnlCommunityFixes.ReplayAnalyzer.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.8/BnlCommunityFixes.ReplayAnalyzer.exe",
-      "sha256": "7960B1983097AC29261B47F7893FA6D82DE0DC860A8AC78869ECD9ADE93597C7",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.9/BnlCommunityFixes.ReplayAnalyzer.exe",
+      "sha256": "B7E40C85D0CC189C214840CD1608E6366AD439397C0F6655EF67A042D527890F",
       "size": 68191477
     }
   }

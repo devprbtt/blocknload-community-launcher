@@ -26,7 +26,7 @@ internal static class Program
     }
 
     [STAThread]
-    private static async Task Main(string[] args)
+    private static void Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
 
@@ -47,7 +47,7 @@ internal static class Program
             else
             {
                 var bootstrapper = new AppBootstrapper(paths, logger);
-                if (await bootstrapper.EnsureInstalledAsync(args))
+                if (bootstrapper.EnsureInstalledAsync(args).GetAwaiter().GetResult())
                 {
                     return;
                 }
@@ -76,7 +76,7 @@ internal static class Program
             else
             {
                 var updateCoordinator = new UpdateCoordinator(paths, logger, settings, runtimeOptions, httpClient);
-                var updateResult = await updateCoordinator.CheckAndApplyIfAcceptedAsync();
+                var updateResult = updateCoordinator.CheckAndApplyIfAcceptedAsync().GetAwaiter().GetResult();
                 if (updateResult.ShouldExitForUpdate)
                 {
                     logger.Info("Exiting for update.");

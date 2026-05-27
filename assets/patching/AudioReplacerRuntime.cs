@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEngine;
 
 namespace BnlCommunityFixes
@@ -14,7 +15,7 @@ namespace BnlCommunityFixes
     {
         private const string CustomAudioFolder = "CustomAudio";
         private const string CustomPrefix = "__CUSTOM__:";
-        private const int PoolSize = 32;
+        private const int PoolSize = 64;
 
         private static AudioReplacerManager instance;
         private static readonly Dictionary<string, AudioClip> customClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
@@ -61,9 +62,11 @@ namespace BnlCommunityFixes
             AudioClip clip;
             if (customClips.TryGetValue(mappedName, out clip) && clip != null && pool != null)
             {
-                // Simple round-robin pool — fast, no Time.time, no search loop
-                AudioSource source = pool[poolIndex];
-                poolIndex = (poolIndex + 1) % PoolSize;
+                AudioSource source = AcquireSource();
+                if (source == null)
+                {
+                    return false;
+                }
 
                 Vector3 position = (target != null) ? target.transform.position : Vector3.zero;
                 source.transform.position = position;
@@ -97,8 +100,11 @@ namespace BnlCommunityFixes
                 GameObject child = new GameObject("AudioPool_" + i);
                 child.transform.SetParent(transform, false);
                 AudioSource src = child.AddComponent<AudioSource>();
-                src.spatialBlend = 1f;
+                src.spatialBlend = 0f;
                 src.playOnAwake = false;
+                src.dopplerLevel = 0f;
+                src.panStereo = 0f;
+                src.priority = 0;
                 src.volume = 1f;
                 pool[i] = src;
             }
@@ -143,46 +149,57 @@ namespace BnlCommunityFixes
             foreach (string filePath in allFiles)
             {
                 string fileName = Path.GetFileName(filePath);
-                string url = "file:///" + filePath.Replace('\\', '/');
+                string extension = Path.GetExtension(filePath).ToLowerInvariant();
+                AudioClip clip = null;
 
-                using (WWW www = new WWW(url))
+                if (extension == ".wav")
                 {
-                    yield return www;
-
-                    if (string.IsNullOrEmpty(www.error))
+                    try
                     {
-                        AudioClip clip = null;
+                        clip = LoadWaveClip(filePath, fileName);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning("[AudioReplacer] Failed to decode wav " + fileName + ": " + ex.Message);
+                    }
+                }
+                else
+                {
+                    string url = "file:///" + filePath.Replace('\\', '/');
+                    using (WWW www = new WWW(url))
+                    {
+                        yield return www;
 
-                        // Try all loading modes — Unity 5.1 MP3 support varies
-                        clip = www.GetAudioClip(false, true);
-                        if (clip == null) clip = www.GetAudioClip(false, false);
-                        if (clip == null) clip = www.GetAudioClip(true, false);
-                        if (clip == null) clip = www.GetAudioClip(true, true);
-                        if (clip == null) clip = www.audioClip;
-
-                        if (clip != null)
+                        if (string.IsNullOrEmpty(www.error))
                         {
-                            clip.name = fileName;
-                            string key = CustomPrefix + fileName;
-                            customClips[key] = clip;
-
-                            // Also register under just the filename without extension
-                            string nameNoExt = Path.GetFileNameWithoutExtension(fileName);
-                            customClips[CustomPrefix + nameNoExt] = clip;
-
-                            loadCount++;
-                            Debug.Log("[AudioReplacer] Loaded custom audio: " + fileName + " (" + clip.length.ToString("F1") + "s, " + clip.channels + "ch, " + clip.frequency + "Hz)");
+                            // Keep compressed formats as a fallback, but prefer wav
+                            // for weapon sounds because it avoids decode stalls later.
+                            clip = www.GetAudioClip(false, false);
+                            if (clip == null) clip = www.GetAudioClip(true, false);
+                            if (clip == null) clip = www.GetAudioClip(false, true);
+                            if (clip == null) clip = www.GetAudioClip(true, true);
+                            if (clip == null) clip = www.audioClip;
                         }
                         else
                         {
-                            Debug.LogWarning("[AudioReplacer] Failed to decode audio: " + fileName);
+                            Debug.LogWarning("[AudioReplacer] Failed to load " + fileName + ": " + www.error);
                         }
                     }
-                    else
-                    {
-                        Debug.LogWarning("[AudioReplacer] Failed to load " + fileName + ": " + www.error);
-                    }
                 }
+
+                if (clip != null)
+                {
+                    clip.name = fileName;
+                    RegisterLoadedClip(fileName, clip);
+                    loadCount++;
+                    Debug.Log("[AudioReplacer] Loaded custom audio: " + fileName + " (" + clip.length.ToString("F1") + "s, " + clip.channels + "ch, " + clip.frequency + "Hz)");
+                }
+                else
+                {
+                    Debug.LogWarning("[AudioReplacer] Failed to decode audio: " + fileName);
+                }
+
+                yield return null;
             }
 
             loadComplete = true;
@@ -196,6 +213,168 @@ namespace BnlCommunityFixes
                 instance = null;
             }
         }
+
+        private static AudioSource AcquireSource()
+        {
+            // Prefer an idle source so overlapping rapid-fire shots do not
+            // stomp currently playing clips on the shared pool.
+            for (int i = 0; i < PoolSize; i++)
+            {
+                int index = (poolIndex + i) % PoolSize;
+                AudioSource source = pool[index];
+                if (source != null && !source.isPlaying)
+                {
+                    poolIndex = (index + 1) % PoolSize;
+                    return source;
+                }
+            }
+
+            // If all sources are busy, fall back to the next source in a
+            // stable round-robin order instead of allocating on the hot path.
+            AudioSource fallback = pool[poolIndex];
+            poolIndex = (poolIndex + 1) % PoolSize;
+            return fallback;
+        }
+
+        private static void RegisterLoadedClip(string fileName, AudioClip clip)
+        {
+            string key = CustomPrefix + fileName;
+            customClips[key] = clip;
+
+            string nameNoExt = Path.GetFileNameWithoutExtension(fileName);
+            customClips[CustomPrefix + nameNoExt] = clip;
+        }
+
+        private static AudioClip LoadWaveClip(string filePath, string clipName)
+        {
+            byte[] bytes = File.ReadAllBytes(filePath);
+            WaveData wave = ParseWave(bytes);
+            AudioClip clip = AudioClip.Create(clipName, wave.Samples.Length / wave.Channels, wave.Channels, wave.SampleRate, false);
+            clip.SetData(wave.Samples, 0);
+            return clip;
+        }
+
+        private static WaveData ParseWave(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length < 44)
+            {
+                throw new InvalidDataException("WAV file is too small.");
+            }
+
+            if (ReadAscii(bytes, 0, 4) != "RIFF" || ReadAscii(bytes, 8, 4) != "WAVE")
+            {
+                throw new InvalidDataException("Not a RIFF/WAVE file.");
+            }
+
+            int offset = 12;
+            ushort formatTag = 0;
+            ushort channels = 0;
+            int sampleRate = 0;
+            ushort bitsPerSample = 0;
+            byte[] sampleBytes = null;
+
+            while (offset + 8 <= bytes.Length)
+            {
+                string chunkId = ReadAscii(bytes, offset, 4);
+                int chunkSize = BitConverter.ToInt32(bytes, offset + 4);
+                int chunkDataOffset = offset + 8;
+                if (chunkSize < 0 || chunkDataOffset + chunkSize > bytes.Length)
+                {
+                    throw new InvalidDataException("Invalid WAV chunk size.");
+                }
+
+                if (chunkId == "fmt ")
+                {
+                    formatTag = BitConverter.ToUInt16(bytes, chunkDataOffset);
+                    channels = BitConverter.ToUInt16(bytes, chunkDataOffset + 2);
+                    sampleRate = BitConverter.ToInt32(bytes, chunkDataOffset + 4);
+                    bitsPerSample = BitConverter.ToUInt16(bytes, chunkDataOffset + 14);
+                }
+                else if (chunkId == "data")
+                {
+                    sampleBytes = new byte[chunkSize];
+                    Buffer.BlockCopy(bytes, chunkDataOffset, sampleBytes, 0, chunkSize);
+                }
+
+                offset = chunkDataOffset + chunkSize + (chunkSize & 1);
+            }
+
+            if (channels == 0 || sampleRate <= 0 || bitsPerSample == 0 || sampleBytes == null)
+            {
+                throw new InvalidDataException("Incomplete WAV data.");
+            }
+
+            return new WaveData
+            {
+                Channels = channels,
+                SampleRate = sampleRate,
+                Samples = DecodeWaveSamples(sampleBytes, formatTag, bitsPerSample)
+            };
+        }
+
+        private static float[] DecodeWaveSamples(byte[] data, ushort formatTag, ushort bitsPerSample)
+        {
+            if (bitsPerSample == 0)
+            {
+                throw new InvalidDataException("Invalid bits-per-sample value.");
+            }
+
+            int bytesPerSample = bitsPerSample / 8;
+            if (bytesPerSample <= 0 || data.Length % bytesPerSample != 0)
+            {
+                throw new InvalidDataException("Unsupported WAV sample layout.");
+            }
+
+            int sampleCount = data.Length / bytesPerSample;
+            float[] samples = new float[sampleCount];
+
+            for (int i = 0; i < sampleCount; i++)
+            {
+                int index = i * bytesPerSample;
+                if (formatTag == 3 && bitsPerSample == 32)
+                {
+                    samples[i] = Mathf.Clamp(BitConverter.ToSingle(data, index), -1f, 1f);
+                    continue;
+                }
+
+                switch (bitsPerSample)
+                {
+                    case 8:
+                        samples[i] = (data[index] - 128) / 128f;
+                        break;
+                    case 16:
+                        samples[i] = BitConverter.ToInt16(data, index) / 32768f;
+                        break;
+                    case 24:
+                        int sample24 = data[index] | (data[index + 1] << 8) | (data[index + 2] << 16);
+                        if ((sample24 & 0x800000) != 0)
+                        {
+                            sample24 |= unchecked((int)0xFF000000);
+                        }
+                        samples[i] = sample24 / 8388608f;
+                        break;
+                    case 32:
+                        samples[i] = BitConverter.ToInt32(data, index) / 2147483648f;
+                        break;
+                    default:
+                        throw new InvalidDataException("Unsupported WAV bit depth: " + bitsPerSample);
+                }
+            }
+
+            return samples;
+        }
+
+        private static string ReadAscii(byte[] bytes, int offset, int count)
+        {
+            return Encoding.ASCII.GetString(bytes, offset, count);
+        }
+
+        private sealed class WaveData
+        {
+            public int Channels;
+            public int SampleRate;
+            public float[] Samples;
+        }
     }
 
         /// <summary>
@@ -208,15 +387,24 @@ namespace BnlCommunityFixes
     public static class AudioReplacerRuntime
     {
         private static bool configured;
+        private static bool bootstrapApplied;
         private static bool logAllPostEvents = true;
         private static readonly HashSet<string> ignoredEvents = new HashSet<string>();
         private static readonly Dictionary<string, string> replacementMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, float> volumeMap = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<int, SuppressionState> pendingUintSuppressions = new Dictionary<int, SuppressionState>();
+        private static readonly Dictionary<string, int> recentCustomEvents = new Dictionary<string, int>(StringComparer.Ordinal);
 
         public static void Configure(bool enableLogging)
         {
             configured = true;
             logAllPostEvents = enableLogging;
+            bootstrapApplied = true;
+            replacementMap.Clear();
+            volumeMap.Clear();
+            ignoredEvents.Clear();
+            pendingUintSuppressions.Clear();
+            recentCustomEvents.Clear();
 
             AudioReplacerManager.EnsureInstance();
 
@@ -228,6 +416,17 @@ namespace BnlCommunityFixes
             {
                 Debug.Log("[AudioReplacer] Audio event logging DISABLED.");
             }
+        }
+
+        public static bool BeginBootstrap(bool enableLogging)
+        {
+            if (bootstrapApplied)
+            {
+                return false;
+            }
+
+            Configure(enableLogging);
+            return true;
         }
 
         /// Always returns false (the PostEvent always runs). For custom audio,
@@ -247,8 +446,11 @@ namespace BnlCommunityFixes
                 }
                 float vol;
                 if (!volumeMap.TryGetValue(eventName, out vol)) vol = 1f;
-                AudioReplacerManager.TryPlayCustomClip(resolved, gameObject, vol);
-                suppressNextUint = true; // suppress the paired uint PostEvent call
+                if (ShouldPlayCustomEventThisFrame(eventName, gameObject))
+                {
+                    AudioReplacerManager.TryPlayCustomClip(resolved, gameObject, vol);
+                }
+                RegisterUintSuppression(gameObject);
                 return true; // SKIP — don't let Wwise play anything
             }
 
@@ -283,8 +485,11 @@ namespace BnlCommunityFixes
                 }
                 float vol;
                 if (!volumeMap.TryGetValue(eventName, out vol)) vol = 1f;
-                AudioReplacerManager.TryPlayCustomClip(resolved, gameObject, vol);
-                suppressNextUint = true; // suppress the paired uint PostEvent call
+                if (ShouldPlayCustomEventThisFrame(eventName, gameObject))
+                {
+                    AudioReplacerManager.TryPlayCustomClip(resolved, gameObject, vol);
+                }
+                RegisterUintSuppression(gameObject);
                 return true; // SKIP
             }
 
@@ -308,24 +513,31 @@ namespace BnlCommunityFixes
             return false;
         }
 
-        // Suppression for uint-based PostEvent: when a custom audio replacement
-        // fires on the string overload, the uint overload may also be called.
-        // This flag suppresses the next uint PostEvent call.
-        private static bool suppressNextUint;
-
-        public static void SetSuppressNextUint()
+        public static bool ShouldSuppressUint(GameObject gameObject)
         {
-            suppressNextUint = true;
-        }
-
-        public static bool ShouldSuppressUint()
-        {
-            if (suppressNextUint)
+            int emitterId = (gameObject != null) ? gameObject.GetInstanceID() : 0;
+            SuppressionState state;
+            if (pendingUintSuppressions.TryGetValue(emitterId, out state))
             {
-                suppressNextUint = false;
-                Debug.Log("[AudioReplacer] Suppressing uint PostEvent.");
-                return true;
+                if (state.Frame >= Time.frameCount - 1 && state.RemainingCount > 0)
+                {
+                    state.RemainingCount--;
+                    if (state.RemainingCount <= 0)
+                    {
+                        pendingUintSuppressions.Remove(emitterId);
+                    }
+                    else
+                    {
+                        pendingUintSuppressions[emitterId] = state;
+                    }
+
+                    Debug.Log("[AudioReplacer] Suppressing uint PostEvent for emitter " + emitterId + ".");
+                    return true;
+                }
+
+                pendingUintSuppressions.Remove(emitterId);
             }
+
             return false;
         }
 
@@ -397,6 +609,47 @@ namespace BnlCommunityFixes
         public static bool IsLoggingEnabled
         {
             get { return configured && logAllPostEvents; }
+        }
+
+        private static void RegisterUintSuppression(GameObject gameObject)
+        {
+            int emitterId = (gameObject != null) ? gameObject.GetInstanceID() : 0;
+            SuppressionState state;
+            if (pendingUintSuppressions.TryGetValue(emitterId, out state) && state.Frame >= Time.frameCount - 1)
+            {
+                state.RemainingCount++;
+                state.Frame = Time.frameCount;
+            }
+            else
+            {
+                state = new SuppressionState
+                {
+                    Frame = Time.frameCount,
+                    RemainingCount = 1
+                };
+            }
+
+            pendingUintSuppressions[emitterId] = state;
+        }
+
+        private static bool ShouldPlayCustomEventThisFrame(string eventName, GameObject gameObject)
+        {
+            int emitterId = (gameObject != null) ? gameObject.GetInstanceID() : 0;
+            string key = emitterId.ToString() + "|" + eventName;
+            int frame;
+            if (recentCustomEvents.TryGetValue(key, out frame) && frame == Time.frameCount)
+            {
+                return false;
+            }
+
+            recentCustomEvents[key] = Time.frameCount;
+            return true;
+        }
+
+        private struct SuppressionState
+        {
+            public int Frame;
+            public int RemainingCount;
         }
     }
 }

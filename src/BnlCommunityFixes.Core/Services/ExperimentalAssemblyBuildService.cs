@@ -24,7 +24,9 @@ public sealed class ExperimentalAssemblyBuildService
         "teammate-hp-config.json",
         "experimental-hide-impact-vfx-config.json",
         "unit-gui-scale-config.json",
-        "experimental-map-render-config.json"
+        "experimental-map-render-config.json",
+        "experimental-audio-replacer-config.json",
+        "experimental-mesh-replacer-config.json"
     ];
 
     private readonly AppPaths paths;
