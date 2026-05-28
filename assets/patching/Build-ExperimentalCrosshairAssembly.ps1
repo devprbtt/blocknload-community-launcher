@@ -31,6 +31,7 @@ $WsiConfigPath = Join-Path $PSScriptRoot "wsi-config.json"
 $MapRenderConfigPath = Join-Path $PSScriptRoot "experimental-map-render-config.json"
 $AudioReplacerConfigPath = Join-Path $PSScriptRoot "experimental-audio-replacer-config.json"
 $MeshReplacerConfigPath = Join-Path $PSScriptRoot "experimental-mesh-replacer-config.json"
+$FontOverrideConfigPath = Join-Path $PSScriptRoot "experimental-font-override-config.json"
 $OutputPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.dll"
 $SavedCopyPath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.font-configured.dll"
 $TempBasePath = Join-Path $PSScriptRoot "Assembly-CSharp.experimental.base.dll"
@@ -288,6 +289,11 @@ $MeshReplacerConfig = Get-JsonConfig -Path $MeshReplacerConfigPath -Default @{
     meshes = @{}
     transformFixes = @{}
 }
+
+$FontOverrideConfig = Get-JsonConfig -Path $FontOverrideConfigPath -Default @{
+    enabled = $false
+}
+[bool]$FontOverrideEnabled = if ($null -ne $FontOverrideConfig.enabled) { [bool]$FontOverrideConfig.enabled } else { $false }
 [bool]$MeshReplacerEnabled = if ($null -ne $MeshReplacerConfig.enabled) { [bool]$MeshReplacerConfig.enabled } else { $false }
 $MeshReplacerMeshes = @{}
 if ($MeshReplacerConfig.meshes -is [System.Collections.IDictionary]) {
@@ -339,6 +345,7 @@ $AnyEnabled = @(
     [bool]$UnitGuiScaleConfig.enabled,
     [bool]$WsiConfig.scale_enabled,
     [bool]$MapRenderConfig.enabled,
+    $FontOverrideEnabled,
     $SkipIntroEnabled,
     $DisableMainMenuFrameCapEnabled
 ) -contains $true
@@ -3361,6 +3368,28 @@ namespace BnlCommunityFixes
 "@
 }
 
+if ($FontOverrideEnabled) {
+$HelperSource += @"
+
+namespace BnlCommunityFixes
+{
+    public static class FontOverrideRuntime
+    {
+        static FontOverrideRuntime()
+        {
+            RuntimeFeatureState.ConfigureFontOverride(true, $(Format-BoolLiteral $FontOverrideEnabled));
+            RuntimeSettingsMenuManager.EnsureInstance();
+            TextureReplacementBootstrapper.EnsureInstance();
+            FontOverrideBootstrapper.EnsureInstance();
+            UnityEngine.Debug.Log("[BNL FontOverride] initialized");
+        }
+
+        public static void EnsureInit() { }
+    }
+}
+"@
+}
+
 if ($AutoCrouchEnabled) {
 $HelperSource += @"
 
@@ -5464,6 +5493,35 @@ if ($true) {
     $DpsIl.InsertBefore($DpsLastRet, $DpsIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedDpsTryRecord))
 }
 
+# Font Override — inject EnsureInit into GuiActivityScroll.Start and GuiNotices.Start
+if ($FontOverrideEnabled) {
+    $FontOverrideRuntimeType = $HelperAssembly.MainModule.Types | Where-Object FullName -eq "BnlCommunityFixes.FontOverrideRuntime" | Select-Object -First 1
+    if (-not $FontOverrideRuntimeType) { throw "FontOverrideRuntime helper type not found." }
+    $ImportedFontEnsureInit = $Module.ImportReference(($FontOverrideRuntimeType.Methods | Where-Object Name -eq "EnsureInit" | Select-Object -First 1))
+
+    $ActivityScrollType = $Module.Types | Where-Object Name -eq "GuiActivityScroll" | Select-Object -First 1
+    if ($ActivityScrollType) {
+        $ActivityScrollStart = $ActivityScrollType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+        if ($ActivityScrollStart -and $ActivityScrollStart.HasBody) {
+            $asIl = $ActivityScrollStart.Body.GetILProcessor()
+            $asFirst = $ActivityScrollStart.Body.Instructions[0]
+            $asIl.InsertBefore($asFirst, $asIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedFontEnsureInit))
+            Write-Output "[FontOverride] Patched GuiActivityScroll.Start"
+        }
+    }
+
+    $GuiNoticesType = $Module.Types | Where-Object Name -eq "GuiNotices" | Select-Object -First 1
+    if ($GuiNoticesType) {
+        $GuiNoticesStart = $GuiNoticesType.Methods | Where-Object Name -eq "Start" | Select-Object -First 1
+        if ($GuiNoticesStart -and $GuiNoticesStart.HasBody) {
+            $gnIl = $GuiNoticesStart.Body.GetILProcessor()
+            $gnFirst = $GuiNoticesStart.Body.Instructions[0]
+            $gnIl.InsertBefore($gnFirst, $gnIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedFontEnsureInit))
+            Write-Output "[FontOverride] Patched GuiNotices.Start"
+        }
+    }
+}
+
 # Skip intro — patch GuiLoginIntro.Start() to immediately call FinishWarning() + FinishIntro()
 if ($SkipIntroEnabled) {
     $GuiLoginIntroType = $Module.Types | Where-Object Name -eq "GuiLoginIntro" | Select-Object -First 1
@@ -6212,6 +6270,7 @@ if ($HideImpactVfxConfig.enabled) { $Features.Add("hide-impact-vfx") | Out-Null 
 if ($UnitGuiScaleConfig.enabled) { $Features.Add("unit-gui-scale") | Out-Null }
 if ($WsiConfig.scale_enabled) { $Features.Add("wsi-scale") | Out-Null }
 if ($MapRenderConfig.enabled) { $Features.Add("map-render-override") | Out-Null }
+if ($FontOverrideEnabled) { $Features.Add("font-override") | Out-Null }
 $Features.Add("audio-replacer") | Out-Null
 if ($MeshReplacerEnabled -and $MeshReplacerMeshes.Count -gt 0) { $Features.Add("mesh-replacer") | Out-Null }
 $Hash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA1).Hash

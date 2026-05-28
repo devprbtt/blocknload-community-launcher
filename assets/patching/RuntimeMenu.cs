@@ -148,6 +148,9 @@ namespace BnlCommunityFixes
         private static bool dpsOverlayConfigured;
         private static bool defaultDpsOverlayEnabled;
 
+        private static bool fontOverrideConfigured;
+        private static bool defaultFontOverrideEnabled;
+
         private static bool loadedFromDisk;
         private static RuntimeMenuSettingsData loadedData;
 
@@ -168,6 +171,8 @@ namespace BnlCommunityFixes
         public static bool WsiScaleSupported { get; private set; }
         public static bool MapRenderOverrideSupported { get; private set; }
         public static bool DpsOverlaySupported { get; private set; }
+        public static bool FontOverrideSupported { get; private set; }
+        public static bool FontOverrideEnabled { get; private set; }
 
         public static float UnitGuiScaleMultiplier { get; private set; }
         public static float WsiScaleMultiplier { get; private set; }
@@ -508,6 +513,18 @@ namespace BnlCommunityFixes
         public static void SetDpsOverlayEnabled(bool value)
         {
             DpsOverlayEnabled = value;
+        }
+
+        public static void ConfigureFontOverride(bool supported, bool enabled)
+        {
+            FontOverrideSupported = FontOverrideSupported || supported;
+            defaultFontOverrideEnabled = enabled;
+
+            if (!fontOverrideConfigured)
+            {
+                FontOverrideEnabled = defaultFontOverrideEnabled;
+                fontOverrideConfigured = true;
+            }
         }
 
         public static void ConfigureLocalBuildPreview(bool supported, bool enabled, float timeoutSeconds)
@@ -2579,6 +2596,132 @@ namespace BnlCommunityFixes
             }
 
             window.Toggle();
+        }
+    }
+
+    public sealed class FontOverrideBootstrapper : UnityEngine.MonoBehaviour
+    {
+        private static FontOverrideBootstrapper instance;
+
+        private UnityEngine.Font edoszFont;
+        private bool fontSearched;
+        private float nextScanTime;
+        private const float ScanInterval = 0.5f;
+
+        public static void EnsureInstance()
+        {
+            if (instance != null) return;
+            var go = UnityEngine.GameObject.Find("BNL_FONT_OVERRIDE");
+            if (go == null) go = new UnityEngine.GameObject("BNL_FONT_OVERRIDE");
+            instance = go.GetComponent<FontOverrideBootstrapper>();
+            if (instance == null) instance = go.AddComponent<FontOverrideBootstrapper>();
+        }
+
+        private void Awake()
+        {
+            if (instance != null && instance != this) { UnityEngine.Object.Destroy(this); return; }
+            instance = this;
+            UnityEngine.Object.DontDestroyOnLoad(gameObject);
+        }
+
+        private bool TryFindEdoszFont()
+        {
+            if (fontSearched) return edoszFont != null;
+            fontSearched = true;
+
+            // Search all loaded asset bundles for the edosz Font asset
+            foreach (var bundle in UnityEngine.AssetBundle.GetAllLoadedAssetBundles())
+            {
+                if (!bundle.Contains("edosz")) continue;
+                var font = bundle.LoadAsset<UnityEngine.Font>("edosz");
+                if (font != null)
+                {
+                    edoszFont = font;
+                    UnityEngine.Debug.Log("[BNL FontOverride] Found edosz font in bundle: " + bundle.name);
+                    return true;
+                }
+            }
+
+            // Fallback: try Resources
+            edoszFont = UnityEngine.Resources.Load<UnityEngine.Font>("edosz");
+            if (edoszFont != null)
+            {
+                UnityEngine.Debug.Log("[BNL FontOverride] Found edosz font via Resources");
+                return true;
+            }
+
+            UnityEngine.Debug.LogWarning("[BNL FontOverride] edosz font not found in any loaded bundle");
+            return false;
+        }
+
+        private void Update()
+        {
+            if (!RuntimeFeatureState.FontOverrideEnabled) return;
+            if (UnityEngine.Time.time < nextScanTime) return;
+            nextScanTime = UnityEngine.Time.time + ScanInterval;
+
+            if (!TryFindEdoszFont()) return;
+
+            ApplyFontOverrides();
+        }
+
+        private void ApplyFontOverrides()
+        {
+            // Find GuiActivityScrollItem components (kill feed rows) and override their Text children
+            var scrollItems = UnityEngine.Object.FindObjectsOfType<GuiActivityScrollItem>();
+            foreach (var item in scrollItems)
+            {
+                if (item == null || item.Content == null) continue;
+                var texts = item.Content.GetComponentsInChildren<UnityEngine.UI.Text>(true);
+                foreach (var t in texts)
+                {
+                    if (t == null) continue;
+                    if (t.font == edoszFont) continue;
+                    t.font = edoszFont;
+                    // Prevent UiStyleFontComponent from overriding us back
+                    var styleSetter = t.GetComponent<UiStyleFontComponent>();
+                    if (styleSetter != null) styleSetter.ignoreStyle = true;
+                }
+                // Also patch the TextTemplate used as source for new items
+                if (item.TextTemplate != null && item.TextTemplate.font != edoszFont)
+                {
+                    item.TextTemplate.font = edoszFont;
+                    var styleSetter = item.TextTemplate.GetComponent<UiStyleFontComponent>();
+                    if (styleSetter != null) styleSetter.ignoreStyle = true;
+                }
+            }
+
+            // Find GuiNotices (center-screen notices) and override their Text children
+            var notices = UnityEngine.Object.FindObjectsOfType<GuiNotices>();
+            foreach (var notice in notices)
+            {
+                if (notice == null || notice.Content == null) continue;
+                var texts = notice.Content.GetComponentsInChildren<UnityEngine.UI.Text>(true);
+                foreach (var t in texts)
+                {
+                    if (t == null) continue;
+                    if (t.font == edoszFont) continue;
+                    t.font = edoszFont;
+                    var styleSetter = t.GetComponent<UiStyleFontComponent>();
+                    if (styleSetter != null) styleSetter.ignoreStyle = true;
+                }
+                // Patch prefab templates so newly instantiated notices get the font
+                PatchNoticeTemplate(notice.BigNotify);
+                PatchNoticeTemplate(notice.SmallNotify);
+            }
+        }
+
+        private void PatchNoticeTemplate(UnityEngine.GameObject template)
+        {
+            if (template == null) return;
+            var texts = template.GetComponentsInChildren<UnityEngine.UI.Text>(true);
+            foreach (var t in texts)
+            {
+                if (t == null || t.font == edoszFont) continue;
+                t.font = edoszFont;
+                var styleSetter = t.GetComponent<UiStyleFontComponent>();
+                if (styleSetter != null) styleSetter.ignoreStyle = true;
+            }
         }
     }
 
