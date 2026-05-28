@@ -2600,6 +2600,9 @@ namespace BnlCommunityFixes
 
         private System.Collections.Generic.Dictionary<string, UnityEngine.Texture2D> replacements;
         private System.Collections.Generic.Dictionary<string, string> replacementFiles;
+        private System.Collections.Generic.HashSet<string> pendingTargets;
+        private System.Collections.Generic.HashSet<string> appliedTargets;
+        private System.Collections.Generic.HashSet<int> patchedImageInstanceIds;
         private float nextScanTime;
         private const float ScanInterval = 1f;
 
@@ -2653,12 +2656,20 @@ namespace BnlCommunityFixes
             UnityEngine.Object.DontDestroyOnLoad(gameObject);
             replacements = new System.Collections.Generic.Dictionary<string, UnityEngine.Texture2D>();
             replacementFiles = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+            pendingTargets = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            appliedTargets = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            patchedImageInstanceIds = new System.Collections.Generic.HashSet<int>();
             LoadReplacementTextures();
             nextScanTime = UnityEngine.Time.realtimeSinceStartup + ScanInterval;
         }
 
         private void OnLevelWasLoaded(int level)
         {
+            // Re-arm targets on level load — new scene has fresh UI instances to swap.
+            // Only re-arm targets that were previously applied (not ones that never appeared).
+            foreach (var key in appliedTargets)
+                pendingTargets.Add(key);
+            patchedImageInstanceIds.Clear();
             nextScanTime = UnityEngine.Time.realtimeSinceStartup + ScanInterval;
         }
 
@@ -2667,6 +2678,9 @@ namespace BnlCommunityFixes
             replacements.Clear();
             replacementFiles.Clear();
             spriteCache.Clear();
+            pendingTargets.Clear();
+            appliedTargets.Clear();
+            patchedImageInstanceIds.Clear();
             if (!System.IO.File.Exists(TextureMappingsFile))
             {
                 UnityEngine.Debug.Log("[BNL] TextureReplacement: texture-replacements.txt not found, skipping.");
@@ -2703,13 +2717,14 @@ namespace BnlCommunityFixes
                 tex.name = targetName;
                 replacements[targetName] = tex;
                 replacementFiles[targetName] = fileName;
+                pendingTargets.Add(targetName);
                 UnityEngine.Debug.Log("[BNL] TextureReplacement: loaded replacement: " + targetName + " -> " + fileName);
             }
         }
 
         private void Update()
         {
-            if (replacements.Count == 0) return;
+            if (pendingTargets.Count == 0) return;
             float now = UnityEngine.Time.realtimeSinceStartup;
             if (now < nextScanTime) return;
             nextScanTime = now + ScanInterval;
@@ -2719,16 +2734,22 @@ namespace BnlCommunityFixes
         private void ApplyReplacements()
         {
             int replaced = 0;
+            // Track which pending keys we matched this pass (to drain them after)
+            var matchedThisPass = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+
             foreach (var renderer in UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.Renderer>())
             {
                 if (renderer == null) continue;
                 foreach (var mat in renderer.materials)
                 {
                     if (mat == null || mat.mainTexture == null) continue;
+                    string texName = mat.mainTexture.name;
+                    if (!pendingTargets.Contains(texName)) continue;
                     UnityEngine.Texture2D replacement;
-                    if (replacements.TryGetValue(mat.mainTexture.name, out replacement))
+                    if (replacements.TryGetValue(texName, out replacement))
                     {
                         mat.mainTexture = replacement;
+                        matchedThisPass.Add(texName);
                         replaced++;
                     }
                 }
@@ -2736,35 +2757,69 @@ namespace BnlCommunityFixes
             foreach (var image in UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.UI.Image>())
             {
                 if (image == null || image.sprite == null) continue;
+                int instanceId = image.GetInstanceID();
+                if (patchedImageInstanceIds.Contains(instanceId)) continue;
                 string spriteName = image.sprite.name;
                 if (image.sprite.texture == null) continue;
                 string texName = image.sprite.texture.name;
-                UnityEngine.Texture2D replacement;
-                if (replacements.TryGetValue(texName, out replacement))
+                UnityEngine.Texture2D replacement = null;
+                string matchedKey = null;
+                if (pendingTargets.Contains(texName) && replacements.TryGetValue(texName, out replacement))
                 {
-                    image.sprite = UnityEngine.Sprite.Create(
-                        replacement,
-                        new UnityEngine.Rect(0, 0, replacement.width, replacement.height),
-                        new UnityEngine.Vector2(0.5f, 0.5f));
-                    replaced++;
-                    UnityEngine.Debug.Log("[BNL] TextureReplacement: swapped sprite=" + spriteName);
+                    matchedKey = texName;
                 }
-                else if (replacements.TryGetValue(spriteName, out replacement))
+                else if (!string.IsNullOrEmpty(spriteName) && pendingTargets.Contains(spriteName) && replacements.TryGetValue(spriteName, out replacement))
                 {
-                    image.sprite = UnityEngine.Sprite.Create(
-                        replacement,
-                        new UnityEngine.Rect(0, 0, replacement.width, replacement.height),
-                        new UnityEngine.Vector2(0.5f, 0.5f));
-                    replaced++;
-                    UnityEngine.Debug.Log("[BNL] TextureReplacement: swapped sprite=" + spriteName + " (by sprite name)");
+                    matchedKey = spriteName;
                 }
-                else if ((spriteName.StartsWith("shop_perk") || spriteName.StartsWith("perk_")) && replacements.ContainsKey(spriteName) == false)
+                if (matchedKey != null && replacement != null)
                 {
-                    UnityEngine.Debug.Log("[BNL] TextureReplacement: MISS sprite=" + spriteName + " tex=" + texName);
+                    // For white_rect: only replace inside the Healthbar prefab (parent chain contains "Healthbar")
+                    // and pick fill vs bg texture based on GameObject name
+                    bool isHealthbarPrefab = false;
+                    bool isHealthbarBg = false;
+                    if (matchedKey == "white_rect" || matchedKey == "white_rect_bg")
+                    {
+                        var t2 = image.transform;
+                        for (int d = 0; d < 6; d++)
+                        {
+                            if (t2 == null) break;
+                            if (t2.gameObject.name == "Healthbar") { isHealthbarPrefab = true; break; }
+                            t2 = t2.parent;
+                        }
+                        if (!isHealthbarPrefab) continue;
+                        // HealthBar GO = background, Value/Last Value = fill
+                        isHealthbarBg = image.gameObject.name == "HealthBar";
+                    }
+
+                    UnityEngine.Texture2D finalTex = replacement;
+                    if (isHealthbarBg)
+                    {
+                        UnityEngine.Texture2D bgTex;
+                        if (replacements.TryGetValue("white_rect_bg", out bgTex) && bgTex != null)
+                            finalTex = bgTex;
+                        image.color = new UnityEngine.Color(0f, 0f, 0f, 0.75f);
+                    }
+
+                    image.sprite = UnityEngine.Sprite.Create(
+                        finalTex,
+                        new UnityEngine.Rect(0, 0, finalTex.width, finalTex.height),
+                        new UnityEngine.Vector2(0.5f, 0.5f),
+                        100f);
+                    matchedThisPass.Add(matchedKey == "white_rect_bg" ? "white_rect" : matchedKey);
+                    patchedImageInstanceIds.Add(instanceId);
+                    replaced++;
+                    UnityEngine.Debug.Log("[BNL] TextureReplacement: swapped " + image.gameObject.name + " sprite=" + spriteName + " bg=" + isHealthbarBg);
                 }
             }
+            // Drain pending keys that were matched — they're now applied to all current instances
+            foreach (var key in matchedThisPass)
+            {
+                pendingTargets.Remove(key);
+                appliedTargets.Add(key);
+            }
             if (replaced > 0)
-                UnityEngine.Debug.Log("[BNL] TextureReplacement: replaced " + replaced + " texture(s).");
+                UnityEngine.Debug.Log("[BNL] TextureReplacement: replaced " + replaced + " texture(s). Pending: " + pendingTargets.Count);
         }
     }
 }

@@ -226,6 +226,9 @@ public sealed class FeatureSettingsService
             runtimeSync.WriteTeammateHpSettings(runtimeConfigPath, settings);
     }
 
+    public SegmentedHealthbarSettings LoadSegmentedHealthbarSettings() => Load("experimental-segmented-healthbar-config.json", new SegmentedHealthbarSettings());
+    public void SaveSegmentedHealthbarSettings(SegmentedHealthbarSettings settings) => Save("experimental-segmented-healthbar-config.json", settings);
+
     public bool EnsureAutoCasualQueueTestDefaultEnabled()
     {
         var migrationMarkerPath = Path.Combine(paths.DataDir, "auto-casual-queue-2.3-default-enabled.migrated");

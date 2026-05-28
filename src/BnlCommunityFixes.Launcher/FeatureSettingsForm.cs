@@ -11,6 +11,7 @@ public sealed class FeatureSettingsForm : Form
     private readonly FeatureSettingsService featureSettingsService;
     private readonly FeaturePresetsService presetsService;
     private readonly AppPaths appPaths;
+    private readonly GameInstallInfo? gameInstallInfo;
 
     private readonly CheckBox crosshairEnabledCheckBox;
     private readonly TextBox crosshairIdleColorTextBox;
@@ -100,6 +101,8 @@ public sealed class FeatureSettingsForm : Form
     private readonly NumericUpDown friendlyLowHealthIndicatorSizeNumeric;
     private readonly NumericUpDown friendlyLowHealthIndicatorAlphaNumeric;
 
+    private readonly CheckBox segmentedHealthbarEnabledCheckBox;
+
     private readonly CheckBox skipIntroCheckBox;
     private readonly CheckBox disableMainMenuFrameCapCheckBox;
 
@@ -132,6 +135,7 @@ public sealed class FeatureSettingsForm : Form
     public FeatureSettingsForm(AppPaths paths, GameInstallInfo? installInfo = null)
     {
         appPaths = paths;
+        gameInstallInfo = installInfo;
         featureSettingsService = new FeatureSettingsService(paths);
         presetsService = new FeaturePresetsService(paths);
 
@@ -635,6 +639,17 @@ public sealed class FeatureSettingsForm : Form
             readFields: () => new MapRenderOverrideSettings { Enabled = mapRenderEnabledCheckBox.Checked, Preset = mapRenderPresetComboBox.SelectedItem as string ?? "Default" },
             applyFields: s => { mapRenderEnabledCheckBox.Checked = s.Enabled; var i = mapRenderPresetComboBox.Items.IndexOf(s.Preset); mapRenderPresetComboBox.SelectedIndex = i >= 0 ? i : 0; });
 
+        // --- Segmented Healthbar ---
+        var segmentedHealthbarTab = new TabPage("Segmented HP");
+        AddDescription(segmentedHealthbarTab,
+            "Replaces the overhead health bars with the segmented style from the beta version of the game. " +
+            "Requires the game to be installed — textures are copied into the game's CustomTextures folder on save.");
+        segmentedHealthbarEnabledCheckBox = NewCheckBox("Enabled", 14, EnabledY);
+        segmentedHealthbarTab.Controls.Add(segmentedHealthbarEnabledCheckBox);
+        AddPresetBar<SegmentedHealthbarSettings>(segmentedHealthbarTab, "segmentedHealthbar",
+            readFields: () => new SegmentedHealthbarSettings { Enabled = segmentedHealthbarEnabledCheckBox.Checked },
+            applyFields: s => { segmentedHealthbarEnabledCheckBox.Checked = s.Enabled; });
+
         // --- Misc ---
         var miscTab = new TabPage("Misc");
         AddDescription(miscTab,
@@ -643,7 +658,7 @@ public sealed class FeatureSettingsForm : Form
         disableMainMenuFrameCapCheckBox = NewCheckBox("Disable frame cap on main menu (uncaps FPS while on the main menu screen)", 14, EnabledY + 30);
         miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox]);
 
-        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, hideImpactVfxTab, unitGuiScaleTab, wsiScaleTab, mapRenderTab, miscTab]);
+        tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, hideImpactVfxTab, unitGuiScaleTab, wsiScaleTab, mapRenderTab, segmentedHealthbarTab, miscTab]);
 
         var saveButton = new Button
         {
@@ -922,8 +937,62 @@ public sealed class FeatureSettingsForm : Form
         var mapRenderIdx = mapRenderPresetComboBox.Items.IndexOf(mapRender.Preset);
         mapRenderPresetComboBox.SelectedIndex = mapRenderIdx >= 0 ? mapRenderIdx : 0;
 
+        var segmentedHealthbar = featureSettingsService.LoadSegmentedHealthbarSettings();
+        segmentedHealthbarEnabledCheckBox.Checked = segmentedHealthbar.Enabled;
+
         skipIntroCheckBox.Checked = LoadDebugMenuBool("skip_intro");
         disableMainMenuFrameCapCheckBox.Checked = LoadDebugMenuBool("disable_main_menu_frame_cap");
+    }
+
+    private void ApplySegmentedHealthbarTextures(bool enabled)
+    {
+        var mappingPath = Path.Combine(appPaths.PatchingDir, "texture-replacements.txt");
+        const string fillEntry = "white_rect=white_rect.png";
+        const string bgEntry   = "white_rect_bg=white_rect_bg.png";
+
+        var lines = File.Exists(mappingPath)
+            ? File.ReadAllLines(mappingPath, System.Text.Encoding.UTF8).ToList()
+            : new List<string>();
+
+        if (enabled)
+        {
+            // Extract textures to CustomTextures folder
+            var customTexturesDir = gameInstallInfo?.IsDetected == true
+                ? Path.Combine(gameInstallInfo.GameRoot, "Win64", "BlockNLoad_Data", "CustomTextures")
+                : null;
+
+            if (customTexturesDir != null)
+            {
+                Directory.CreateDirectory(customTexturesDir);
+                var asm = System.Reflection.Assembly.GetExecutingAssembly();
+                foreach (var (resName, fileName) in new[]
+                {
+                    ("Patching.white_rect.png",    "white_rect.png"),
+                    ("Patching.white_rect_bg.png", "white_rect_bg.png")
+                })
+                {
+                    using var stream = asm.GetManifestResourceStream(resName);
+                    if (stream == null) continue;
+                    using var dest = File.Create(Path.Combine(customTexturesDir, fileName));
+                    stream.CopyTo(dest);
+                }
+            }
+
+            // Add entries to texture-replacements.txt if not present
+            if (!lines.Any(l => l.StartsWith("white_rect=", StringComparison.OrdinalIgnoreCase)))
+                lines.Add(fillEntry);
+            if (!lines.Any(l => l.StartsWith("white_rect_bg=", StringComparison.OrdinalIgnoreCase)))
+                lines.Add(bgEntry);
+        }
+        else
+        {
+            lines.RemoveAll(l =>
+                l.StartsWith("white_rect=", StringComparison.OrdinalIgnoreCase) ||
+                l.StartsWith("white_rect_bg=", StringComparison.OrdinalIgnoreCase));
+        }
+
+        Directory.CreateDirectory(appPaths.PatchingDir);
+        File.WriteAllLines(mappingPath, lines, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
     private bool LoadDebugMenuBool(string key)
@@ -1135,6 +1204,12 @@ public sealed class FeatureSettingsForm : Form
             Enabled = mapRenderEnabledCheckBox.Checked,
             Preset = mapRenderPresetComboBox.SelectedItem as string ?? "Default"
         });
+
+        featureSettingsService.SaveSegmentedHealthbarSettings(new SegmentedHealthbarSettings
+        {
+            Enabled = segmentedHealthbarEnabledCheckBox.Checked
+        });
+        ApplySegmentedHealthbarTextures(segmentedHealthbarEnabledCheckBox.Checked);
 
         SaveDebugMenuBool("skip_intro", skipIntroCheckBox.Checked);
         SaveDebugMenuBool("disable_main_menu_frame_cap", disableMainMenuFrameCapCheckBox.Checked);

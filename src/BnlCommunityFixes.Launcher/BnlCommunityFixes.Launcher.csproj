@@ -43,6 +43,9 @@
     <EmbeddedResource Include="..\..\assets\patching\MeshReplacerRuntime.cs" LogicalName="Patching.MeshReplacerRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-mesh-replacer-config.json" LogicalName="Patching.experimental-mesh-replacer-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\Mono.Cecil.dll" LogicalName="Patching.Mono.Cecil.dll" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-segmented-healthbar-config.json" LogicalName="Patching.experimental-segmented-healthbar-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\white_rect.png" LogicalName="Patching.white_rect.png" />
+    <EmbeddedResource Include="..\..\assets\patching\white_rect_bg.png" LogicalName="Patching.white_rect_bg.png" />
   </ItemGroup>
 
 </Project>
