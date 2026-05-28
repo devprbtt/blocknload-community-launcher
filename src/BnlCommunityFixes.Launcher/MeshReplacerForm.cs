@@ -202,6 +202,34 @@ public sealed class MeshReplacerForm : Form
         CancelButton = cancelButton;
 
         LoadConfig();
+        AutoImportNewFiles();
+    }
+
+    private void AutoImportNewFiles()
+    {
+        if (!Directory.Exists(customMeshFolder)) return;
+
+        var rows = GetCurrentMappings();
+        bool added = false;
+
+        string customFull = Path.GetFullPath(customMeshFolder).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        foreach (var filePath in Directory.EnumerateFiles(customMeshFolder, "*.obj", SearchOption.AllDirectories))
+        {
+            string fullPath = Path.GetFullPath(filePath);
+            string relativePath = fullPath.StartsWith(customFull, StringComparison.OrdinalIgnoreCase)
+                ? fullPath.Substring(customFull.Length)
+                : Path.GetFileName(fullPath);
+
+            string meshName = Path.GetFileNameWithoutExtension(relativePath);
+            if (string.IsNullOrWhiteSpace(meshName)) continue;
+            if (rows.ContainsKey(meshName)) continue;
+
+            rows[meshName] = relativePath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            added = true;
+        }
+
+        if (added)
+            ApplyMappings(rows);
     }
 
     private void LoadConfig()

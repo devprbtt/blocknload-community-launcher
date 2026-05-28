@@ -306,6 +306,40 @@ public sealed class AudioReplacerForm : Form
         CancelButton = cancelButton;
 
         LoadConfig();
+        AutoImportNewFiles();
+    }
+
+    private void AutoImportNewFiles()
+    {
+        if (!Directory.Exists(customAudioFolder)) return;
+
+        var rows = GetCurrentMappings();
+        bool added = false;
+
+        string customFull = Path.GetFullPath(customAudioFolder).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        foreach (var filePath in Directory.EnumerateFiles(customAudioFolder, "*.*", SearchOption.AllDirectories))
+        {
+            string ext = Path.GetExtension(filePath);
+            if (!string.Equals(ext, ".wav", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(ext, ".mp3", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(ext, ".ogg", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            string fullPath = Path.GetFullPath(filePath);
+            string relativePath = fullPath.StartsWith(customFull, StringComparison.OrdinalIgnoreCase)
+                ? fullPath.Substring(customFull.Length)
+                : Path.GetFileName(fullPath);
+
+            string eventName = Path.GetFileNameWithoutExtension(relativePath);
+            if (string.IsNullOrWhiteSpace(eventName)) continue;
+            if (rows.ContainsKey(eventName)) continue;
+
+            rows[eventName] = relativePath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            added = true;
+        }
+
+        if (added)
+            ApplyMappings(rows);
     }
 
     private void LoadConfig()
