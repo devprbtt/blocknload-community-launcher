@@ -192,6 +192,40 @@ public sealed class TextureReplacerForm : Form
         CancelButton = cancelButton;
 
         LoadConfig();
+        AutoImportNewFiles();
+    }
+
+    private void AutoImportNewFiles()
+    {
+        if (!Directory.Exists(customTextureFolder)) return;
+
+        var rows = GetCurrentMappings();
+        bool added = false;
+
+        foreach (var filePath in Directory.EnumerateFiles(customTextureFolder, "*.*", SearchOption.AllDirectories))
+        {
+            string ext = Path.GetExtension(filePath);
+            if (!string.Equals(ext, ".png", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(ext, ".jpg", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(ext, ".jpeg", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            string customFull = Path.GetFullPath(customTextureFolder).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            string fullPath = Path.GetFullPath(filePath);
+            string relativePath = fullPath.StartsWith(customFull, StringComparison.OrdinalIgnoreCase)
+                ? fullPath.Substring(customFull.Length)
+                : Path.GetFileName(fullPath);
+
+            string textureName = Path.GetFileNameWithoutExtension(relativePath);
+            if (string.IsNullOrWhiteSpace(textureName)) continue;
+            if (rows.ContainsKey(textureName)) continue;
+
+            rows[textureName] = relativePath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            added = true;
+        }
+
+        if (added)
+            ApplyMappings(rows);
     }
 
     private void LoadConfig()
