@@ -1,22 +1,16 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.4.10",
-  "minimum_supported_version": "2.4.10",
-  "published_at": "2026-05-27T23:33:43.1618211+00:00",
-  "notes": "## Bridge Release\n\nThis compatibility bridge exists so launchers older than `2.5.0` can still auto-update.\n\n- Includes `BnlCommunityFixes.exe`\n- Includes `BnlUpdater.exe` for older launchers that still require `updater_exe` in the manifest\n- Contains the new internal update-helper flow and embedded replay analyzer from the current launcher codebase\n- Fixes required-update dialog bypass by blocking manual close on forced updates\n- Fixes bootstrap convergence so renamed launcher downloads like `BnlCommunityFixes (1).exe` still install and relaunch through the canonical `BnlCommunityFixes.exe`\n- Restores legacy updater argument compatibility so `2.4.6` and similar launchers can actually apply the bridge update\n\nAfter users move onto this bridge release, they can later move forward to the single-exe release line.",
+  "version": "2.5.0",
+  "minimum_supported_version": "2.5.0",
+  "published_at": "2026-05-28T20:09:42.4769064+00:00",
+  "notes": "## What's new\n\n- Added segmented healthbar feature toggle\n- Added Edo SZ font override support for kill feed and major UI areas\n- Fixed chat font flash while applying UI font overrides\n- Added WSI scale runtime sync so launcher state stays aligned with in-game F8 changes\n- Audio, mesh, and texture replacers now auto-import newly added files when opened\n\n## Update flow\n\n- The launcher now continues on the single-exe 2.5.x release line\n- Includes the bridge hardening work that improved forced updates and bootstrap behavior during the 2.4.10 migration",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.10/BnlCommunityFixes.exe",
-      "sha256": "2C276344224916B1BCBCF0205324AA1E23B2470D7D19F6E4293D463331E6C76F",
-      "size": 164242622
-    },
-    "updater_exe": {
-      "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.4.10/BnlUpdater.exe",
-      "sha256": "119EAB406F26AC05A46B417CA86243341D729BD4F4E5396D6934749ADF6428AF",
-      "size": 67634937
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.5.0/BnlCommunityFixes.exe",
+      "sha256": "B34AE21D3FC18F2D7030D98859AF414444BAA68C91BDAE9AFCDD33CF1E97DB56",
+      "size": 164271282
     }
   }
 }
