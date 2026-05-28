@@ -2603,8 +2603,14 @@ namespace BnlCommunityFixes
     {
         private static FontOverrideBootstrapper instance;
 
-        private UnityEngine.Font edoszFont;
-        private bool fontSearched;
+        // Font slots — loaded lazily from the Scenes asset bundle via FindObjectsOfTypeAll
+        private UnityEngine.Font fontEdosz;
+        private UnityEngine.Font fontMyriadBoldPoint;
+        private UnityEngine.Font fontAvenirHeavyCn;
+        private UnityEngine.Font fontAvenirCondensed;
+        private UnityEngine.Font fontRobotoCondensed;
+        private bool fontsSearched;
+
         private float nextScanTime;
         private const float ScanInterval = 0.5f;
 
@@ -2624,33 +2630,34 @@ namespace BnlCommunityFixes
             UnityEngine.Object.DontDestroyOnLoad(gameObject);
         }
 
-        private bool TryFindEdoszFont()
+        private bool TryLoadFonts()
         {
-            if (fontSearched) return edoszFont != null;
-            fontSearched = true;
+            if (fontsSearched) return fontEdosz != null;
 
-            // Search all loaded asset bundles for the edosz Font asset
-            foreach (var bundle in UnityEngine.AssetBundle.GetAllLoadedAssetBundles())
+            var allFonts = UnityEngine.Resources.FindObjectsOfTypeAll(typeof(UnityEngine.Font));
+            foreach (var obj in allFonts)
             {
-                if (!bundle.Contains("edosz")) continue;
-                var font = bundle.LoadAsset<UnityEngine.Font>("edosz");
-                if (font != null)
-                {
-                    edoszFont = font;
-                    UnityEngine.Debug.Log("[BNL FontOverride] Found edosz font in bundle: " + bundle.name);
-                    return true;
-                }
+                var f = obj as UnityEngine.Font;
+                if (f == null) continue;
+                var n = f.name;
+                if (string.Equals(n, "edosz",                    System.StringComparison.OrdinalIgnoreCase)) fontEdosz          = f;
+                else if (string.Equals(n, "MyriadPro-Bold-Point",System.StringComparison.OrdinalIgnoreCase)) fontMyriadBoldPoint = f;
+                else if (string.Equals(n, "AvenirNextLTPro-HeavyCn", System.StringComparison.OrdinalIgnoreCase)) fontAvenirHeavyCn  = f;
+                else if (string.Equals(n, "AvenirNext Condensed",    System.StringComparison.OrdinalIgnoreCase)) fontAvenirCondensed = f;
+                else if (string.Equals(n, "RobotoCondensed",         System.StringComparison.OrdinalIgnoreCase)) fontRobotoCondensed = f;
             }
 
-            // Fallback: try Resources
-            edoszFont = UnityEngine.Resources.Load<UnityEngine.Font>("edosz");
-            if (edoszFont != null)
+            if (fontEdosz != null)
             {
-                UnityEngine.Debug.Log("[BNL FontOverride] Found edosz font via Resources");
+                fontsSearched = true;
+                UnityEngine.Debug.Log("[BNL FontOverride] Fonts loaded — edosz=" + (fontEdosz != null)
+                    + " myriadBoldPoint=" + (fontMyriadBoldPoint != null)
+                    + " avenirHeavyCn=" + (fontAvenirHeavyCn != null)
+                    + " avenirCondensed=" + (fontAvenirCondensed != null)
+                    + " roboto=" + (fontRobotoCondensed != null));
                 return true;
             }
 
-            UnityEngine.Debug.LogWarning("[BNL FontOverride] edosz font not found in any loaded bundle");
             return false;
         }
 
@@ -2660,68 +2667,182 @@ namespace BnlCommunityFixes
             if (UnityEngine.Time.time < nextScanTime) return;
             nextScanTime = UnityEngine.Time.time + ScanInterval;
 
-            if (!TryFindEdoszFont()) return;
+            if (!TryLoadFonts()) return;
 
             ApplyFontOverrides();
         }
 
-        private void ApplyFontOverrides()
-        {
-            // Find GuiActivityScrollItem components (kill feed rows) and override their Text children
-            var scrollItems = UnityEngine.Object.FindObjectsOfType<GuiActivityScrollItem>();
-            foreach (var item in scrollItems)
-            {
-                if (item == null || item.Content == null) continue;
-                var texts = item.Content.GetComponentsInChildren<UnityEngine.UI.Text>(true);
-                foreach (var t in texts)
-                {
-                    if (t == null) continue;
-                    if (t.font == edoszFont) continue;
-                    t.font = edoszFont;
-                    // Prevent UiStyleFontComponent from overriding us back
-                    var styleSetter = t.GetComponent<UiStyleFontComponent>();
-                    if (styleSetter != null) styleSetter.ignoreStyle = true;
-                }
-                // Also patch the TextTemplate used as source for new items
-                if (item.TextTemplate != null && item.TextTemplate.font != edoszFont)
-                {
-                    item.TextTemplate.font = edoszFont;
-                    var styleSetter = item.TextTemplate.GetComponent<UiStyleFontComponent>();
-                    if (styleSetter != null) styleSetter.ignoreStyle = true;
-                }
-            }
+        // ── Helpers ──────────────────────────────────────────────────────────
 
-            // Find GuiNotices (center-screen notices) and override their Text children
-            var notices = UnityEngine.Object.FindObjectsOfType<GuiNotices>();
-            foreach (var notice in notices)
+        private static void SetFont(UnityEngine.UI.Text t, UnityEngine.Font font)
+        {
+            if (t == null || font == null || t.font == font) return;
+            t.font = font;
+            var style = t.GetComponent<UiStyleFontComponent>();
+            if (style != null) style.ignoreStyle = true;
+        }
+
+        private void PatchChildren(UnityEngine.GameObject root, UnityEngine.Font font)
+        {
+            if (root == null || font == null) return;
+            foreach (var t in root.GetComponentsInChildren<UnityEngine.UI.Text>(true))
+                SetFont(t, font);
+        }
+
+        // ── Per-system patches ────────────────────────────────────────────────
+
+        private void PatchActivityScroll()
+        {
+            // Kill feed rows — MyriadPro-Bold-Point (original depot font for this area)
+            if (fontMyriadBoldPoint == null) return;
+            foreach (var item in UnityEngine.Object.FindObjectsOfType<GuiActivityScrollItem>())
             {
-                if (notice == null || notice.Content == null) continue;
-                var texts = notice.Content.GetComponentsInChildren<UnityEngine.UI.Text>(true);
-                foreach (var t in texts)
-                {
-                    if (t == null) continue;
-                    if (t.font == edoszFont) continue;
-                    t.font = edoszFont;
-                    var styleSetter = t.GetComponent<UiStyleFontComponent>();
-                    if (styleSetter != null) styleSetter.ignoreStyle = true;
-                }
-                // Patch prefab templates so newly instantiated notices get the font
-                PatchNoticeTemplate(notice.BigNotify);
-                PatchNoticeTemplate(notice.SmallNotify);
+                if (item == null) continue;
+                if (item.Content != null)
+                    PatchChildren(item.Content, fontMyriadBoldPoint);
+                SetFont(item.TextTemplate, fontMyriadBoldPoint);
             }
         }
 
-        private void PatchNoticeTemplate(UnityEngine.GameObject template)
+        private void PatchNotices()
         {
-            if (template == null) return;
-            var texts = template.GetComponentsInChildren<UnityEngine.UI.Text>(true);
-            foreach (var t in texts)
+            // Center-screen notices — edosz (original depot font for big banners)
+            if (fontEdosz == null) return;
+            foreach (var notice in UnityEngine.Object.FindObjectsOfType<GuiNotices>())
             {
-                if (t == null || t.font == edoszFont) continue;
-                t.font = edoszFont;
-                var styleSetter = t.GetComponent<UiStyleFontComponent>();
-                if (styleSetter != null) styleSetter.ignoreStyle = true;
+                if (notice == null) continue;
+                if (notice.Content != null)
+                    PatchChildren(notice.Content, fontEdosz);
+                PatchChildren(notice.BigNotify,   fontEdosz);
+                PatchChildren(notice.SmallNotify, fontEdosz);
             }
+        }
+
+        private void PatchChat()
+        {
+            // Chat messages and player names — RobotoCondensed
+            // (existing messages; new ones are patched immediately via PatchChatMessage injection)
+            if (fontRobotoCondensed == null) return;
+            foreach (var msg in UnityEngine.Object.FindObjectsOfType<UiChatMessage>())
+            {
+                if (msg == null) continue;
+                SetFont(msg.Message,    fontRobotoCondensed);
+                SetFont(msg.PlayerName, fontRobotoCondensed);
+            }
+        }
+
+        // Called via Cecil injection at the start of UiChatMessage.Fill — instant font apply, no delay
+        public static void PatchChatMessage(UiChatMessage msg)
+        {
+            if (!RuntimeFeatureState.FontOverrideEnabled) return;
+            if (instance == null || instance.fontRobotoCondensed == null) return;
+            SetFont(msg.Message,    instance.fontRobotoCondensed);
+            SetFont(msg.PlayerName, instance.fontRobotoCondensed);
+        }
+
+        private void PatchScoreboard()
+        {
+            // In-match scoreboard rows — AvenirNext Condensed
+            if (fontAvenirCondensed == null) return;
+            foreach (var row in UnityEngine.Object.FindObjectsOfType<GuiPlayerScore>())
+            {
+                if (row == null) continue;
+                SetFont(row.Nickname,    fontAvenirCondensed);
+                SetFont(row.Kills,       fontAvenirCondensed);
+                SetFont(row.Deaths,      fontAvenirCondensed);
+                SetFont(row.Assists,     fontAvenirCondensed);
+                SetFont(row.RespawnTime, fontAvenirCondensed);
+                SetFont(row.SquadNumText,fontAvenirCondensed);
+            }
+        }
+
+        private void PatchResultScreen()
+        {
+            // End-of-match result screen — AvenirNext Condensed
+            if (fontAvenirCondensed == null) return;
+            foreach (var row in UnityEngine.Object.FindObjectsOfType<GuiResultScreenPlayer>())
+            {
+                if (row == null) continue;
+                SetFont(row.Nickname,    fontAvenirCondensed);
+                SetFont(row.SquadNumText,fontAvenirCondensed);
+                SetFont(row.Kills,       fontAvenirCondensed);
+                SetFont(row.Deaths,      fontAvenirCondensed);
+                SetFont(row.Assists,     fontAvenirCondensed);
+                SetFont(row.Sum,         fontAvenirCondensed);
+                SetFont(row.Dest,        fontAvenirCondensed);
+                SetFont(row.Earned,      fontAvenirCondensed);
+                SetFont(row.Built,       fontAvenirCondensed);
+                SetFont(row.Obj,         fontAvenirCondensed);
+            }
+        }
+
+        private void PatchHealthbars()
+        {
+            // Floating player name labels above units — AvenirNextLTPro-HeavyCn
+            if (fontAvenirHeavyCn == null) return;
+            foreach (var hb in UnityEngine.Object.FindObjectsOfType<GuiHealthbar>())
+            {
+                if (hb == null) continue;
+                SetFont(hb.Title, fontAvenirHeavyCn);
+            }
+        }
+
+        private void PatchTeamList()
+        {
+            // Team roster panel — AvenirNextLTPro-HeavyCn
+            if (fontAvenirHeavyCn == null) return;
+            foreach (var tl in UnityEngine.Object.FindObjectsOfType<GuiTeamList>())
+            {
+                if (tl == null) continue;
+                SetFont(tl.Nickname, fontAvenirHeavyCn);
+            }
+            foreach (var tm in UnityEngine.Object.FindObjectsOfType<GuiTeammate>())
+            {
+                if (tm == null) continue;
+                SetFont(tm.PlayerName,   fontAvenirHeavyCn);
+                SetFont(tm.RespawnTime,  fontAvenirHeavyCn);
+            }
+        }
+
+        private void PatchHud()
+        {
+            // Ammo and resource counters — AvenirNext Condensed
+            if (fontAvenirCondensed != null)
+            {
+                foreach (var ammo in UnityEngine.Object.FindObjectsOfType<GuiWeaponsAmmo>())
+                {
+                    if (ammo == null) continue;
+                    SetFont(ammo.Mag,  fontAvenirCondensed);
+                    SetFont(ammo.Pool, fontAvenirCondensed);
+                }
+                foreach (var res in UnityEngine.Object.FindObjectsOfType<GuiResource>())
+                {
+                    if (res == null) continue;
+                    SetFont(res.Value, fontAvenirCondensed);
+                }
+            }
+
+            // Phase/match timer — AvenirNextLTPro-HeavyCn
+            if (fontAvenirHeavyCn != null)
+            {
+                foreach (var phase in UnityEngine.Object.FindObjectsOfType<GuiPhaseAssault>())
+                {
+                    if (phase == null) continue;
+                    SetFont(phase.Time, fontAvenirHeavyCn);
+                }
+            }
+        }
+
+        private void ApplyFontOverrides()
+        {
+            PatchActivityScroll();
+            PatchNotices();
+            PatchChat();
+            PatchScoreboard();
+            PatchResultScreen();
+            PatchHealthbars();
+            PatchTeamList();
+            PatchHud();
         }
     }
 

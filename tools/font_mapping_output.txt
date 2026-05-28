@@ -1,0 +1,984 @@
+Loading: H:\Programas\Steam\steamapps\content\app_299360\depot_299361\assetbundles\Scenes
+Loaded.
+Fonts (local): {181: 'AvenirNext Condensed', 182: 'MyriadPro-Bold-Point', 183: 'AvenirNextLTPro-Heavy', 184: 'RobotoCondensed', 185: 'edosz', 186: 'MyriadPro-Bold', 187: 'AvenirNextLTPro-HeavyCn', 96: 'debug_cour'}
+GameObjects: 1111  Transforms: 1567  MonoBehaviours: 2837
+Reading MonoBehaviours...
+UILabels: 386  UIFonts: 2  UnityTexts: 0
+
+================================================================================
+FULL FONT USAGE REPORT -- Block N Load Old Depot (depot_299361)
+================================================================================
+
+Font "<UIFont(pid=1521, go=Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/BackgroundDecor/Background_Decor2/SwitchHero Button/Background)>"  (file_id=uifont, path_id=1521)
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Label  [UILabel.mFont→UIFont(pid=1521,no_dyn_font)]  [text: 'Click To play']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Player Name/Background  [UILabel.mFont→UIFont(pid=1521,no_dyn_font)]  [text: '100']
+
+Font "<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>"  (file_id=uifont, path_id=607)
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Caption  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'PROFILE']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/star/star3/DownLine  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'SUMMARY']
+  - Lobby/Gui/Popups/Input/AllTime/Chat Anchor  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'HEROES']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/1_Tab Hero/New  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'MAPS']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/1_Tab Hero/PlayrName  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'MAPS']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/01_ResumeGame/Selector  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'You have no friends']
+  - Lobby/Gui/Popups/Input/AllTime/Teammates/Foreground  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'RANKED STATUS']
+  - Lobby/Main Camera/Key2  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'RANKED STATUS']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/ReportWindowPlacement/Icon  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'HOW TO PLAY']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/ButtonCancel  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'HOW TO PLAY']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/SpectatorTeamNames/Team2  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'MATCH HISTORY']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'STATS']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonTitles/Label Active  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'TITLES']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonTitles/Label Inactive  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'TITLES']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Device/Outline Scale/Outline/Waiting/Animation  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'STATS']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Lobby_character_block/List/Unit View 4/Panel/Info/Player Name/ButtonSubmit/Spectator  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: 'MATCH HISTORY']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Key  [UILabel.mFont→UIFont(pid=607,no_dyn_font)]  [text: '10 / 10']
+
+Font "<UIFont(pid=608, go=?)>"  (file_id=uifont, path_id=608)
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/CreationMode/MouseLook Creation Mode/RespawnTime  [UILabel.mFont→UIFont(pid=608,no_dyn_font)]  [text: '1']
+
+Font "<UIFont(pid=609, go=?)>"  (file_id=uifont, path_id=609)
+  - Lobby/Gui/BottomPanel/Left  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Player']
+  - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/BuffPrefab/Cooldown/Labels  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: '100']
+  - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/Teammate/RespawnTime  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: '99']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Background  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Skills']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Caption  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Spawn point blocked by other player']
+  - Lobby/Gui/Opponents/List/Enemy/Scale/Background Scale/Background/Yes/Resource  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: '999999']
+  - Lobby/Gui/Opponents/List/Enemy/Scale/Player/Icon  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'You not respawn until it will be clear. You can choose anoth']
+  - Lobby/Gui/Opponents/Point  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'All characters skins are free this weekend, so you can dress']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Base/Scale/Icon/Desc1  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'All characters skins are free this weekend, so you can dress']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/MyPlayer/Scale  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Resource Cost']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Caption  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: "Spawn point blocked by world's objects"]
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Separator  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'You not respawn until it will be free. You can choose anothe']
+  - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundRight  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'You have no spawn point']
+  - Lobby/Gui/Voting/List/Map/IconScale/Icon/Factory/PlayerMsg/Panel/Info/Message  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'GOING DEVENSIVE']
+  - Lobby/Main Camera/Key1/Label Anchor  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Durability']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Content/Placeholders/1/Teammate/RespawnTime  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: '99']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Medal/Draftpick_waitingfence/text/NoHaveSpawnPoint/Description  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'You not respawn until you choose spawn point']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/RequeueToggle/AsSquad/Background  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: '00:15']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/RequeueToggle/AsTeam/Label  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Requeue as Team']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team1/Title  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'STRONG']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/RespawnTime  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: '99']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/Menu_star  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'New Label']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Resource  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: '2500']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 2  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Player Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/EnableSkipButton  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'MAP NAME']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/PlayrName  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Time to Build']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/Hero Name/Ready Anchor/Waiting/Animation  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Requeue Solo / as Hero Squad']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/RespawnTime  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: '99']
+  - Lobby/Standing_Blocks/teammate_1/Cost  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: '0']
+  - Lobby/Standing_Blocks/teammate_1/Lobby_character_gradient  [UILabel.mFont→UIFont(pid=609,no_dyn_font)]  [text: 'Select Your Block']
+
+Font "AvenirNext Condensed"  (file_id=3, path_id=181)
+  - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Blink/List/Line/Kills  [UILabel.mTrueTypeFont]  [text: 'K']
+  - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Blink/List/Line/Name  [UILabel.mTrueTypeFont]  [text: 'Looong Player name']
+  - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Slot  [UILabel.mTrueTypeFont]  [text: '1']
+  - Lobby/Gui/BottomPanel/Left/Chat/Alarm/SlotInactive  [UILabel.mTrueTypeFont]  [text: '1']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/BackgroundDecor/Background_Decor2/SwitchHero Button/Label  [UILabel.mTrueTypeFont]  [text: 'Switch Hero']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/Lobby_character_gradient  [UILabel.mTrueTypeFont]  [text: 'TOTAL']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/star  [UILabel.mTrueTypeFont]  [text: '100 / 100']
+  - Lobby/Gui/Opponents/List/Enemy  [UILabel.mTrueTypeFont]  [text: '35']
+  - Lobby/Gui/Opponents/List/Enemy/Scale/Background Scale/Background  [UILabel.mTrueTypeFont]  [text: '999']
+  - Lobby/Gui/Opponents/List/Enemy/Scale/Waiting/Animation/Label  [UILabel.mTrueTypeFont]  [text: 'Cancel']
+  - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Outline Scale/Outline  [UILabel.mTrueTypeFont]  [text: "I'm going offensive"]
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/PingBuilding/Label  [UILabel.mTrueTypeFont]  [text: 'MOUSE LOOK']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background/Level  [UILabel.mTrueTypeFont]  [text: '15']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/Devices  [UILabel.mTrueTypeFont]  [text: 'HEALING']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/Devices/Device/Outline Scale/Health/ValueText  [UILabel.mTrueTypeFont]  [text: '100 / 100']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/OppHealing  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Gui/TopPanel Anchor/TopPanel Tween/Background  [UILabel.mTrueTypeFont]  [text: 'TITLES']
+  - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Built  [UILabel.mTrueTypeFont]  [text: 'Bu']
+  - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Dest  [UILabel.mTrueTypeFont]  [text: 'De']
+  - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Earned  [UILabel.mTrueTypeFont]  [text: 'Ea']
+  - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Kills  [UILabel.mTrueTypeFont]  [text: 'K']
+  - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Obj  [UILabel.mTrueTypeFont]  [text: 'Ob']
+  - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Player Name  [UILabel.mTrueTypeFont]  [text: 'A']
+  - Lobby/Gui/Voting/List/Map/IconScale  [UILabel.mTrueTypeFont]  [text: 'Earned']
+  - Lobby/Gui/Voting/List/Map/VoteCount  [UILabel.mTrueTypeFont]  [text: '5 votes']
+  - Lobby/Main Camera/Key1  [UILabel.mTrueTypeFont]  [text: 'F1: ']
+  - Lobby/Main Camera/Key2  [UILabel.mTrueTypeFont]  [text: 'F2: ']
+  - Lobby/Main Camera/Key2/Label Anchor/Label  [UILabel.mTrueTypeFont]  [text: "I'm going defensive"]
+  - Lobby/Main Camera/Key3  [UILabel.mTrueTypeFont]  [text: 'F3: ']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/Assists  [UILabel.mTrueTypeFont]  [text: 'A']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/Kills  [UILabel.mTrueTypeFont]  [text: 'K']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/Label  [UILabel.mTrueTypeFont]  [text: 'Follow me']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/Name  [UILabel.mTrueTypeFont]  [text: 'Looong Player name']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/RespawnTime  [UILabel.mTrueTypeFont]  [text: '35']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden  [UILabel.mTrueTypeFont]  [text: 'Enemy Spotted']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/AmmoTool1/AmmoTool1  [UILabel.mTrueTypeFont]  [text: '10/100']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/Key/KeyActive  [UILabel.mTrueTypeFont]  [text: 'Q']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/Key/KeyInactive  [UILabel.mTrueTypeFont]  [text: 'Q']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Content/Placeholders/2  [UILabel.mTrueTypeFont]  [text: 'D']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel  [UILabel.mTrueTypeFont]  [text: '10/100']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Info/InQueue  [UILabel.mTrueTypeFont]  [text: 'In Queue']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Info/InSquad  [UILabel.mTrueTypeFont]  [text: 'In Squad']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Medal/Draftpick_waitingfence  [UILabel.mTrueTypeFont]  [text: 'The professional']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Player Name  [UILabel.mTrueTypeFont]  [text: 'Player Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/AlphaButtons/Minus/Label  [UILabel.mTrueTypeFont]  [text: 'Lobby Chat']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/Scale/OppIcon  [UILabel.mTrueTypeFont]  [text: 'WARFARE']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/AlterEgo Tween/Notify  [UILabel.mTrueTypeFont]  [text: 'PICK YOUR CHARACTER!']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/AlterEgo Tween/NotifyDecorTop  [UILabel.mTrueTypeFont]  [text: 'F4: ']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/TimeLeft/Window/Label  [UILabel.mTrueTypeFont]  [text: 'TIME LEFT']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/TimeLeft/Window/Time  [UILabel.mTrueTypeFont]  [text: '02:34']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/1_Warfare/Background  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/1_Warfare/OppWarfare  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/2_Construction/MyConstruction  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/2_Construction/Name  [UILabel.mTrueTypeFont]  [text: 'CONSTRUACTION']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/3_Tactics/MyTactics  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/3_Tactics/OppTactics  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info/Count  [UILabel.mTrueTypeFont]  [text: '999']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/ButtonCancel/Label  [UILabel.mTrueTypeFont]  [text: 'CANCEL']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/ButtonReady/Label  [UILabel.mTrueTypeFont]  [text: 'READY']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/DependingBlocks  [UILabel.mTrueTypeFont]  [text: '99']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/KeyActive  [UILabel.mTrueTypeFont]  [text: 'F']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/KeyInactive  [UILabel.mTrueTypeFont]  [text: 'F']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale  [UILabel.mTrueTypeFont]  [text: 'TIME LEFT']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/ButtonCancel Anchor/ButtonCancel/text  [UILabel.mTrueTypeFont]  [text: 'Cancel']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/ButtonYes Anchor/ButtonYes/Label  [UILabel.mTrueTypeFont]  [text: 'Yes']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/Title  [UILabel.mTrueTypeFont]  [text: 'Add as friend?']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/ReportWindow/Title  [UILabel.mTrueTypeFont]  [text: 'Report this player?']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Requeue/AsTeam/Label  [UILabel.mTrueTypeFont]  [text: 'Requeue as Team']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team1/InfoStats/Built  [UILabel.mTrueTypeFont]  [text: 'Built']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team1/InfoStats/Dest  [UILabel.mTrueTypeFont]  [text: 'Dest']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Built  [UILabel.mTrueTypeFont]  [text: 'Built']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Dest  [UILabel.mTrueTypeFont]  [text: 'Dest']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Earned  [UILabel.mTrueTypeFont]  [text: 'Earned']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Obj  [UILabel.mTrueTypeFont]  [text: 'Obj']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/TimeLeft/Window/Time  [UILabel.mTrueTypeFont]  [text: '00:00']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/TimeLeft/Window/Time/OppConstruction  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus/Devices Pos/Devices/Device/Label  [UILabel.mTrueTypeFont]  [text: 'Exit to Main Menu']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Buffs/Panel/Time  [UILabel.mTrueTypeFont]  [text: '00:15']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title  [UILabel.mTrueTypeFont]  [text: 'MAP']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name  [UILabel.mTrueTypeFont]  [text: 'Map Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/Name  [UILabel.mTrueTypeFont]  [text: 'Map Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label  [UILabel.mTrueTypeFont]  [text: 'Submit']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/ExitAsSquad/Label  [UILabel.mTrueTypeFont]  [text: 'Take Squad back to Main Menu']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/Titles/Label Inactive  [UILabel.mTrueTypeFont]  [text: 'TITLES']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Device/Label  [UILabel.mTrueTypeFont]  [text: 'Requeue Solo / as Hero Squad']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Device/Outline Scale/Outline/Waiting/Background/Cost  [UILabel.mTrueTypeFont]  [text: '0']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Lobby_character_block/List/Unit View 4  [UILabel.mTrueTypeFont]  [text: 'Inappropriate Player']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Lobby_character_block/List/Unit View 4/Panel/Info/Player Name  [UILabel.mTrueTypeFont]  [text: 'Username...']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices  [UILabel.mTrueTypeFont]  [text: 'Looong Player name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/ToolKey/KeyActive  [UILabel.mTrueTypeFont]  [text: 'E']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/ToolKey/KeyInactive  [UILabel.mTrueTypeFont]  [text: 'E']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Cost  [UILabel.mTrueTypeFont]  [text: '999']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/CostInc Anchor/3  [UILabel.mTrueTypeFont]  [text: '+999']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Hero Name  [UILabel.mTrueTypeFont]  [text: 'Obj']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Hero Name/Ready Anchor  [UILabel.mTrueTypeFont]  [text: 'D']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Player Name  [UILabel.mTrueTypeFont]  [text: 'Username...']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Player Name/Background/Stats/Label Active  [UILabel.mTrueTypeFont]  [text: 'STATS']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Info/Player Name  [UILabel.mTrueTypeFont]  [text: 'Username...']
+  - Lobby/Standing_Blocks/Gui Characters/FlagBG  [UILabel.mTrueTypeFont]  [text: 'TACTIC']
+  - Lobby/Standing_Blocks/teammate_2  [UILabel.mTrueTypeFont]  [text: 'STATS']
+  - Lobby/Standing_Blocks/teammate_4/Panel/Device Background/OppTotal  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Unit View 1/Panel/Info/Hero Name/Ready Anchor  [UILabel.mTrueTypeFont]  [text: 'A']
+  - Unit View 1/Panel/Info/Hero Name/Ready Anchor/Waiting/Animation  [UILabel.mTrueTypeFont]  [text: 'D']
+  - Unit View 1/Panel/Info/Player Name  [UILabel.mTrueTypeFont]  [text: 'Username...']
+
+Font "AvenirNext Condensed"  (file_id=1, path_id=181)
+  - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Slot/Background/Portrait  [UILabel.mTrueTypeFont]  [text: 'Map Name']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Background/Outline  [UILabel.mTrueTypeFont]  [text: 'Chat']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Power/Charge/DeviceSelectWheel/Group/Arrow/Background  [UILabel.mTrueTypeFont]  [text: 'Assists']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Power/Charge/DeviceSelectWheel/Group/DebugMouseIndicator/StarDecorLeft/Sprite  [UILabel.mTrueTypeFont]  [text: 'New Label']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/BackgroundDecor/Background_Decor2/SwitchHero Button  [UILabel.mTrueTypeFont]  [text: 'Friends']
+  - Lobby/Gui/Opponents/List/Enemy/Scale/Background Scale/Background/Yes/Outline/Outline  [UILabel.mTrueTypeFont]  [text: 'Game Starter']
+  - Lobby/Gui/Opponents/List/Enemy/Scale/Status/Spawn/Button/Outline Scale/Hero  [UILabel.mTrueTypeFont]  [text: 'Join']
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Panel  [UILabel.mTrueTypeFont]  [text: '4m']
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Super Supply Drops  [UILabel.mTrueTypeFont]  [text: 'Off']
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Super Supply Drops/Label  [UILabel.mTrueTypeFont]  [text: 'Super Supply Drops:']
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items  [UILabel.mTrueTypeFont]  [text: 'Victory']
+  - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Icon Scale  [UILabel.mTrueTypeFont]  [text: 'PREV PAGE']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Minimap Panel/Circle/ZoneMessenger  [UILabel.mTrueTypeFont]  [text: 'Position']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Base/Scale/Outline  [UILabel.mTrueTypeFont]  [text: 'Name']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Ghost/Scale/Area Scale/Area  [UILabel.mTrueTypeFont]  [text: 'Player Name']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/MyPlayer/Scale/Ring/Icon  [UILabel.mTrueTypeFont]  [text: 'Total']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Ping  [UILabel.mTrueTypeFont]  [text: '10m']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/PingExplosion  [UILabel.mTrueTypeFont]  [text: '{0} invites you to join a squad. Accept? ']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background  [UILabel.mTrueTypeFont]  [text: 'LVL 1']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background/Level  [UILabel.mTrueTypeFont]  [text: 'Rank']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/Ring  [UILabel.mTrueTypeFont]  [text: 'Deaths']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/Selector  [UILabel.mTrueTypeFont]  [text: 'Deaths']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/Devices/Icon  [UILabel.mTrueTypeFont]  [text: 'Friends Only']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppCore  [UILabel.mTrueTypeFont]  [text: 'In Squad']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/ProgressBack/SelectedBlocks  [UILabel.mTrueTypeFont]  [text: 'Read more']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Title/Skin  [UILabel.mTrueTypeFont]  [text: 'Player']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_1/MouseWheelWeaponSelect  [UILabel.mTrueTypeFont]  [text: 'Game Name']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_1/No  [UILabel.mTrueTypeFont]  [text: 'WIN RATE']
+  - Lobby/Gui/Popups/Portrait/Level  [UILabel.mTrueTypeFont]  [text: 'Slots']
+  - Lobby/Gui/Voting/List/Remove/Label  [UILabel.mTrueTypeFont]  [text: 'Read more']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/AmmoTool1  [UILabel.mTrueTypeFont]  [text: 'SHARED MATCH (DEBUG)']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/Key/KeyInactive  [UILabel.mTrueTypeFont]  [text: 'Max Respawn Time']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/SwitchIcon  [UILabel.mTrueTypeFont]  [text: 'Go Back']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/SwitchIcon/Title  [UILabel.mTrueTypeFont]  [text: 'Total Wins']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Info/Portrait  [UILabel.mTrueTypeFont]  [text: '56']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/04_Settings/Icon/Icon  [UILabel.mTrueTypeFont]  [text: 'Rank']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/04_Settings/Icon/Message  [UILabel.mTrueTypeFont]  [text: 'Wins']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Player Name/Background  [UILabel.mTrueTypeFont]  [text: 'Type Here']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/AlphaButtons/Minus/Label/Info Icon  [UILabel.mTrueTypeFont]  [text: 'Max Respawn Time:']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores  [UILabel.mTrueTypeFont]  [text: 'MAP EDITOR']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/3_Tactics/OppTactics  [UILabel.mTrueTypeFont]  [text: 'Bricks Used']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info  [UILabel.mTrueTypeFont]  [text: 'League Rank']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info/Caption  [UILabel.mTrueTypeFont]  [text: 'Ok']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/KeyActive  [UILabel.mTrueTypeFont]  [text: 'Refresh']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/Title  [UILabel.mTrueTypeFont]  [text: 'Game Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/DirectionPlayerList  [UILabel.mTrueTypeFont]
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/ExitAsSquad  [UILabel.mTrueTypeFont]  [text: 'PRIMARY']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/PingOffensive  [UILabel.mTrueTypeFont]  [text: 'GATLING GUN']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Chat/Table/Input/Icon  [UILabel.mTrueTypeFont]  [text: 'Cancel']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/PrepareForBattle/Label  [UILabel.mTrueTypeFont]  [text: 'Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Resource/Background  [UILabel.mTrueTypeFont]  [text: 'Game Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Player Name/Background/Stats  [UILabel.mTrueTypeFont]  [text: 'Create Game']
+
+Font "AvenirNext Condensed"  (file_id=2, path_id=181)
+  - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Slot/Background/Portrait  [UILabel.mTrueTypeFont]  [text: 'Hit any button to continue']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppShelds/ReadyInactive/Label/Focus  [UILabel.mTrueTypeFont]  [text: 'ASSAULT * DESTRUCTION * TANK']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Content/Placeholders/1/Teammate/Portrait Scale/Portrait  [UILabel.mTrueTypeFont]  [text: 'Mobility']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames  [UILabel.mTrueTypeFont]  [text: '100']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Icon/Label  [UILabel.mTrueTypeFont]  [text: 'SELECTED BLOCKS']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/fence_wooden/Hit/Up/AnimUp/UpLine/AvailableBlocks  [UILabel.mTrueTypeFont]  [text: 'AVAILABLE BLOCKS']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/PrepareForBattle/Label  [UILabel.mTrueTypeFont]  [text: 'RECOMMEND BLOCKS']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/EnableSkipButton  [UILabel.mTrueTypeFont]  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Key  [UILabel.mTrueTypeFont]  [text: 'Complexity']
+  - Lobby/Standing_Blocks/teammate_4/Panel/Cosshair/Down/AnimDown  [UILabel.mTrueTypeFont]  [text: 'Toughness']
+
+Font "AvenirNextLTPro-Heavy"  (file_id=3, path_id=183)
+  - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/BuffPrefab/Cooldown/Labels/Hero Name  [UILabel.mTrueTypeFont]  [text: 'Hero Name...']
+  - Lobby/Gui/Opponents/Label  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Panel/Description  [UILabel.mTrueTypeFont]  [text: 'seconds to respawn']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Scroll Bar/Sprite  [UILabel.mTrueTypeFont]  [text: 'VS.']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/01_ResumeGame/Glow_background_Team  [UILabel.mTrueTypeFont]  [text: 'RESUME GAME']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/02_Settings/Label  [UILabel.mTrueTypeFont]  [text: 'SETTINGS']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/BuildNotify  [UILabel.mTrueTypeFont]  [text: 'Prepare your base']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppShelds/ReadyInactive/Label  [UILabel.mTrueTypeFont]  [text: 'BLOCK IN']
+  - Lobby/Gui/Settings Anchor  [UILabel.mTrueTypeFont]  [text: 'RECALL']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/text/NotifySmall/FriendlyTeam  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name  [UILabel.mTrueTypeFont]  [text: 'Hero Name...']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/CreationMode/MouseLook Creation Mode/RespawnTime  [UILabel.mTrueTypeFont]  [text: '99']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/02_Surrender/Label  [UILabel.mTrueTypeFont]  [text: 'SURRENDER']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/03_ResumeGame/Label  [UILabel.mTrueTypeFont]  [text: 'RESUME GAME']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/04_Settings/Label  [UILabel.mTrueTypeFont]  [text: 'SETTINGS']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/AlterEgo Tween/AlterEgo Alpha/Ready/Ready/Label  [UILabel.mTrueTypeFont]  [text: 'BLOCK IN']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team2  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/FriendlyTeam  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Background  [UILabel.mTrueTypeFont]  [text: 'EXIT']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label  [UILabel.mTrueTypeFont]  [text: 'LOCKED IN!']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/SpectatorTeamNames/Team1  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/SpectatorTeamNames/Team2  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/NoBuildZone/Message  [UILabel.mTrueTypeFont]  [text: 'NO BUILD ZONE!']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Health/Thumb/Label  [UILabel.mTrueTypeFont]  [text: '90']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Icon/Label  [UILabel.mTrueTypeFont]  [text: '10']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/PrepareForBattle/Label  [UILabel.mTrueTypeFont]  [text: 'Prepare for Battle!']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Device/Outline Scale/Outline  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Panel/Waiting  [UILabel.mTrueTypeFont]  [text: 'left click to skip']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Lobby_character_block/List/Unit View 4/Panel/Info/Hero Name  [UILabel.mTrueTypeFont]  [text: 'Hero Name...']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/Hero Name  [UILabel.mTrueTypeFont]  [text: 'Hero Name...']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Hero Name  [UILabel.mTrueTypeFont]  [text: 'Hero Name...']
+  - Unit View 1/Panel/Info/Hero Name  [UILabel.mTrueTypeFont]  [text: 'Hero Name...']
+
+Font "AvenirNextLTPro-Heavy"  (file_id=1, path_id=183)
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Buffs/Me/Title  [UILabel.mTrueTypeFont]  [text: 'Mobility']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Buffs/Panel/Icon  [UILabel.mTrueTypeFont]  [text: 'Toughness']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/Coming Soon  [UILabel.mTrueTypeFont]  [text: 'WEAPON']
+
+Font "AvenirNextLTPro-Heavy"  (file_id=2, path_id=183)
+  - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Blink/List/Line/Name  [UILabel.mTrueTypeFont]  [text: '8']
+  - Lobby/Gui/BottomPanel/Left/Chat/Icon  [UILabel.mTrueTypeFont]  [text: 'No XP gained in this mode, try playing for Funsies or Ranked']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/PingBuilding/Label  [UILabel.mTrueTypeFont]  [text: 'Faster sprint']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_2/No/Hero Name  [UILabel.mTrueTypeFont]  [text: 'ENGINEER']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_4/Empty/ZoneNotifications  [UILabel.mTrueTypeFont]  [text: 'Earned']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/Background  [UILabel.mTrueTypeFont]  [text: '7']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Health/TooltipNo  [UILabel.mTrueTypeFont]  [text: 'Next reward: ']
+  - Lobby/Standing_Blocks/teammate_4/Panel/Cosshair/Right  [UILabel.mTrueTypeFont]  [text: 'PICK YOUR CHARACTER']
+
+Font "AvenirNextLTPro-HeavyCn"  (file_id=3, path_id=187)
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Team2/TeamName  [UILabel.mTrueTypeFont]  [text: 'TEAM']
+  - Lobby/Gui/Popups  [UILabel.mTrueTypeFont]  [text: '60']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/1_Tab Hero/PlayrName  [UILabel.mTrueTypeFont]  [text: 'Player Name']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Map Title  [UILabel.mTrueTypeFont]  [text: 'MENU']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Time  [UILabel.mTrueTypeFont]  [text: '30:20']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Full/Light  [UILabel.mTrueTypeFont]  [text: "Press 'Y' to vote YES!"]
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Full/Title  [UILabel.mTrueTypeFont]  [text: 'SURRENDER ?']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Title  [UILabel.mTrueTypeFont]  [text: 'SURRENDER ?']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Content/Placeholders/1/Teammate/PlayrName  [UILabel.mTrueTypeFont]  [text: 'Player Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Medal/Draftpick_waitingfence/text/Description  [UILabel.mTrueTypeFont]  [text: 'Choose Your Respawn point']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Header  [UILabel.mTrueTypeFont]  [text: 'MENU']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Player Name/Resource  [UILabel.mTrueTypeFont]  [text: '9000']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Opp  [UILabel.mTrueTypeFont]  [text: 'Player Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/AlterEgo Tween/AlterEgo Alpha/Ready/Title  [UILabel.mTrueTypeFont]  [text: 'Cube Core']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/TimeLeft/Window/TimeBar  [UILabel.mTrueTypeFont]  [text: 'ENEMY TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team1/Title  [UILabel.mTrueTypeFont]  [text: 'YOUR TEAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus/Resource  [UILabel.mTrueTypeFont]  [text: '-99999']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/PlayrName  [UILabel.mTrueTypeFont]  [text: 'Player Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/TeamName  [UILabel.mTrueTypeFont]  [text: 'Team A']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/Resource  [UILabel.mTrueTypeFont]  [text: '12345']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Resource  [UILabel.mTrueTypeFont]  [text: '+99999']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Level Anchor/LevelBar/Exp  [UILabel.mTrueTypeFont]  [text: '+200']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Level Anchor/PlayerName  [UILabel.mTrueTypeFont]  [text: 'Looong Player name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Device/Outline Scale/Outline/Waiting/Background  [UILabel.mTrueTypeFont]  [text: '60']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Panel/KillCam  [UILabel.mTrueTypeFont]  [text: 'KILL CAM']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Health/TooltipNo  [UILabel.mTrueTypeFont]  [text: "Press 'N' to vote NO!"]
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/Hero Name/Ready Anchor/Waiting/Background  [UILabel.mTrueTypeFont]  [text: '400 to next rank']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Resource/Resource  [UILabel.mTrueTypeFont]  [text: '9000']
+  - Lobby/Standing_Blocks/teammate_2/Lobby_character_block/TeamName  [UILabel.mTrueTypeFont]  [text: 'Team 1']
+
+Font "AvenirNextLTPro-HeavyCn"  (file_id=1, path_id=187)
+  - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/CycleDeathTargets  [UILabel.mTrueTypeFont]  [text: 'VENGER']
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Power/Charge/DeviceSelectWheel  [UILabel.mTrueTypeFont]  [text: 'CREATE OR JOIN']
+  - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Button  [UILabel.mTrueTypeFont]  [text: 'Colossus']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/HealBlock/Scale  [UILabel.mTrueTypeFont]  [text: 'DIVISION: GOLD III']
+  - Lobby/Gui/Popups/Input/AllTime/NotifyDecorBottom/TweenScale  [UILabel.mTrueTypeFont]  [text: 'PLAY SOLO']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_4/Empty/ZoneNotifications  [UILabel.mTrueTypeFont]  [text: '100500']
+  - Lobby/Gui/Voting/List/Map/IconScale/Icon/Factory/PlayerMsg/Panel/Player/Hero  [UILabel.mTrueTypeFont]  [text: 'Test Name']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/List/Weapon2/Icon  [UILabel.mTrueTypeFont]  [text: 'Player Level: 13']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHeroButton Anchor/Label  [UILabel.mTrueTypeFont]  [text: 'Game Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/HealthBackground  [UILabel.mTrueTypeFont]  [text: '100500']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/fence_wooden/Hit/Up/AnimUp/UpLine/AvailableBlocks/Outline Scale  [UILabel.mTrueTypeFont]  [text: '100500']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Panel/Waiting/Background/Outline  [UILabel.mTrueTypeFont]  [text: 'PLAY NOW']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Resource/Background  [UILabel.mTrueTypeFont]  [text: 'DEVICE NAME']
+  - Lobby/Standing_Blocks/teammate_4/Panel/Cosshair/Down/AnimDown  [UILabel.mTrueTypeFont]
+
+Font "AvenirNextLTPro-HeavyCn"  (file_id=2, path_id=187)
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Text  [UILabel.mTrueTypeFont]  [text: 'SKILL']
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Text/Alpha  [UILabel.mTrueTypeFont]  [text: 'BRAINS']
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Ping/Sprite  [UILabel.mTrueTypeFont]  [text: 'WEAPON 1']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons  [UILabel.mTrueTypeFont]  [text: 'FINISH!']
+  - Lobby/Gui/Popups/Portrait/Level  [UILabel.mTrueTypeFont]  [text: 'REQUIRES LVL 10']
+  - Lobby/Gui/Voting/List/Map/IconScale/Icon/Objectives  [UILabel.mTrueTypeFont]  [text: 'PASSIVE ABILITY']
+  - Lobby/Gui/Voting/List/text/No  [UILabel.mTrueTypeFont]  [text: 'AVAILABLE BLOCKS']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/Scale/Icon/DeathScreenCameraActive  [UILabel.mTrueTypeFont]  [text: 'WEAPON 1']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/04_Settings/Icon/Message  [UILabel.mTrueTypeFont]  [text: 'COAL POWERED CHAMPION']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info/Caption  [UILabel.mTrueTypeFont]  [text: 'BRAWN']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Ability Icon  [UILabel.mTrueTypeFont]  [text: 'DEFEAT!']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/RequeueToggle/AsTeam  [UILabel.mTrueTypeFont]  [text: 'SPECIAL DEVICE']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Built  [UILabel.mTrueTypeFont]  [text: 'LEVEL UP!']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus  [UILabel.mTrueTypeFont]  [text: 'SELECT YOUR SKIN!']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus/3_Tab Skin/ZoneAchievements  [UILabel.mTrueTypeFont]  [text: '+200']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus/Devices Pos/Devices/Vote_3  [UILabel.mTrueTypeFont]  [text: 'WEAPON 1']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason  [UILabel.mTrueTypeFont]  [text: 'ACTIVE ABILITY']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Resource/Background  [UILabel.mTrueTypeFont]  [text: 'VICTORY!']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Icon Anchor  [UILabel.mTrueTypeFont]  [text: 'ENGINEER']
+
+Font "edosz"  (file_id=3, path_id=185)
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Map Title  [UILabel.mTrueTypeFont]  [text: 'VOTE FOR A MAP!']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Header  [UILabel.mTrueTypeFont]  [text: 'DEFEAT']
+  - Lobby/Standing_Blocks/teammate_4/Panel/Cosshair/Down/Dark/NotifyBig/Text  [UILabel.mTrueTypeFont]  [text: 'TEST TEST TEST BIG NOTIFY!']
+  - Unit View 1/Panel  [UILabel.mTrueTypeFont]  [text: 'TEST TEST TEST SMALL NOTIFY!']
+
+Font "edosz"  (file_id=1, path_id=185)
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Full/Progress  [UILabel.mTrueTypeFont]  [text: 'What the Block you gonna do?']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_1/MouseWheelWeaponSelect/Item/No  [UILabel.mTrueTypeFont]  [text: 'BIG NOTIFY']
+
+Font "MyriadPro-Bold"  (file_id=1, path_id=186)
+  - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel  [UILabel.mTrueTypeFont]  [text: 'Hero Switching:']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppShelds/ReadyInactive/Label/Focus  [UILabel.mTrueTypeFont]  [text: 'Max Respawn Time:']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/PlayerModelCamera/Icon  [UILabel.mTrueTypeFont]  [text: '1']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Icon/Label  [UILabel.mTrueTypeFont]  [text: 'Player Name']
+
+Font "MyriadPro-Bold"  (file_id=2, path_id=186)
+  - Lobby/Gui/Popups/Portrait/Background  [UILabel.mTrueTypeFont]  [text: 'Ground Tool']
+  - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/Key/KeyInactive  [UILabel.mTrueTypeFont]  [text: 'Block Name']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Label  [UILabel.mTrueTypeFont]  [text: 'NEXT']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info/Icon/Icon  [UILabel.mTrueTypeFont]  [text: 'Ping:138']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHeroButton Anchor/Label  [UILabel.mTrueTypeFont]  [text: 'NEXT']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/KeyInactive  [UILabel.mTrueTypeFont]  [text: 'Active Ability']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/ButtonYes Anchor/ButtonYes/Label  [UILabel.mTrueTypeFont]  [text: 'description description description descript description']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/Title  [UILabel.mTrueTypeFont]  [text: 'Special Device']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag_DS  [UILabel.mTrueTypeFont]  [text: 'Second Weapon']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/fence_wooden/Critical/Down/AnimDown  [UILabel.mTrueTypeFont]  [text: 'Passive Ability']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/Hero Name/Ready Anchor/Waiting/Background/Hero Description  [UILabel.mTrueTypeFont]  [text: 'This text have info about your selected character. Make sure']
+  - Lobby/Standing_Blocks/teammate_2/Lobby_character_block/TeamName  [UILabel.mTrueTypeFont]  [text: 'First Weapon']
+
+Font "MyriadPro-Bold"  (file_id=3, path_id=186)
+  - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/Teammate/teammate_3  [UILabel.mTrueTypeFont]  [text: 'Player Name']
+  - Lobby/Standing_Blocks/teammate_4/Model Pos 4  [UILabel.mTrueTypeFont]  [text: 'Sheld generator']
+
+Font "MyriadPro-Bold-Point"  (file_id=3, path_id=182)
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Text  [UILabel.mTrueTypeFont]  [text: 'Assist on <PLAYER>']
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items/1_Killer/Killer  [UILabel.mTrueTypeFont]  [text: 'Killer']
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items/4_Dead  [UILabel.mTrueTypeFont]  [text: 'Dead']
+  - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Text/Alpha/Text  [UILabel.mTrueTypeFont]  [text: '<PLAYER> has collected supplies']
+  - Lobby/Gui/Voting/List/Map/VoteCount/Tooltip/Text  [UILabel.mTrueTypeFont]  [text: 'Tooltip']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Info/Player Name  [UILabel.mTrueTypeFont]  [text: '<PLAYER> has destroyed']
+  - Unit View 1/Panel/Info/Hero Name/Ready Anchor/Waiting  [UILabel.mTrueTypeFont]  [text: '<PLAYER> built']
+
+Font "RobotoCondensed"  (file_id=3, path_id=184)
+  - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Text List/Text  [UILabel.mTrueTypeFont]  [text: 'It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww']
+  - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Outline Scale/Text  [UILabel.mTrueTypeFont]  [text: 'It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww']
+  - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Room  [UILabel.mTrueTypeFont]  [text: '[Team]']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Room  [UILabel.mTrueTypeFont]  [text: '[Team]']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text  [UILabel.mTrueTypeFont]  [text: 'It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww']
+  - Lobby/Gui/Popups/Input/Label  [UILabel.mTrueTypeFont]  [text: 'Press Enter to chat']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/ReportWindow/AdditionalMessage/Lobby_character_gradient  [UILabel.mTrueTypeFont]  [text: 'Add up to 150 characters description if required.']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label  [UILabel.mTrueTypeFont]  [text: 'Press Enter to chat']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/Background  [UILabel.mTrueTypeFont]  [text: '1']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Chat/Table/Input/Label  [UILabel.mTrueTypeFont]  [text: 'Press Enter to chat']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/CurrentValue  [UILabel.mTrueTypeFont]  [text: 'Inappropriate Player']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Key  [UILabel.mTrueTypeFont]  [text: '1']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/Hero Name/Ready Anchor/Ready  [UILabel.mTrueTypeFont]  [text: 'Description Description Description Description Description ']
+
+Font "RobotoCondensed"  (file_id=1, path_id=184)
+  - GuiHitDetect/Outline Scale  [UILabel.mTrueTypeFont]  [text: 'All characters skins are free this weekend, so you can dress']
+  - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_0/Yes/03_Exit  [UILabel.mTrueTypeFont]  [text: 'All characters skins are free this weekend']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/ReportWindow/AdditionalMessage/New/Outline Scale  [UILabel.mTrueTypeFont]  [text: 'All characters skins are free this weekend, so you can dress']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices  [UILabel.mTrueTypeFont]  [text: 'All characters skins are free this weekend, so you can dress']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/EnableSkipButton/Button  [UILabel.mTrueTypeFont]  [text: 'Press Enter to chat...']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Lobby_character_block/List/Unit View 4/Panel/Devices Pos/Device Background/Ring/ButtonRecommendBlocks  [UILabel.mTrueTypeFont]  [text: '     Exeption: a name did not start with a legal character 3']
+
+Font "RobotoCondensed"  (file_id=2, path_id=184)
+  - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/GeneratorAnchor  [UILabel.mTrueTypeFont]  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+  - Lobby/Gui/Opponents/List/Enemy/Scale/Background Scale/Background/Yes/Outline/Outline  [UILabel.mTrueTypeFont]  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+  - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/TimeBar  [UILabel.mTrueTypeFont]  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team2  [UILabel.mTrueTypeFont]  [text: 'Active Ability Description']
+  - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Yes  [UILabel.mTrueTypeFont]  [text: 'Active Ability Description']
+  - Lobby/Standing_Blocks/teammate_4/Panel/HashedCrosshair/Bottom  [UILabel.mTrueTypeFont]  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+
+
+--- Fonts present but NOT directly referenced by any UILabel/Text ---
+  path_id=96  'debug_cour'
+
+
+================================================================================
+NGUI UIFont OBJECTS (bitmap/truetype font wrappers)
+================================================================================
+  UIFont pid=607  go='Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector'
+    mDynamicFont -> 'none'  mReplacement -> None
+  UIFont pid=1521  go='Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/BackgroundDecor/Background_Decor2/SwitchHero Button/Background'
+    mDynamicFont -> 'none'  mReplacement -> None
+
+================================================================================
+MReplaceTool COMPONENTS
+================================================================================
+  go='Lobby/Gui/Opponents/List/Enemy/Scale/Info'
+    Caption = 'Replace blocks'
+    Height = 100.0
+    HotKey = <UnknownObject<MapHotKey> Key=48, IsControl=0, IsShift=1>
+    Icon = PPtr(m_FileID=1, m_PathID=14, assetsfile=<SerializedFile>)
+    MenuIndex = 1100
+
+================================================================================
+TARGET FONT SUMMARY
+================================================================================
+
+  Font 'edosz' (path_id=185)
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Map Title  [text: 'VOTE FOR A MAP!']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Full/Progress  [text: 'What the Block you gonna do?']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_1/MouseWheelWeaponSelect/Item/No  [text: 'BIG NOTIFY']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Header  [text: 'DEFEAT']
+    - Lobby/Standing_Blocks/teammate_4/Panel/Cosshair/Down/Dark/NotifyBig/Text  [text: 'TEST TEST TEST BIG NOTIFY!']
+    - Unit View 1/Panel  [text: 'TEST TEST TEST SMALL NOTIFY!']
+
+  Font 'AvenirNextLTPro-Heavy' (path_id=183)
+    - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Blink/List/Line/Name  [text: '8']
+    - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/BuffPrefab/Cooldown/Labels/Hero Name  [text: 'Hero Name...']
+    - Lobby/Gui/BottomPanel/Left/Chat/Icon  [text: 'No XP gained in this mode, try playing for Funsies or Ranked']
+    - Lobby/Gui/Opponents/Label  [text: 'TEAM']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Panel/Description  [text: 'seconds to respawn']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/PingBuilding/Label  [text: 'Faster sprint']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Scroll Bar/Sprite  [text: 'VS.']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/01_ResumeGame/Glow_background_Team  [text: 'RESUME GAME']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/02_Settings/Label  [text: 'SETTINGS']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/BuildNotify  [text: 'Prepare your base']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppShelds/ReadyInactive/Label  [text: 'BLOCK IN']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_2/No/Hero Name  [text: 'ENGINEER']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_4/Empty/ZoneNotifications  [text: 'Earned']
+    - Lobby/Gui/Settings Anchor  [text: 'RECALL']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/text/NotifySmall/FriendlyTeam  [text: 'TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name  [text: 'Hero Name...']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/CreationMode/MouseLook Creation Mode/RespawnTime  [text: '99']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/02_Surrender/Label  [text: 'SURRENDER']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/03_ResumeGame/Label  [text: 'RESUME GAME']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/04_Settings/Label  [text: 'SETTINGS']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1  [text: 'TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/AlterEgo Tween/AlterEgo Alpha/Ready/Ready/Label  [text: 'BLOCK IN']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team2  [text: 'TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/FriendlyTeam  [text: 'TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In  [text: 'TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Background  [text: 'EXIT']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label  [text: 'LOCKED IN!']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label  [text: 'TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/Background  [text: '7']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/SpectatorTeamNames/Team1  [text: 'TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/SpectatorTeamNames/Team2  [text: 'TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/NoBuildZone/Message  [text: 'NO BUILD ZONE!']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Buffs/Me/Title  [text: 'Mobility']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Buffs/Panel/Icon  [text: 'Toughness']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Health/Thumb/Label  [text: '90']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/Coming Soon  [text: 'WEAPON']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Icon/Label  [text: '10']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/PrepareForBattle/Label  [text: 'Prepare for Battle!']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Device/Outline Scale/Outline  [text: 'TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Panel/Waiting  [text: 'left click to skip']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Lobby_character_block/List/Unit View 4/Panel/Info/Hero Name  [text: 'Hero Name...']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Health/TooltipNo  [text: 'Next reward: ']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/Hero Name  [text: 'Hero Name...']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Hero Name  [text: 'Hero Name...']
+    - Lobby/Standing_Blocks/teammate_4/Panel/Cosshair/Right  [text: 'PICK YOUR CHARACTER']
+    - Unit View 1/Panel/Info/Hero Name  [text: 'Hero Name...']
+
+  Font 'AvenirNextLTPro-HeavyCn' (path_id=187)
+    - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/CycleDeathTargets  [text: 'VENGER']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Power/Charge/DeviceSelectWheel  [text: 'CREATE OR JOIN']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Team2/TeamName  [text: 'TEAM']
+    - Lobby/Gui/Popups  [text: '60']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Text  [text: 'SKILL']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Text/Alpha  [text: 'BRAINS']
+    - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Button  [text: 'Colossus']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/HealBlock/Scale  [text: 'DIVISION: GOLD III']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Ping/Sprite  [text: 'WEAPON 1']
+    - Lobby/Gui/Popups/Input/AllTime/NotifyDecorBottom/TweenScale  [text: 'PLAY SOLO']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/1_Tab Hero/PlayrName  [text: 'Player Name']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons  [text: 'FINISH!']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Map Title  [text: 'MENU']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Time  [text: '30:20']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Full/Light  [text: "Press 'Y' to vote YES!"]
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Full/Title  [text: 'SURRENDER ?']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Title  [text: 'SURRENDER ?']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_4/Empty/ZoneNotifications  [text: '100500']
+    - Lobby/Gui/Popups/Portrait/Level  [text: 'REQUIRES LVL 10']
+    - Lobby/Gui/Voting/List/Map/IconScale/Icon/Factory/PlayerMsg/Panel/Player/Hero  [text: 'Test Name']
+    - Lobby/Gui/Voting/List/Map/IconScale/Icon/Objectives  [text: 'PASSIVE ABILITY']
+    - Lobby/Gui/Voting/List/text/No  [text: 'AVAILABLE BLOCKS']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/Scale/Icon/DeathScreenCameraActive  [text: 'WEAPON 1']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/List/Weapon2/Icon  [text: 'Player Level: 13']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Content/Placeholders/1/Teammate/PlayrName  [text: 'Player Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Medal/Draftpick_waitingfence/text/Description  [text: 'Choose Your Respawn point']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/04_Settings/Icon/Message  [text: 'COAL POWERED CHAMPION']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Header  [text: 'MENU']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Player Name/Resource  [text: '9000']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Opp  [text: 'Player Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/AlterEgo Tween/AlterEgo Alpha/Ready/Title  [text: 'Cube Core']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/TimeLeft/Window/TimeBar  [text: 'ENEMY TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info/Caption  [text: 'BRAWN']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHeroButton Anchor/Label  [text: 'Game Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Ability Icon  [text: 'DEFEAT!']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/RequeueToggle/AsTeam  [text: 'SPECIAL DEVICE']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team1/Title  [text: 'YOUR TEAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Built  [text: 'LEVEL UP!']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus  [text: 'SELECT YOUR SKIN!']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus/3_Tab Skin/ZoneAchievements  [text: '+200']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus/Devices Pos/Devices/Vote_3  [text: 'WEAPON 1']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus/Resource  [text: '-99999']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/HealthBackground  [text: '100500']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/PlayrName  [text: 'Player Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/TeamName  [text: 'Team A']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/Resource  [text: '12345']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Resource  [text: '+99999']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/fence_wooden/Hit/Up/AnimUp/UpLine/AvailableBlocks/Outline Scale  [text: '100500']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Level Anchor/LevelBar/Exp  [text: '+200']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Level Anchor/PlayerName  [text: 'Looong Player name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Device/Outline Scale/Outline/Waiting/Background  [text: '60']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Panel/KillCam  [text: 'KILL CAM']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Panel/Waiting/Background/Outline  [text: 'PLAY NOW']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason  [text: 'ACTIVE ABILITY']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Health/TooltipNo  [text: "Press 'N' to vote NO!"]
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/Hero Name/Ready Anchor/Waiting/Background  [text: '400 to next rank']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Resource/Background  [text: 'DEVICE NAME']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Resource/Resource  [text: '9000']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Icon Anchor  [text: 'ENGINEER']
+    - Lobby/Standing_Blocks/teammate_2/Lobby_character_block/TeamName  [text: 'Team 1']
+    - Lobby/Standing_Blocks/teammate_4/Panel/Cosshair/Down/AnimDown
+
+  Font 'MyriadPro-Bold' (path_id=186)
+    - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/Teammate/teammate_3  [text: 'Player Name']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel  [text: 'Hero Switching:']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppShelds/ReadyInactive/Label/Focus  [text: 'Max Respawn Time:']
+    - Lobby/Gui/Popups/Portrait/Background  [text: 'Ground Tool']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/PlayerModelCamera/Icon  [text: '1']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/Key/KeyInactive  [text: 'Block Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Label  [text: 'NEXT']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info/Icon/Icon  [text: 'Ping:138']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHeroButton Anchor/Label  [text: 'NEXT']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/KeyInactive  [text: 'Active Ability']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/ButtonYes Anchor/ButtonYes/Label  [text: 'description description description descript description']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/Title  [text: 'Special Device']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag_DS  [text: 'Second Weapon']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Icon/Label  [text: 'Player Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/fence_wooden/Critical/Down/AnimDown  [text: 'Passive Ability']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/Hero Name/Ready Anchor/Waiting/Background/Hero Description  [text: 'This text have info about your selected character. Make sure']
+    - Lobby/Standing_Blocks/teammate_2/Lobby_character_block/TeamName  [text: 'First Weapon']
+    - Lobby/Standing_Blocks/teammate_4/Model Pos 4  [text: 'Sheld generator']
+
+  Font 'RobotoCondensed' (path_id=184)
+    - GuiHitDetect/Outline Scale  [text: 'All characters skins are free this weekend, so you can dress']
+    - Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/GeneratorAnchor  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Text List/Text  [text: 'It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww']
+    - Lobby/Gui/Opponents/List/Enemy/Scale/Background Scale/Background/Yes/Outline/Outline  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+    - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Outline Scale/Text  [text: 'It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww']
+    - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Room  [text: '[Team]']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Room  [text: '[Team]']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text  [text: 'It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/TimeBar  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_0/Yes/03_Exit  [text: 'All characters skins are free this weekend']
+    - Lobby/Gui/Popups/Input/Label  [text: 'Press Enter to chat']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team2  [text: 'Active Ability Description']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/ReportWindow/AdditionalMessage/Lobby_character_gradient  [text: 'Add up to 150 characters description if required.']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/ReportWindow/AdditionalMessage/New/Outline Scale  [text: 'All characters skins are free this weekend, so you can dress']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Yes  [text: 'Active Ability Description']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices  [text: 'All characters skins are free this weekend, so you can dress']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label  [text: 'Press Enter to chat']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/Background  [text: '1']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Chat/Table/Input/Label  [text: 'Press Enter to chat']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/EnableSkipButton/Button  [text: 'Press Enter to chat...']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/CurrentValue  [text: 'Inappropriate Player']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Lobby_character_block/List/Unit View 4/Panel/Devices Pos/Device Background/Ring/ButtonRecommendBlocks  [text: '     Exeption: a name did not start with a legal character 3']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Key  [text: '1']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/Hero Name/Ready Anchor/Ready  [text: 'Description Description Description Description Description ']
+    - Lobby/Standing_Blocks/teammate_4/Panel/HashedCrosshair/Bottom  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+
+  Font 'AvenirNext Condensed' (path_id=181)
+    - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Blink/List/Line/Kills  [text: 'K']
+    - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Blink/List/Line/Name  [text: 'Looong Player name']
+    - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Slot  [text: '1']
+    - Lobby/Gui/BottomPanel/Left/Chat/Alarm/Slot/Background/Portrait  [text: 'Map Name']
+    - Lobby/Gui/BottomPanel/Left/Chat/Alarm/SlotInactive  [text: '1']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Background/Outline  [text: 'Chat']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Power/Charge/DeviceSelectWheel/Group/Arrow/Background  [text: 'Assists']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Camera/VehicleHeath/Power/Charge/DeviceSelectWheel/Group/DebugMouseIndicator/StarDecorLeft/Sprite  [text: 'New Label']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/BackgroundDecor/Background_Decor2/SwitchHero Button  [text: 'Friends']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/BackgroundDecor/Background_Decor2/SwitchHero Button/Label  [text: 'Switch Hero']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/Lobby_character_gradient  [text: 'TOTAL']
+    - Lobby/Gui/GuiBackground Offset/GuiBackground/Team1/star  [text: '100 / 100']
+    - Lobby/Gui/Opponents/List/Enemy  [text: '35']
+    - Lobby/Gui/Opponents/List/Enemy/Scale/Background Scale/Background  [text: '999']
+    - Lobby/Gui/Opponents/List/Enemy/Scale/Background Scale/Background/Yes/Outline/Outline  [text: 'Game Starter']
+    - Lobby/Gui/Opponents/List/Enemy/Scale/Status/Spawn/Button/Outline Scale/Hero  [text: 'Join']
+    - Lobby/Gui/Opponents/List/Enemy/Scale/Waiting/Animation/Label  [text: 'Cancel']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Panel  [text: '4m']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Super Supply Drops  [text: 'Off']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Super Supply Drops/Label  [text: 'Super Supply Drops:']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items  [text: 'Victory']
+    - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Icon Scale  [text: 'PREV PAGE']
+    - Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Outline Scale/Outline  [text: "I'm going offensive"]
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Minimap Panel/Circle/ZoneMessenger  [text: 'Position']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Base/Scale/Outline  [text: 'Name']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Ghost/Scale/Area Scale/Area  [text: 'Player Name']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/MyPlayer/Scale/Ring/Icon  [text: 'Total']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Ping  [text: '10m']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/PingBuilding/Label  [text: 'MOUSE LOOK']
+    - Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/PingExplosion  [text: '{0} invites you to join a squad. Accept? ']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background  [text: 'LVL 1']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background/Level  [text: '15']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel  [text: '12345']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/Ring  [text: 'Deaths']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/Selector  [text: 'Deaths']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/Devices  [text: 'HEALING']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/Devices/Device/Outline Scale/Health/ValueText  [text: '100 / 100']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/Devices/Icon  [text: 'Friends Only']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/OppHealing  [text: '12345']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppCore  [text: 'In Squad']
+    - Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppShelds/ReadyInactive/Label/Focus  [text: 'ASSAULT * DESTRUCTION * TANK']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/ProgressBack/SelectedBlocks  [text: 'Read more']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Title/Skin  [text: 'Player']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_1/MouseWheelWeaponSelect  [text: 'Game Name']
+    - Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_1/No  [text: 'WIN RATE']
+    - Lobby/Gui/Popups/Portrait/Level  [text: 'Slots']
+    - Lobby/Gui/TopPanel Anchor/TopPanel Tween/Background  [text: 'TITLES']
+    - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Built  [text: 'Bu']
+    - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Dest  [text: 'De']
+    - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Earned  [text: 'Ea']
+    - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Kills  [text: 'K']
+    - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Obj  [text: 'Ob']
+    - Lobby/Gui/TopPanel Anchor/TopPanel Tween/BackgroundLeft/Player Name  [text: 'A']
+    - Lobby/Gui/Voting/List/Map/IconScale  [text: 'Earned']
+    - Lobby/Gui/Voting/List/Map/VoteCount  [text: '5 votes']
+    - Lobby/Gui/Voting/List/Remove/Label  [text: 'Read more']
+    - Lobby/Main Camera/Key1  [text: 'F1: ']
+    - Lobby/Main Camera/Key2  [text: 'F2: ']
+    - Lobby/Main Camera/Key2/Label Anchor/Label  [text: "I'm going defensive"]
+    - Lobby/Main Camera/Key3  [text: 'F3: ']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/Assists  [text: 'A']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/Kills  [text: 'K']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/Label  [text: 'Follow me']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/Name  [text: 'Looong Player name']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/RespawnTime  [text: '35']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden  [text: 'Enemy Spotted']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/AmmoTool1  [text: 'SHARED MATCH (DEBUG)']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/AmmoTool1/AmmoTool1  [text: '10/100']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/Key/KeyActive  [text: 'Q']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/Key/KeyInactive  [text: 'Q']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/SwitchIcon  [text: 'Go Back']
+    - Lobby/Standing_Blocks/Draftpick_waitingfence/fence_wooden/WeaponsGroup/SwitchIcon/Title  [text: 'Total Wins']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Content/Placeholders/1/Teammate/Portrait Scale/Portrait  [text: 'Mobility']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Content/Placeholders/2  [text: 'D']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel  [text: '10/100']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos  [text: '12345']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Info/InQueue  [text: 'In Queue']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Info/InSquad  [text: 'In Squad']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Info/Portrait  [text: '56']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Devices Pos/Devices/Device/Group/Medal/Draftpick_waitingfence  [text: 'The professional']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/04_Settings/Icon/Icon  [text: 'Rank']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/EscMenu/Panel/Buttons/04_Settings/Icon/Message  [text: 'Wins']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Player Name  [text: 'Player Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Player Name/Background  [text: 'Type Here']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/AlphaButtons/Minus/Label  [text: 'Lobby Chat']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/AlphaButtons/Minus/Label/Info Icon  [text: 'Max Respawn Time:']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores  [text: 'MAP EDITOR']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/Scale/OppIcon  [text: 'WARFARE']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/AlterEgo Tween/Notify  [text: 'PICK YOUR CHARACTER!']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/AlterEgo Tween/NotifyDecorTop  [text: 'F4: ']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/TimeLeft/Window/Label  [text: 'TIME LEFT']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/SpectatorTeamNames/Team1/Reposition/TimeLeft/Window/Time  [text: '02:34']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/1_Warfare/Background  [text: '12345']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/1_Warfare/OppWarfare  [text: '12345']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/2_Construction/MyConstruction  [text: '12345']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/2_Construction/Name  [text: 'CONSTRUACTION']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/3_Tactics/MyTactics  [text: '12345']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/TeamScores/3_Tactics/OppTactics  [text: '12345']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames  [text: '100']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info  [text: 'League Rank']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info/Caption  [text: 'Ok']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/AlterEgo Anchor/Scores/ZoneTeamNames/Locked In/Label/Info/Count  [text: '999']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/ButtonCancel/Label  [text: 'CANCEL']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Death/DeathCamPanel/SwitchHero/Panel/ButtonReady/Label  [text: 'READY']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/DependingBlocks  [text: '99']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/KeyActive  [text: 'F']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/KeyInactive  [text: 'F']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale  [text: 'TIME LEFT']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/ButtonCancel Anchor/ButtonCancel/text  [text: 'Cancel']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/ButtonYes Anchor/ButtonYes/Label  [text: 'Yes']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/AddAsFriendsWindow/Title  [text: 'Add as friend?']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/ReportWindow/Title  [text: 'Report this player?']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Requeue/AsTeam/Label  [text: 'Requeue as Team']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team1/InfoStats/Built  [text: 'Built']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team1/InfoStats/Dest  [text: 'Dest']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Built  [text: 'Built']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Dest  [text: 'Dest']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Earned  [text: 'Earned']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/Team2/InfoStats/Obj  [text: 'Obj']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/TimeLeft/Window/Time  [text: '00:00']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Ability/AbilityGroup/Label/Scale/FriendlyIcon/TimeLeft/Window/Time/OppConstruction  [text: '12345']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/Devices/DevicesGroup/AvailableDevices/Device/ResourceMinus/Devices Pos/Devices/Device/Label  [text: 'Exit to Main Menu']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/DirectionPlayerList
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Buffs/Panel/Time  [text: '00:15']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title  [text: 'MAP']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name  [text: 'Map Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/Name  [text: 'Map Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label  [text: 'Submit']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/ExitAsSquad  [text: 'PRIMARY']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/ExitAsSquad/Label  [text: 'Take Squad back to Main Menu']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/PingOffensive  [text: 'GATLING GUN']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/Titles/Label Inactive  [text: 'TITLES']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Icon/Label  [text: 'SELECTED BLOCKS']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/fence_wooden/Hit/Up/AnimUp/UpLine/AvailableBlocks  [text: 'AVAILABLE BLOCKS']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Chat/Table/Input/Icon  [text: 'Cancel']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/PrepareForBattle/Label  [text: 'Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Device/Label  [text: 'Requeue Solo / as Hero Squad']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Device/Outline Scale/Outline/Waiting/Background/Cost  [text: '0']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/EnableSkipButton  [text: 'vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf ']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Lobby_character_block/List/Unit View 4  [text: 'Inappropriate Player']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Lobby_character_block/List/Unit View 4/Panel/Info/Player Name  [text: 'Username...']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices  [text: 'Looong Player name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Key  [text: 'Complexity']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/ToolKey/KeyActive  [text: 'E']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Portrait Scale/ToolKey/KeyInactive  [text: 'E']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Resource/Background  [text: 'Game Name']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Cost  [text: '999']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/CostInc Anchor/3  [text: '+999']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Hero Name  [text: 'Obj']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Hero Name/Ready Anchor  [text: 'D']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Player Name  [text: 'Username...']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Player Name/Background/Stats  [text: 'Create Game']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Info/Player Name/Background/Stats/Label Active  [text: 'STATS']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Info/Player Name  [text: 'Username...']
+    - Lobby/Standing_Blocks/Gui Characters/FlagBG  [text: 'TACTIC']
+    - Lobby/Standing_Blocks/teammate_2  [text: 'STATS']
+    - Lobby/Standing_Blocks/teammate_4/Panel/Cosshair/Down/AnimDown  [text: 'Toughness']
+    - Lobby/Standing_Blocks/teammate_4/Panel/Device Background/OppTotal  [text: '12345']
+    - Unit View 1/Panel/Info/Hero Name/Ready Anchor  [text: 'A']
+    - Unit View 1/Panel/Info/Hero Name/Ready Anchor/Waiting/Animation  [text: 'D']
+    - Unit View 1/Panel/Info/Player Name  [text: 'Username...']
+
+  Font 'MyriadPro-Bold-Point' (path_id=182)
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Text  [text: 'Assist on <PLAYER>']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items/1_Killer/Killer  [text: 'Killer']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items/4_Dead  [text: 'Dead']
+    - Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Text/Alpha/Text  [text: '<PLAYER> has collected supplies']
+    - Lobby/Gui/Voting/List/Map/VoteCount/Tooltip/Text  [text: 'Tooltip']
+    - Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Info/Player Name  [text: '<PLAYER> has destroyed']
+    - Unit View 1/Panel/Info/Hero Name/Ready Anchor/Waiting  [text: '<PLAYER> built']
+
+================================================================================
+HUD/NOTIFICATION/ACTIVITY-RELATED GO PATHS WITH FONT REFERENCES
+================================================================================
+
+  [activityscroll]
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Panel  → font='AvenirNext Condensed'  text='4m'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Panel/Description  → font='AvenirNextLTPro-Heavy'  text='seconds to respawn'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Super Supply Drops  → font='AvenirNext Condensed'  text='Off'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Super Supply Drops/Label  → font='AvenirNext Condensed'  text='Super Supply Drops:'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Text  → font='AvenirNextLTPro-HeavyCn'  text='SKILL'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Text  → font='MyriadPro-Bold-Point'  text='Assist on <PLAYER>'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items  → font='AvenirNext Condensed'  text='Victory'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items/1_Killer/Killer  → font='MyriadPro-Bold-Point'  text='Killer'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items/4_Dead  → font='MyriadPro-Bold-Point'  text='Dead'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Text/Alpha  → font='AvenirNextLTPro-HeavyCn'  text='BRAINS'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Text/Alpha/Text  → font='MyriadPro-Bold-Point'  text='<PLAYER> has collected supplies'
+
+  [playerinfo]
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Buffs/Me/Title  → font='AvenirNextLTPro-Heavy'  text='Mobility'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Buffs/Panel/Icon  → font='AvenirNextLTPro-Heavy'  text='Toughness'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Buffs/Panel/Time  → font='AvenirNext Condensed'  text='00:15'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title  → font='AvenirNext Condensed'  text='MAP'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Health/Thumb/Label  → font='AvenirNextLTPro-Heavy'  text='90'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/HealthBackground  → font='AvenirNextLTPro-HeavyCn'  text='100500'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name  → font='AvenirNext Condensed'  text='Map Name'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='STATS'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label  → font='RobotoCondensed'  text='Press Enter to chat'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/Background  → font='RobotoCondensed'  text='1'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/Name  → font='AvenirNext Condensed'  text='Map Name'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/PlayrName  → font='AvenirNextLTPro-HeavyCn'  text='Player Name'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/RespawnTime  → font='<UIFont(pid=609, go=?)>'  text='99'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/TeamName  → font='AvenirNextLTPro-HeavyCn'  text='Team A'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonTitles/Label Active  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='TITLES'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonTitles/Label Inactive  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='TITLES'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label  → font='AvenirNext Condensed'  text='Submit'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/Coming Soon  → font='AvenirNextLTPro-Heavy'  text='WEAPON'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/ExitAsSquad  → font='AvenirNext Condensed'  text='PRIMARY'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/ExitAsSquad/Label  → font='AvenirNext Condensed'  text='Take Squad back to Main Menu'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag/Label/PingOffensive  → font='AvenirNext Condensed'  text='GATLING GUN'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/MenuFlag_DS  → font='MyriadPro-Bold'  text='Second Weapon'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/Menu_star  → font='<UIFont(pid=609, go=?)>'  text='New Label'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/Titles/Label Inactive  → font='AvenirNext Condensed'  text='TITLES'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/Resource  → font='AvenirNextLTPro-HeavyCn'  text='12345'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Icon/Label  → font='AvenirNext Condensed'  text='SELECTED BLOCKS'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Icon/Label  → font='AvenirNextLTPro-Heavy'  text='10'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Icon/Label  → font='MyriadPro-Bold'  text='Player Name'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Resource  → font='<UIFont(pid=609, go=?)>'  text='2500'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Resource/ResourcePlus/Resource  → font='AvenirNextLTPro-HeavyCn'  text='+99999'
+
+  [respawn]
+    Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/Teammate/RespawnTime  → font='<UIFont(pid=609, go=?)>'  text='99'
+    Lobby/Standing_Blocks/Draftpick_waitingfence/RespawnTime  → font='AvenirNext Condensed'  text='35'
+    Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Content/Placeholders/1/Teammate/RespawnTime  → font='<UIFont(pid=609, go=?)>'  text='99'
+    Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/CreationMode/MouseLook Creation Mode/RespawnTime  → font='<UIFont(pid=608, go=?)>'  text='1'
+    Lobby/Standing_Blocks/Gui Characters/Characters/My Info/Panel/Info/Hero Name/Ready Anchor/CreationMode/MouseLook Creation Mode/RespawnTime  → font='AvenirNextLTPro-Heavy'  text='99'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Life/PlayerInfo/PlayerInfoGroup/Map Title/Map Name/ButtonStats/Input/Label/Team2 Anchor/Team2/Player/RespawnTime  → font='<UIFont(pid=609, go=?)>'  text='99'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/RespawnTime  → font='<UIFont(pid=609, go=?)>'  text='99'
+
+  [chat]
+    Lobby/Gui/BottomPanel/Left/Chat/Alarm/Blink/List/Line/Kills  → font='AvenirNext Condensed'  text='K'
+    Lobby/Gui/BottomPanel/Left/Chat/Alarm/Blink/List/Line/Name  → font='AvenirNext Condensed'  text='Looong Player name'
+    Lobby/Gui/BottomPanel/Left/Chat/Alarm/Blink/List/Line/Name  → font='AvenirNextLTPro-Heavy'  text='8'
+    Lobby/Gui/BottomPanel/Left/Chat/Alarm/Slot  → font='AvenirNext Condensed'  text='1'
+    Lobby/Gui/BottomPanel/Left/Chat/Alarm/Slot/Background/Portrait  → font='AvenirNext Condensed'  text='Hit any button to continue'
+    Lobby/Gui/BottomPanel/Left/Chat/Alarm/SlotInactive  → font='AvenirNext Condensed'  text='1'
+    Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/CycleDeathTargets  → font='AvenirNextLTPro-HeavyCn'  text='VENGER'
+    Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/GeneratorAnchor  → font='RobotoCondensed'  text='vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf '
+    Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/BuffPrefab/Cooldown/Labels  → font='<UIFont(pid=609, go=?)>'  text='100'
+    Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/BuffPrefab/Cooldown/Labels/Hero Name  → font='AvenirNextLTPro-Heavy'  text='Hero Name...'
+    Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/Teammate/RespawnTime  → font='<UIFont(pid=609, go=?)>'  text='99'
+    Lobby/Gui/BottomPanel/Left/Chat/BackgroundAlarm/Teammates/TeammatesList/Teammate/teammate_3  → font='MyriadPro-Bold'  text='Player Name'
+    Lobby/Gui/BottomPanel/Left/Chat/Icon  → font='AvenirNextLTPro-Heavy'  text='No XP gained in this mode, try playing for Funsies or Ranked'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='HEROES'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Button  → font='AvenirNextLTPro-HeavyCn'  text='Colossus'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Icon Scale  → font='AvenirNext Condensed'  text='PREV PAGE'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Outline Scale/Outline  → font='AvenirNext Condensed'  text="I'm going offensive"
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Outline Scale/Text  → font='RobotoCondensed'  text='It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Room  → font='RobotoCondensed'  text='[Team]'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel  → font='AvenirNext Condensed'  text='12345'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Caption  → font='<UIFont(pid=609, go=?)>'  text="Spawn point blocked by world's objects"
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Room  → font='RobotoCondensed'  text='[Team]'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Scroll Bar/Sprite  → font='AvenirNextLTPro-Heavy'  text='VS.'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Separator  → font='<UIFont(pid=609, go=?)>'  text='You not respawn until it will be free. You can choose anothe'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text  → font='RobotoCondensed'  text='It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons  → font='AvenirNextLTPro-HeavyCn'  text='FINISH!'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/01_ResumeGame/Glow_background_Team  → font='AvenirNextLTPro-Heavy'  text='RESUME GAME'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/01_ResumeGame/Selector  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='You have no friends'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/02_Settings/Label  → font='AvenirNextLTPro-Heavy'  text='SETTINGS'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/Ring  → font='AvenirNext Condensed'  text='Deaths'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/Selector  → font='AvenirNext Condensed'  text='Deaths'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Map Title  → font='AvenirNextLTPro-HeavyCn'  text='MENU'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Map Title  → font='edosz'  text='VOTE FOR A MAP!'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Chat/Table/Input/Icon  → font='AvenirNext Condensed'  text='Cancel'
+    Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/MatchFinish/ResultScreen/Panel/Chat/Table/Input/Label  → font='RobotoCondensed'  text='Press Enter to chat'
+
+  [popup]
+    Lobby/Gui/Popups  → font='AvenirNextLTPro-HeavyCn'  text='60'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Panel  → font='AvenirNext Condensed'  text='4m'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Panel/Description  → font='AvenirNextLTPro-Heavy'  text='seconds to respawn'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Super Supply Drops  → font='AvenirNext Condensed'  text='Off'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Super Supply Drops/Label  → font='AvenirNext Condensed'  text='Super Supply Drops:'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Text  → font='AvenirNextLTPro-HeavyCn'  text='SKILL'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/ImportantText/Text  → font='MyriadPro-Bold-Point'  text='Assist on <PLAYER>'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items  → font='AvenirNext Condensed'  text='Victory'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items/1_Killer/Killer  → font='MyriadPro-Bold-Point'  text='Killer'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Pvp/Items/4_Dead  → font='MyriadPro-Bold-Point'  text='Dead'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Text/Alpha  → font='AvenirNextLTPro-HeavyCn'  text='BRAINS'
+    Lobby/Gui/Popups/Input/AllTime/ActivityScroll Anchor/ActivityScroll/Text/Alpha/Text  → font='MyriadPro-Bold-Point'  text='<PLAYER> has collected supplies'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='HEROES'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Button  → font='AvenirNextLTPro-HeavyCn'  text='Colossus'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Icon Scale  → font='AvenirNext Condensed'  text='PREV PAGE'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Outline Scale/Outline  → font='AvenirNext Condensed'  text="I'm going offensive"
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Outline Scale/Text  → font='RobotoCondensed'  text='It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'
+    Lobby/Gui/Popups/Input/AllTime/Chat Anchor/Chat/Table/Room  → font='RobotoCondensed'  text='[Team]'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Minimap Panel/Circle/ZoneMessenger  → font='AvenirNext Condensed'  text='Position'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel  → font='MyriadPro-Bold'  text='Hero Switching:'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Base/Scale/Icon/Desc1  → font='<UIFont(pid=609, go=?)>'  text='All characters skins are free this weekend, so you can dress'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Base/Scale/Outline  → font='AvenirNext Condensed'  text='Name'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Ghost/Scale/Area Scale/Area  → font='AvenirNext Condensed'  text='Player Name'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/HealBlock/Scale  → font='AvenirNextLTPro-HeavyCn'  text='DIVISION: GOLD III'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/MyPlayer/Scale  → font='<UIFont(pid=609, go=?)>'  text='Resource Cost'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/MyPlayer/Scale/Ring/Icon  → font='AvenirNext Condensed'  text='Total'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Ping  → font='AvenirNext Condensed'  text='10m'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/Ping/Sprite  → font='AvenirNextLTPro-HeavyCn'  text='WEAPON 1'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/PingBuilding/Label  → font='AvenirNext Condensed'  text='MOUSE LOOK'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/PingBuilding/Label  → font='AvenirNextLTPro-Heavy'  text='Faster sprint'
+    Lobby/Gui/Popups/Input/AllTime/MinimapLive Anchor/MinimapLiveGroup/Minimap/Panel/Objects/PingExplosion  → font='AvenirNext Condensed'  text='{0} invites you to join a squad. Accept? '
+    Lobby/Gui/Popups/Input/AllTime/NotifyDecorBottom/TweenScale  → font='AvenirNextLTPro-HeavyCn'  text='PLAY SOLO'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/1_Tab Hero/New  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='MAPS'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/1_Tab Hero/PlayrName  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='MAPS'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/1_Tab Hero/PlayrName  → font='AvenirNextLTPro-HeavyCn'  text='Player Name'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background  → font='AvenirNext Condensed'  text='LVL 1'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background/Level  → font='AvenirNext Condensed'  text='15'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel  → font='AvenirNext Condensed'  text='12345'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Caption  → font='<UIFont(pid=609, go=?)>'  text="Spawn point blocked by world's objects"
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Room  → font='RobotoCondensed'  text='[Team]'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Scroll Bar/Sprite  → font='AvenirNextLTPro-Heavy'  text='VS.'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Separator  → font='<UIFont(pid=609, go=?)>'  text='You not respawn until it will be free. You can choose anothe'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text  → font='RobotoCondensed'  text='It is chat! sdsa wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons  → font='AvenirNextLTPro-HeavyCn'  text='FINISH!'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/01_ResumeGame/Glow_background_Team  → font='AvenirNextLTPro-Heavy'  text='RESUME GAME'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/01_ResumeGame/Selector  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='You have no friends'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/02_Settings/Label  → font='AvenirNextLTPro-Heavy'  text='SETTINGS'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/Ring  → font='AvenirNext Condensed'  text='Deaths'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Buttons/Selector  → font='AvenirNext Condensed'  text='Deaths'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Map Title  → font='AvenirNextLTPro-HeavyCn'  text='MENU'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/ChatPanel/Chat/Table/Text List/Text/Map Title  → font='edosz'  text='VOTE FOR A MAP!'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/Devices  → font='AvenirNext Condensed'  text='HEALING'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/Devices/Device/Outline Scale/Health/ValueText  → font='AvenirNext Condensed'  text='100 / 100'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/Devices/Icon  → font='AvenirNext Condensed'  text='Friends Only'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Background_Decor2/Outline/Arrow/Panel/Icon Scale/Outline Scale/Outline/OppHealing  → font='AvenirNext Condensed'  text='12345'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/BuildNotify  → font='AvenirNextLTPro-Heavy'  text='Prepare your base'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppCore  → font='AvenirNext Condensed'  text='In Squad'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppShelds/ReadyInactive/Label  → font='AvenirNextLTPro-Heavy'  text='BLOCK IN'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppShelds/ReadyInactive/Label/Focus  → font='AvenirNext Condensed'  text='ASSAULT * DESTRUCTION * TANK'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/OppShelds/ReadyInactive/Label/Focus  → font='MyriadPro-Bold'  text='Max Respawn Time:'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/Time  → font='AvenirNextLTPro-HeavyCn'  text='30:20'
+    Lobby/Gui/Popups/Input/AllTime/PhaseAssault/PhaseAssaultGroup/TimeBar  → font='RobotoCondensed'  text='vgfuidfhuihfweifh  vgfuidfhu vgfuidfhuihfweifh  ewiufhweigf '
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Full/Light  → font='AvenirNextLTPro-HeavyCn'  text="Press 'Y' to vote YES!"
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Full/Progress  → font='edosz'  text='What the Block you gonna do?'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Full/Title  → font='AvenirNextLTPro-HeavyCn'  text='SURRENDER ?'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/ProgressBack/SelectedBlocks  → font='AvenirNext Condensed'  text='Read more'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Title  → font='AvenirNextLTPro-HeavyCn'  text='SURRENDER ?'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Title/Skin  → font='AvenirNext Condensed'  text='Player'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_0/Yes/03_Exit  → font='RobotoCondensed'  text='All characters skins are free this weekend'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_1/MouseWheelWeaponSelect  → font='AvenirNext Condensed'  text='Game Name'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_1/MouseWheelWeaponSelect/Item/No  → font='edosz'  text='BIG NOTIFY'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_1/No  → font='AvenirNext Condensed'  text='WIN RATE'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_2/No/Hero Name  → font='AvenirNextLTPro-Heavy'  text='ENGINEER'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_4/Empty/ZoneNotifications  → font='AvenirNextLTPro-Heavy'  text='Earned'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_4/Empty/ZoneNotifications  → font='AvenirNextLTPro-HeavyCn'  text='100500'
+    Lobby/Gui/Popups/Input/AllTime/Teammates/Foreground  → font='<UIFont(pid=607, go=Lobby/Standing_Blocks/Gui Characters/Characters/Teammate/Unit View 3/Panel/Devices Pos/Devices/Labels/Reason/Panel/Devices Pos/Devices/Device/Selector)>'  text='RANKED STATUS'
+    Lobby/Gui/Popups/Input/Label  → font='RobotoCondensed'  text='Press Enter to chat'
+    Lobby/Gui/Popups/Portrait/Background  → font='MyriadPro-Bold'  text='Ground Tool'
+    Lobby/Gui/Popups/Portrait/Level  → font='AvenirNext Condensed'  text='Slots'
+    Lobby/Gui/Popups/Portrait/Level  → font='AvenirNextLTPro-HeavyCn'  text='REQUIRES LVL 10'
+
+  [notification]
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_4/Empty/ZoneNotifications  → font='AvenirNextLTPro-Heavy'  text='Earned'
+    Lobby/Gui/Popups/Input/AllTime/Surrender/Short/Votes/Vote_4/Empty/ZoneNotifications  → font='AvenirNextLTPro-HeavyCn'  text='100500'
+
+Done.

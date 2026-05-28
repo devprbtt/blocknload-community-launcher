@@ -3385,6 +3385,11 @@ namespace BnlCommunityFixes
         }
 
         public static void EnsureInit() { }
+
+        public static void PatchChatMessage(UiChatMessage msg)
+        {
+            FontOverrideBootstrapper.PatchChatMessage(msg);
+        }
     }
 }
 "@
@@ -5518,6 +5523,21 @@ if ($FontOverrideEnabled) {
             $gnFirst = $GuiNoticesStart.Body.Instructions[0]
             $gnIl.InsertBefore($gnFirst, $gnIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedFontEnsureInit))
             Write-Output "[FontOverride] Patched GuiNotices.Start"
+        }
+    }
+
+    # Patch UiChatMessage.Fill (both overloads) — inject PatchChatMessage(this) at start
+    # so font is applied instantly when a chat message is spawned, with no visible delay.
+    $ImportedPatchChatMessage = $Module.ImportReference(($FontOverrideRuntimeType.Methods | Where-Object Name -eq "PatchChatMessage" | Select-Object -First 1))
+    $UiChatMessageType = $Module.Types | Where-Object Name -eq "UiChatMessage" | Select-Object -First 1
+    if ($UiChatMessageType -and $ImportedPatchChatMessage) {
+        foreach ($fillMethod in ($UiChatMessageType.Methods | Where-Object Name -eq "Fill")) {
+            if (-not $fillMethod.HasBody) { continue }
+            $fillIl = $fillMethod.Body.GetILProcessor()
+            $fillFirst = $fillMethod.Body.Instructions[0]
+            $fillIl.InsertBefore($fillFirst, $fillIl.Create([Mono.Cecil.Cil.OpCodes]::Ldarg_0))
+            $fillIl.InsertBefore($fillFirst, $fillIl.Create([Mono.Cecil.Cil.OpCodes]::Call, $ImportedPatchChatMessage))
+            Write-Output "[FontOverride] Patched UiChatMessage.Fill($($fillMethod.Parameters.Count) params)"
         }
     }
 }
