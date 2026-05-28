@@ -180,11 +180,45 @@ public sealed class FeatureSettingsService
             runtimeSync.WriteHideImpactVfxSettings(runtimeConfigPath, settings);
     }
 
-    public UnitGuiScaleSettings LoadUnitGuiScaleSettings() => Load("unit-gui-scale-config.json", new UnitGuiScaleSettings());
-    public void SaveUnitGuiScaleSettings(UnitGuiScaleSettings settings) => Save("unit-gui-scale-config.json", settings);
+    public UnitGuiScaleSettings LoadUnitGuiScaleSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "unit-gui-scale-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("unit-gui-scale-config.json", new UnitGuiScaleSettings());
+            settings = runtimeSync.ReadUnitGuiScaleSettings(runtimeConfigPath, settings);
+            Save("unit-gui-scale-config.json", settings);
+            return settings;
+        }
+        return Load("unit-gui-scale-config.json", new UnitGuiScaleSettings());
+    }
 
-    public WsiSettings LoadWsiSettings() => Load("wsi-config.json", new WsiSettings());
-    public void SaveWsiSettings(WsiSettings settings) => Save("wsi-config.json", settings);
+    public void SaveUnitGuiScaleSettings(UnitGuiScaleSettings settings)
+    {
+        Save("unit-gui-scale-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteUnitGuiScaleSettings(runtimeConfigPath, settings);
+    }
+
+    public WsiSettings LoadWsiSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "wsi-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("wsi-config.json", new WsiSettings());
+            settings = runtimeSync.ReadWsiSettings(runtimeConfigPath, settings);
+            Save("wsi-config.json", settings);
+            return settings;
+        }
+        return Load("wsi-config.json", new WsiSettings());
+    }
+
+    public void SaveWsiSettings(WsiSettings settings)
+    {
+        Save("wsi-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteWsiSettings(runtimeConfigPath, settings);
+    }
 
     public MapRenderOverrideSettings LoadMapRenderOverrideSettings()
     {
