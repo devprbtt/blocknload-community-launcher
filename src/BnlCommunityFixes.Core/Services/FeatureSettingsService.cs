@@ -266,6 +266,25 @@ public sealed class FeatureSettingsService
     public FontOverrideSettings LoadFontOverrideSettings() => Load("experimental-font-override-config.json", new FontOverrideSettings());
     public void SaveFontOverrideSettings(FontOverrideSettings settings) => Save("experimental-font-override-config.json", settings);
 
+    public void PushLauncherSettingsToRuntime()
+    {
+        if (runtimeConfigPath == null)
+        {
+            return;
+        }
+
+        runtimeSync.WriteCrosshairSettings(runtimeConfigPath, Load("crosshair-config.json", new CrosshairSettings()));
+        runtimeSync.WriteFovSettings(runtimeConfigPath, Load("fov-config.json", new FovSettings()));
+        runtimeSync.WriteTeamColorSettings(runtimeConfigPath, Load("experimental-team-color-config.json", new TeamColorSettings()));
+        runtimeSync.WriteDamageHealingSettings(runtimeConfigPath, Load("damage-healing-indicator-config.json", new DamageHealingSettings()));
+        runtimeSync.WriteLocalBuildPreviewSettings(runtimeConfigPath, Load("experimental-local-build-preview-config.json", new LocalBuildPreviewSettings()));
+        runtimeSync.WriteTeammateHpSettings(runtimeConfigPath, Load("teammate-hp-config.json", new TeammateHpSettings()));
+        runtimeSync.WriteHideImpactVfxSettings(runtimeConfigPath, Load("experimental-hide-impact-vfx-config.json", new HideImpactVfxSettings()));
+        runtimeSync.WriteUnitGuiScaleSettings(runtimeConfigPath, Load("unit-gui-scale-config.json", new UnitGuiScaleSettings()));
+        runtimeSync.WriteWsiSettings(runtimeConfigPath, Load("wsi-config.json", new WsiSettings()));
+        runtimeSync.WriteMapRenderOverrideSettings(runtimeConfigPath, Load("experimental-map-render-config.json", new MapRenderOverrideSettings()));
+    }
+
     public bool EnsureAutoCasualQueueTestDefaultEnabled()
     {
         var migrationMarkerPath = Path.Combine(paths.DataDir, "auto-casual-queue-2.3-default-enabled.migrated");

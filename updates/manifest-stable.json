@@ -1,16 +1,16 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-05-28T20:09:42.4769064+00:00",
-  "notes": "## What's new\n\n- Added segmented healthbar feature toggle\n- Added Edo SZ font override support for kill feed and major UI areas\n- Fixed chat font flash while applying UI font overrides\n- Added WSI scale runtime sync so launcher state stays aligned with in-game F8 changes\n- Audio, mesh, and texture replacers now auto-import newly added files when opened\n\n## Update flow\n\n- The launcher now continues on the single-exe 2.5.x release line\n- Includes the bridge hardening work that improved forced updates and bootstrap behavior during the 2.4.10 migration",
+  "published_at": "2026-05-29T10:42:34.2185473+00:00",
+  "notes": "## What's new\n\n- Added built-in settings profiles on the main launcher UI: Recommended Settings and Personal Settings\n- Launcher updates now reset the shipped Recommended Settings profile to the new bundled defaults\n- Added a one-time post-update notice explaining that recommended settings were refreshed\n- Fixed profile switching so both Recommended and Personal persist independently\n- Updated the shipped recommended feature settings to match the latest launcher-saved recommended profile\n\n## Other included improvements\n\n- Segmented healthbar toggle\n- Edo SZ font override expansion and chat font flash fix\n- WSI scale runtime sync improvements\n- Auto-import of newly added files in audio, mesh, and texture replacers",
   "assets": {
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.5.0/BnlCommunityFixes.exe",
-      "sha256": "B34AE21D3FC18F2D7030D98859AF414444BAA68C91BDAE9AFCDD33CF1E97DB56",
-      "size": 164271282
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.5.1/BnlCommunityFixes.exe",
+      "sha256": "835C6E4C52F6C1C110D558F15CA4769C474B8CB5E7C1A3B4503A34D77AE3D704",
+      "size": 164279474
     }
   }
 }

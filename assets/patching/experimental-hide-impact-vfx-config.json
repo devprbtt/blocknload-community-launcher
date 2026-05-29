@@ -1,4 +1,6 @@
 {
-    "enabled": false,
-    "hide_impact_vfx": false
+  "enabled": false,
+  "hide_impact_vfx": false,
+  "hide_lava_water_plane": false,
+  "hide_falling_blocks": false
 }

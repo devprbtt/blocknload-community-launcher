@@ -14,11 +14,14 @@ public sealed class LauncherMainForm : Form
     private readonly LaunchCoordinator launchCoordinator;
     private readonly LauncherConfigService launcherConfigService;
     private readonly ReplayLauncherService replayLauncherService;
+    private readonly SettingsService settingsService;
+    private readonly LauncherSettingsProfileService settingsProfileService;
 
     private readonly Label gamePathLabel;
     private readonly Label detectionLabel;
     private readonly Label patchStatusLabel;
     private readonly ComboBox serverComboBox;
+    private readonly ComboBox settingsProfileComboBox;
     private readonly Button launchButton;
     private readonly Button featureSettingsButton;
     private readonly Button importExportButton;
@@ -36,6 +39,8 @@ public sealed class LauncherMainForm : Form
 
     private LauncherConfig? launcherConfig;
     private bool syncingReplayRecorderToggle;
+    private bool syncingSettingsProfileComboBox;
+    private bool shouldShowUpdatedRecommendedNotice;
 
     public LauncherMainForm(
         AppPaths paths,
@@ -54,13 +59,15 @@ public sealed class LauncherMainForm : Form
         launchCoordinator = new LaunchCoordinator(paths, logger);
         launcherConfigService = new LauncherConfigService();
         replayLauncherService = new ReplayLauncherService(paths, logger, settings, httpClient);
+        settingsService = new SettingsService(paths);
+        settingsProfileService = new LauncherSettingsProfileService(paths);
 
         Text = $"Block N Load Community Fixes V2 - {launcherVersion}";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = true;
-        ClientSize = new System.Drawing.Size(760, 500);
+        ClientSize = new System.Drawing.Size(760, 556);
 
         using var appIconStream = typeof(LauncherMainForm).Assembly.GetManifestResourceStream("BnlCommunityFixes.Launcher.launcher-icon.ico");
         if (appIconStream != null) Icon = new System.Drawing.Icon(appIconStream);
@@ -147,10 +154,27 @@ public sealed class LauncherMainForm : Form
         launchButton.Click += (_, _) => LaunchSelectedServer();
         AcceptButton = launchButton;
 
+        var settingsProfileLabel = new Label
+        {
+            Text = "Settings profile",
+            AutoSize = true,
+            Location = new System.Drawing.Point(24, 212)
+        };
+
+        settingsProfileComboBox = new ComboBox
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Location = new System.Drawing.Point(24, 230),
+            Size = new System.Drawing.Size(230, 26)
+        };
+        settingsProfileComboBox.Items.Add("Recommended Settings");
+        settingsProfileComboBox.Items.Add("Personal Settings");
+        settingsProfileComboBox.SelectedIndexChanged += (_, _) => ChangeSettingsProfileFromUi();
+
         featureSettingsButton = new Button
         {
             Text = "Feature Settings",
-            Location = new System.Drawing.Point(24, 212),
+            Location = new System.Drawing.Point(24, 270),
             Size = new System.Drawing.Size(120, 28)
         };
         featureSettingsButton.Click += (_, _) => OpenFeatureSettings();
@@ -158,7 +182,7 @@ public sealed class LauncherMainForm : Form
         importExportButton = new Button
         {
             Text = "Import / Export...",
-            Location = new System.Drawing.Point(150, 212),
+            Location = new System.Drawing.Point(150, 270),
             Size = new System.Drawing.Size(120, 28)
         };
         importExportButton.Click += (_, _) => OpenConfigTransfer();
@@ -166,7 +190,7 @@ public sealed class LauncherMainForm : Form
         moreOptionsButton = new Button
         {
             Text = "More options...",
-            Location = new System.Drawing.Point(276, 212),
+            Location = new System.Drawing.Point(276, 270),
             Size = new System.Drawing.Size(110, 28)
         };
         moreOptionsButton.Click += (_, _) => OpenMoreOptions();
@@ -174,7 +198,7 @@ public sealed class LauncherMainForm : Form
         audioReplacerButton = new Button
         {
             Text = "Audio Replacer",
-            Location = new System.Drawing.Point(392, 212),
+            Location = new System.Drawing.Point(392, 270),
             Size = new System.Drawing.Size(120, 28)
         };
         audioReplacerButton.Click += (_, _) => OpenAudioReplacer();
@@ -182,7 +206,7 @@ public sealed class LauncherMainForm : Form
         meshReplacerButton = new Button
         {
             Text = "Mesh Replacer",
-            Location = new System.Drawing.Point(518, 212),
+            Location = new System.Drawing.Point(518, 270),
             Size = new System.Drawing.Size(110, 28)
         };
         meshReplacerButton.Click += (_, _) => OpenMeshReplacer();
@@ -190,7 +214,7 @@ public sealed class LauncherMainForm : Form
         textureReplacerButton = new Button
         {
             Text = "Texture Replacer",
-            Location = new System.Drawing.Point(634, 212),
+            Location = new System.Drawing.Point(634, 270),
             Size = new System.Drawing.Size(102, 28)
         };
         textureReplacerButton.Click += (_, _) => OpenTextureReplacer();
@@ -199,14 +223,14 @@ public sealed class LauncherMainForm : Form
         {
             Text = "Match Replays",
             AutoSize = true,
-            Location = new System.Drawing.Point(24, 256),
+            Location = new System.Drawing.Point(24, 314),
             Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold)
         };
 
         openReplayFolderButton = new Button
         {
             Text = "Open Folder",
-            Location = new System.Drawing.Point(24, 278),
+            Location = new System.Drawing.Point(24, 336),
             Size = new System.Drawing.Size(112, 28)
         };
         openReplayFolderButton.Click += (_, _) => OpenReplayFolder();
@@ -214,7 +238,7 @@ public sealed class LauncherMainForm : Form
         analyzeReplayButton = new Button
         {
             Text = "Browse Replays",
-            Location = new System.Drawing.Point(142, 278),
+            Location = new System.Drawing.Point(142, 336),
             Size = new System.Drawing.Size(112, 28)
         };
         analyzeReplayButton.Click += (_, _) => OpenReplayBrowser();
@@ -222,28 +246,28 @@ public sealed class LauncherMainForm : Form
         recordReplaysCheckBox = new CheckBox
         {
             Text = "Record match replays",
-            Location = new System.Drawing.Point(260, 280),
+            Location = new System.Drawing.Point(260, 338),
             Size = new System.Drawing.Size(160, 22)
         };
         recordReplaysCheckBox.CheckedChanged += (_, _) => ToggleReplayRecording();
         recordCustomReplaysCheckBox = new CheckBox
         {
             Text = "Custom",
-            Location = new System.Drawing.Point(424, 280),
+            Location = new System.Drawing.Point(424, 338),
             Size = new System.Drawing.Size(76, 22)
         };
         recordCustomReplaysCheckBox.CheckedChanged += (_, _) => ToggleReplayRecording();
         recordCasualReplaysCheckBox = new CheckBox
         {
             Text = "Casual",
-            Location = new System.Drawing.Point(506, 280),
+            Location = new System.Drawing.Point(506, 338),
             Size = new System.Drawing.Size(72, 22)
         };
         recordCasualReplaysCheckBox.CheckedChanged += (_, _) => ToggleReplayRecording();
         recordRankedReplaysCheckBox = new CheckBox
         {
             Text = "Ranked",
-            Location = new System.Drawing.Point(584, 280),
+            Location = new System.Drawing.Point(584, 338),
             Size = new System.Drawing.Size(78, 22)
         };
         recordRankedReplaysCheckBox.CheckedChanged += (_, _) => ToggleReplayRecording();
@@ -253,7 +277,7 @@ public sealed class LauncherMainForm : Form
             Multiline = true,
             ReadOnly = true,
             ScrollBars = ScrollBars.Vertical,
-            Location = new System.Drawing.Point(24, 318),
+            Location = new System.Drawing.Point(24, 376),
             Size = new System.Drawing.Size(712, 160),
             Font = new System.Drawing.Font("Consolas", 9F)
         };
@@ -268,6 +292,8 @@ public sealed class LauncherMainForm : Form
             serverLabel,
             serverComboBox,
             launchButton,
+            settingsProfileLabel,
+            settingsProfileComboBox,
             featureSettingsButton,
             importExportButton,
             moreOptionsButton,
@@ -284,7 +310,11 @@ public sealed class LauncherMainForm : Form
             statusTextBox
         ]);
 
+        shouldShowUpdatedRecommendedNotice = settingsProfileService.ApplyUpdateDefaultsIfNeeded(settings, launcherVersion, logger);
+        settingsProfileService.SyncActiveSettingsToRuntime(installInfo);
+        settingsService.Save(settings);
         ReloadConfig();
+        Shown += (_, _) => ShowUpdatedRecommendedNoticeIfNeeded();
     }
 
     private void ReloadConfig()
@@ -362,6 +392,7 @@ public sealed class LauncherMainForm : Form
         {
             $"Launcher version: {launcherVersion}",
             $"Manifest: {settings.ManifestUrl}",
+            $"Settings profile: {(LauncherSettingsProfileService.IsPersonalProfile(settings.SettingsProfile) ? "Personal Settings" : "Recommended Settings")}",
             $"Settings file: {Path.Combine(paths.DataDir, "launcher-settings.json")}",
             $"Patching dir: {paths.PatchingDir}"
         };
@@ -397,6 +428,8 @@ public sealed class LauncherMainForm : Form
         var replayControlsEnabled = installInfo.IsDetected;
         openReplayFolderButton.Enabled = replayControlsEnabled;
         analyzeReplayButton.Enabled = replayControlsEnabled;
+        settingsProfileComboBox.Enabled = true;
+        SyncSettingsProfileComboBox();
         SyncReplayRecorderToggleFromConfig();
     }
 
@@ -450,6 +483,8 @@ public sealed class LauncherMainForm : Form
     {
         using var form = new FeatureSettingsForm(paths, installInfo);
         form.ShowDialog(this);
+        settingsProfileService.SyncSelectedSnapshotFromActive(settings, logger);
+        settingsService.Save(settings);
         UpdateStatusSummary();
     }
 
@@ -457,6 +492,9 @@ public sealed class LauncherMainForm : Form
     {
         using var form = new ConfigTransferForm(paths);
         form.ShowDialog(this);
+        settingsProfileService.SyncSelectedSnapshotFromActive(settings, logger);
+        settingsService.Save(settings);
+        UpdateStatusSummary();
     }
 
     private void VerifyGameFiles()
@@ -664,6 +702,8 @@ public sealed class LauncherMainForm : Form
         {
             Directory.CreateDirectory(paths.PatchingDir);
             File.WriteAllText(ReplayRecorderConfigPath, config + Environment.NewLine);
+            settingsProfileService.SyncSelectedSnapshotFromActive(settings, logger);
+            settingsService.Save(settings);
             UpdateStatusSummary();
         }
         catch (Exception ex)
@@ -685,6 +725,72 @@ public sealed class LauncherMainForm : Form
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }
+    }
+
+    private void SyncSettingsProfileComboBox()
+    {
+        syncingSettingsProfileComboBox = true;
+        try
+        {
+            settingsProfileComboBox.SelectedIndex =
+                LauncherSettingsProfileService.IsPersonalProfile(settings.SettingsProfile) ? 1 : 0;
+        }
+        finally
+        {
+            syncingSettingsProfileComboBox = false;
+        }
+    }
+
+    private void ChangeSettingsProfileFromUi()
+    {
+        if (syncingSettingsProfileComboBox || settingsProfileComboBox.SelectedIndex < 0)
+        {
+            return;
+        }
+
+        var selectedProfile = settingsProfileComboBox.SelectedIndex == 1
+            ? LauncherSettings.PersonalSettingsProfile
+            : LauncherSettings.RecommendedSettingsProfile;
+
+        try
+        {
+            settingsProfileService.ApplySelectedProfile(settings, selectedProfile, logger);
+            settingsProfileService.SyncActiveSettingsToRuntime(installInfo);
+            settingsService.Save(settings);
+            UpdateStatusSummary();
+        }
+        catch (Exception exception)
+        {
+            logger.Exception(exception, "Failed to apply settings profile");
+            MessageBox.Show(
+                $"Failed to apply settings profile.{Environment.NewLine}{exception.Message}",
+                "Block N Load Community Fixes V2",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            SyncSettingsProfileComboBox();
+        }
+    }
+
+    private void ShowUpdatedRecommendedNoticeIfNeeded()
+    {
+        if (!shouldShowUpdatedRecommendedNotice ||
+            !settingsProfileService.ShouldShowUpdateNotice(settings, launcherVersion))
+        {
+            return;
+        }
+
+        MessageBox.Show(
+            "This launcher update reset the active feature settings to Recommended Settings." +
+            Environment.NewLine + Environment.NewLine +
+            "Use the Settings profile dropdown on the main screen if you want to restore your Personal Settings.",
+            "Recommended Settings Applied",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
+
+        settingsProfileService.DismissUpdateNotice(settings, launcherVersion);
+        settingsService.Save(settings);
+        shouldShowUpdatedRecommendedNotice = false;
+        UpdateStatusSummary();
     }
 
     private sealed record ServerItem(string Key, LauncherServer Server)
