@@ -1,28 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-05-31T13:26:34.8619182+00:00",
-  "notes": "## What's new\n\n- Keeps the cross-platform `Avalonia` launcher introduced in `2.6.0`\n- Keeps platform-aware update manifests with per-RID launcher assets\n\n## Hotfix\n\n- Fixed bundled patching asset extraction on Windows releases\n- Fixed feature-bundle startup on published launchers by loading embedded patching resources from the launcher entry assembly\n\n## Notes\n\n- `launcher_exe` remains in the manifest as a Windows compatibility alias\n- Manifest entries continue to expose `launcher_win_x64` and `launcher_linux_x64`\n",
+  "published_at": "2026-05-31T13:29:20.3079362+00:00",
+  "notes": "## What's new\n\n- Keeps the cross-platform `Avalonia` launcher introduced in `2.6.0`\n- Keeps platform-aware update manifests with per-RID launcher assets\n\n## Hotfixes\n\n- Fixed bundled patching asset extraction in published launchers\n- Fixed Windows Avalonia single-file publish by forcing native Skia libraries to self-extract at runtime\n- Fixed launchers that appeared to do nothing on startup because the UI renderer could not load native dependencies\n\n## Notes\n\n- `launcher_exe` remains in the manifest as a Windows compatibility alias\n- Manifest entries continue to expose `launcher_win_x64` and `launcher_linux_x64`\n",
   "assets": {
-    "launcher_linux_x64": {
-      "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.1/BnlCommunityFixes",
-      "sha256": "3EAE32C58D779E0273BE191BF67C2CD1901D3CDF7B816A8D5506AB6DFD0E50E5",
-      "size": 110384852
-    },
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.1/BnlCommunityFixes.exe",
-      "sha256": "CA2909BD4301BF22A0ACABA45EE1063FBB0B9FA3C5DBB167AEC9C2B58935FB8A",
-      "size": 115284206
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.2/BnlCommunityFixes.exe",
+      "sha256": "DF7AB5AB3B5F141E992FB5C1865EC8A49A5586654303E5191424F997EC191840",
+      "size": 115284283
+    },
+    "launcher_linux_x64": {
+      "file_name": "BnlCommunityFixes",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.2/BnlCommunityFixes",
+      "sha256": "17B8CA5BF5FC42C75E6D1D097D5F831CFEFB5C6C67E8CDC142486BEBD599F4F4",
+      "size": 110385313
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.1/BnlCommunityFixes.exe",
-      "sha256": "CA2909BD4301BF22A0ACABA45EE1063FBB0B9FA3C5DBB167AEC9C2B58935FB8A",
-      "size": 115284206
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.2/BnlCommunityFixes.exe",
+      "sha256": "DF7AB5AB3B5F141E992FB5C1865EC8A49A5586654303E5191424F997EC191840",
+      "size": 115284283
     }
   }
 }
