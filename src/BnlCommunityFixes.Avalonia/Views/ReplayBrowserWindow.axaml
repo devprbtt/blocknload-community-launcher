@@ -1,0 +1,47 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BnlCommunityFixes.Avalonia.ViewModels"
+        x:Class="BnlCommunityFixes.Avalonia.Views.ReplayBrowserWindow"
+        x:DataType="vm:ReplayBrowserViewModel"
+        Title="Match Replays"
+        Width="920" Height="540"
+        MinWidth="760" MinHeight="420"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="14">
+
+        <!-- Status bar -->
+        <TextBlock DockPanel.Dock="Bottom"
+                   Text="{Binding Status}"
+                   Foreground="Gray" FontSize="11"
+                   Margin="0 6 0 0" />
+
+        <!-- Action buttons -->
+        <WrapPanel DockPanel.Dock="Bottom" Margin="0 8 0 0">
+            <Button Content="Analyze"       Command="{Binding AnalyzeCommand}"       IsEnabled="{Binding AnalyzeEnabled}"       Margin="0 0 4 0" />
+            <Button Content="Validation"    Command="{Binding OpenValidationCommand}" IsEnabled="{Binding OpenValidationEnabled}" Margin="0 0 4 0" />
+            <Button Content="Open Location" Command="{Binding OpenLocationCommand}"   IsEnabled="{Binding OpenLocationEnabled}"   Margin="0 0 4 0" />
+            <Button Content="Delete"        Command="{Binding DeleteCommand}"         IsEnabled="{Binding DeleteEnabled}"         Margin="0 0 4 0" />
+            <Button Content="Refresh"       Command="{Binding ReloadCommand}"         Margin="0 0 4 0" />
+            <Button Content="Launch Replay Mode" Command="{Binding LaunchReplayModeCommand}" IsEnabled="{Binding LaunchReplayEnabled}" Margin="0 0 4 0" />
+            <Button Content="Close" Click="Close_Click" />
+        </WrapPanel>
+
+        <!-- Replay grid -->
+        <DataGrid ItemsSource="{Binding Replays}"
+                  SelectedItem="{Binding SelectedReplay}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Date"     Binding="{Binding Date}"     Width="140" />
+                <DataGridTextColumn Header="Map"      Binding="{Binding Map}"      Width="*" />
+                <DataGridTextColumn Header="Duration" Binding="{Binding Duration}" Width="70" />
+                <DataGridTextColumn Header="Winner"   Binding="{Binding Winner}"   Width="70" />
+                <DataGridTextColumn Header="Size"     Binding="{Binding Size}"     Width="80" />
+                <DataGridTextColumn Header="Status"   Binding="{Binding Status}"   Width="90" />
+                <DataGridTextColumn Header="File"     Binding="{Binding File}"     Width="160" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+    </DockPanel>
+</Window>

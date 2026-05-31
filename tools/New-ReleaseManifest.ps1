@@ -2,8 +2,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
 
-    [Parameter(Mandatory = $true)]
     [string]$LauncherPath,
+
+    [string]$LauncherExeByRidJson = "",
 
     [string]$UpdaterPath = "",
 
@@ -43,15 +44,54 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $OutputPath = Join-Path (Resolve-Path (Join-Path $PSScriptRoot "..")).Path "release\$Version\manifest-$Channel.json"
 }
 
-$LauncherResolved = (Resolve-Path $LauncherPath).Path
+$BaseUrl = "https://github.com/$Repository/releases/download/$ReleaseTag"
+$LauncherAssets = [ordered]@{}
 $UpdaterResolved = $null
-$LauncherFileName = [IO.Path]::GetFileName($LauncherResolved)
 $UpdaterFileName = $null
+
+if (-not [string]::IsNullOrWhiteSpace($LauncherExeByRidJson)) {
+    $launcherByRid = $LauncherExeByRidJson | ConvertFrom-Json -AsHashtable
+    foreach ($rid in $launcherByRid.Keys) {
+        $resolved = (Resolve-Path $launcherByRid[$rid]).Path
+        $fileName = [IO.Path]::GetFileName($resolved)
+        $assetKey = "launcher_" + ($rid -replace '-', '_')
+        $LauncherAssets[$assetKey] = [ordered]@{
+            file_name = $fileName
+            url = "$BaseUrl/$fileName"
+            sha256 = (Get-FileHash -LiteralPath $resolved -Algorithm SHA256).Hash
+            size = (Get-Item -LiteralPath $resolved).Length
+        }
+    }
+
+    if ($launcherByRid.ContainsKey("win-x64")) {
+        $resolved = (Resolve-Path $launcherByRid["win-x64"]).Path
+        $fileName = [IO.Path]::GetFileName($resolved)
+        $LauncherAssets["launcher_exe"] = [ordered]@{
+            file_name = $fileName
+            url = "$BaseUrl/$fileName"
+            sha256 = (Get-FileHash -LiteralPath $resolved -Algorithm SHA256).Hash
+            size = (Get-Item -LiteralPath $resolved).Length
+        }
+    }
+}
+elseif (-not [string]::IsNullOrWhiteSpace($LauncherPath)) {
+    $LauncherResolved = (Resolve-Path $LauncherPath).Path
+    $LauncherFileName = [IO.Path]::GetFileName($LauncherResolved)
+    $LauncherAssets["launcher_exe"] = [ordered]@{
+        file_name = $LauncherFileName
+        url = "$BaseUrl/$LauncherFileName"
+        sha256 = (Get-FileHash -LiteralPath $LauncherResolved -Algorithm SHA256).Hash
+        size = (Get-Item -LiteralPath $LauncherResolved).Length
+    }
+}
+else {
+    throw "Either -LauncherPath or -LauncherExeByRidJson must be provided."
+}
+
 if (-not [string]::IsNullOrWhiteSpace($UpdaterPath)) {
     $UpdaterResolved = (Resolve-Path $UpdaterPath).Path
     $UpdaterFileName = [IO.Path]::GetFileName($UpdaterResolved)
 }
-$BaseUrl = "https://github.com/$Repository/releases/download/$ReleaseTag"
 
 $Manifest = [ordered]@{
     product = $Product
@@ -60,14 +100,7 @@ $Manifest = [ordered]@{
     minimum_supported_version = $MinimumSupportedVersion
     published_at = [DateTimeOffset]::UtcNow.ToString("o")
     notes = $Notes
-    assets = [ordered]@{
-        launcher_exe = [ordered]@{
-            file_name = $LauncherFileName
-            url = "$BaseUrl/$LauncherFileName"
-            sha256 = (Get-FileHash -LiteralPath $LauncherResolved -Algorithm SHA256).Hash
-            size = (Get-Item -LiteralPath $LauncherResolved).Length
-        }
-    }
+    assets = $LauncherAssets
 }
 
 if ($UpdaterResolved) {

@@ -1,8 +1,13 @@
+<!-- Windows-only WinForms launcher. For cross-platform (Linux/macOS), use BnlCommunityFixes.Avalonia instead. -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\BnlCommunityFixes.Core\BnlCommunityFixes.Core.csproj" />
     <ProjectReference Include="..\BnlCommunityFixes.ReplayAnalyzer\BnlCommunityFixes.ReplayAnalyzer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net35" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -11,7 +16,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>2.5.1</Version>
+    <Version>2.6.0</Version>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Launcher</RootNamespace>
@@ -19,6 +24,7 @@
 
   <PropertyGroup>
     <ApplicationIcon>launcher-icon.ico</ApplicationIcon>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,9 +32,14 @@
     <EmbeddedResource Include="game-icon.ico" />
     <EmbeddedResource Include="..\..\assets\patching\Build-ExperimentalCrosshairAssembly.ps1" LogicalName="Patching.Build-ExperimentalCrosshairAssembly.ps1" />
     <EmbeddedResource Include="..\..\assets\patching\CrosshairBundleRuntime.cs" LogicalName="Patching.CrosshairBundleRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\HelperBase.template.cs" LogicalName="Patching.HelperBase.template.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\AutoCasualQueueRuntime.template.cs" LogicalName="Patching.AutoCasualQueueRuntime.template.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\TeammateHpRuntime.template.cs" LogicalName="Patching.TeammateHpRuntime.template.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\FontOverrideRuntime.template.cs" LogicalName="Patching.FontOverrideRuntime.template.cs" />
     <EmbeddedResource Include="..\..\assets\patching\RuntimeMenu.cs" LogicalName="Patching.RuntimeMenu.cs" />
     <EmbeddedResource Include="..\..\assets\patching\MatchReplayRecorderRuntime.cs" LogicalName="Patching.MatchReplayRecorderRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\ReplayPlayerRuntime.cs" LogicalName="Patching.ReplayPlayerRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\AutoCrouchRuntime.cs" LogicalName="Patching.AutoCrouchRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-debug-menu-config.json" LogicalName="Patching.experimental-debug-menu-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-match-replay-recorder-config.json" LogicalName="Patching.experimental-match-replay-recorder-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-auto-casual-queue-config.json" LogicalName="Patching.experimental-auto-casual-queue-config.json" />
@@ -55,6 +66,9 @@
     <EmbeddedResource Include="..\..\assets\patching\MeshReplacerRuntime.cs" LogicalName="Patching.MeshReplacerRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-mesh-replacer-config.json" LogicalName="Patching.experimental-mesh-replacer-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\Mono.Cecil.dll" LogicalName="Patching.Mono.Cecil.dll" />
+    <EmbeddedResource Include="$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net35\1.0.3\build\.NETFramework\v3.5\mscorlib.dll" LogicalName="Patching.ref-mscorlib.dll" />
+    <EmbeddedResource Include="$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net35\1.0.3\build\.NETFramework\v3.5\System.dll" LogicalName="Patching.ref-System.dll" />
+    <EmbeddedResource Include="$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net35\1.0.3\build\.NETFramework\v3.5\System.Core.dll" LogicalName="Patching.ref-System.Core.dll" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-segmented-healthbar-config.json" LogicalName="Patching.experimental-segmented-healthbar-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-font-override-config.json" LogicalName="Patching.experimental-font-override-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\white_rect.png" LogicalName="Patching.white_rect.png" />

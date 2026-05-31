@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
 
-    [string]$RuntimeIdentifier = "win-x64",
+    # Comma-separated list of RIDs to publish. Default builds both Windows and Linux.
+    [string]$RuntimeIdentifiers = "win-x64,linux-x64",
 
     [string]$Configuration = "Release",
 
@@ -27,18 +28,15 @@ param(
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$LauncherProject = Join-Path $RepoRoot "src\BnlCommunityFixes.Launcher\BnlCommunityFixes.Launcher.csproj"
-$UpdaterProject = Join-Path $RepoRoot "src\BnlCommunityFixes.Updater\BnlCommunityFixes.Updater.csproj"
+$LauncherProject = Join-Path $RepoRoot "src\BnlCommunityFixes.Avalonia\BnlCommunityFixes.Avalonia.csproj"
+$UpdaterProject  = Join-Path $RepoRoot "src\BnlCommunityFixes.Updater\BnlCommunityFixes.Updater.csproj"
 
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path $RepoRoot "release\$Version"
 }
 
-$LauncherOutput = Join-Path $OutputRoot "launcher"
-$UpdaterOutput = Join-Path $OutputRoot "updater"
-$PublishArgs = @(
+$BasePublishArgs = @(
     "-c", $Configuration,
-    "-r", $RuntimeIdentifier,
     "--self-contained", "true",
     "-p:PublishSingleFile=true",
     "-p:IncludeNativeLibrariesForSelfExtract=true",
@@ -50,54 +48,67 @@ $PublishArgs = @(
 )
 
 Remove-Item -LiteralPath $OutputRoot -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force -Path $LauncherOutput | Out-Null
-if ($IncludeLegacyUpdater) {
-    New-Item -ItemType Directory -Force -Path $UpdaterOutput | Out-Null
-}
 
-dotnet publish $LauncherProject @PublishArgs -o $LauncherOutput | Out-Null
-if ($IncludeLegacyUpdater) {
-    dotnet publish $UpdaterProject @PublishArgs -o $UpdaterOutput | Out-Null
-}
-if ($Portable -or $OutputRoot -like "*replay-launcher-test*") {
-    Set-Content -LiteralPath (Join-Path $LauncherOutput "portable-launcher.flag") -Value "portable" -Encoding ASCII
-}
+# Publish one launcher binary per RID
+$RIDs = $RuntimeIdentifiers -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+$LauncherExeByRid = @{}
 
-$LauncherExe = Join-Path $LauncherOutput "BnlCommunityFixes.exe"
-$UpdaterExe = Join-Path $UpdaterOutput "BnlUpdater.exe"
+foreach ($rid in $RIDs) {
+    $ridOutput = Join-Path $OutputRoot "launcher-$rid"
+    New-Item -ItemType Directory -Force -Path $ridOutput | Out-Null
 
-if (-not (Test-Path $LauncherExe)) {
-    throw "Launcher publish output not found: $LauncherExe"
-}
+    Write-Host "Publishing launcher for $rid..."
+    dotnet publish $LauncherProject @BasePublishArgs -r $rid -o $ridOutput | Out-Null
 
-if ($IncludeLegacyUpdater -and -not (Test-Path $UpdaterExe)) {
-    throw "Updater publish output not found: $UpdaterExe"
-}
+    $exeName = if ($rid -like "win-*") { "BnlCommunityFixes.exe" } else { "BnlCommunityFixes" }
+    $exePath = Join-Path $ridOutput $exeName
 
-$ManifestPath = $null
-if (-not [string]::IsNullOrWhiteSpace($Repository)) {
-    $ManifestPath = Join-Path $OutputRoot "manifest-$Channel.json"
-    $ManifestArgs = @(
-        "-Version", $Version,
-        "-LauncherPath", $LauncherExe,
-        "-Repository", $Repository,
-        "-ReleaseTag", $ReleaseTag,
-        "-Channel", $Channel,
-        "-MinimumSupportedVersion", $MinimumSupportedVersion,
-        "-Notes", $Notes,
-        "-NotesFile", $NotesFile,
-        "-OutputPath", $ManifestPath
-    )
-    if ($IncludeLegacyUpdater) {
-        $ManifestArgs += @("-UpdaterPath", $UpdaterExe)
+    if (-not (Test-Path $exePath)) {
+        throw "Launcher publish output not found for ${rid}: $exePath"
     }
-    & (Join-Path $RepoRoot "tools\New-ReleaseManifest.ps1") @ManifestArgs | Out-Null
+
+    if ($Portable) {
+        Set-Content -LiteralPath (Join-Path $ridOutput "portable-launcher.flag") -Value "portable" -Encoding ASCII
+    }
+
+    $LauncherExeByRid[$rid] = $exePath
+    Write-Output "Built launcher ($rid): $exePath"
 }
 
-Write-Output "Built launcher: $LauncherExe"
+# Optionally build the updater (Windows-only legacy component)
+$UpdaterExe = $null
 if ($IncludeLegacyUpdater) {
+    $UpdaterOutput = Join-Path $OutputRoot "updater"
+    New-Item -ItemType Directory -Force -Path $UpdaterOutput | Out-Null
+    dotnet publish $UpdaterProject @BasePublishArgs -r "win-x64" -o $UpdaterOutput | Out-Null
+    $UpdaterExe = Join-Path $UpdaterOutput "BnlUpdater.exe"
+    if (-not (Test-Path $UpdaterExe)) {
+        throw "Updater publish output not found: $UpdaterExe"
+    }
     Write-Output "Built updater: $UpdaterExe"
 }
-if ($ManifestPath) {
+
+# Generate a platform-aware manifest
+if (-not [string]::IsNullOrWhiteSpace($Repository)) {
+    $ManifestPath = Join-Path $OutputRoot "manifest-$Channel.json"
+    $ManifestParams = @{
+        Version                 = $Version
+        LauncherExeByRidJson    = ($LauncherExeByRid | ConvertTo-Json -Compress)
+        Repository              = $Repository
+        ReleaseTag              = $ReleaseTag
+        Channel                 = $Channel
+        MinimumSupportedVersion = $MinimumSupportedVersion
+        OutputPath              = $ManifestPath
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Notes)) {
+        $ManifestParams.Notes = $Notes
+    }
+    if (-not [string]::IsNullOrWhiteSpace($NotesFile)) {
+        $ManifestParams.NotesFile = $NotesFile
+    }
+    if ($UpdaterExe) {
+        $ManifestParams.UpdaterPath = $UpdaterExe
+    }
+    & (Join-Path $RepoRoot "tools\New-ReleaseManifest.ps1") @ManifestParams | Out-Null
     Write-Output "Built manifest: $ManifestPath"
 }

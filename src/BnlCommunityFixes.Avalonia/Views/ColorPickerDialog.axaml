@@ -1,0 +1,78 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="BnlCommunityFixes.Avalonia.Views.ColorPickerDialog"
+        Title="Pick Color"
+        Width="340" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+
+    <StackPanel Margin="14 12 14 12" Spacing="10">
+
+        <!-- Basic colors palette (8 columns × 6 rows = 48, like Windows ColorDialog) -->
+        <TextBlock Text="Basic colors" FontSize="11" Foreground="Gray" />
+        <ItemsControl x:Name="PaletteItems">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel ItemWidth="26" ItemHeight="26" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="22" Height="22" Margin="2"
+                            CornerRadius="2"
+                            BorderThickness="1"
+                            BorderBrush="Gray"
+                            Background="{Binding}"
+                            Cursor="Hand"
+                            Tag="{Binding}"
+                            PointerPressed="PaletteColor_Click">
+                        <Border.Styles>
+                            <Style Selector="Border:pointerover">
+                                <Setter Property="BorderBrush" Value="White" />
+                                <Setter Property="BorderThickness" Value="2" />
+                            </Style>
+                        </Border.Styles>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Preview -->
+        <Grid ColumnDefinitions="*,8,*" Margin="0 4 0 0">
+            <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Text="New" FontSize="11" Foreground="Gray" />
+                <Border x:Name="PreviewBorder" Height="32" CornerRadius="3"
+                        BorderBrush="Gray" BorderThickness="1" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4">
+                <TextBlock Text="Hex" FontSize="11" Foreground="Gray" />
+                <TextBox x:Name="HexInput" Watermark="#RRGGBB" MaxLength="7"
+                         FontFamily="Consolas,monospace" TextAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <!-- RGB sliders -->
+        <Grid ColumnDefinitions="12,*,36" RowDefinitions="Auto,4,Auto,4,Auto">
+            <!-- R -->
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="R" FontWeight="SemiBold" Foreground="#FF5555" VerticalAlignment="Center" FontSize="11"/>
+            <Slider Grid.Row="0" Grid.Column="1" x:Name="RSlider" Minimum="0" Maximum="255" Margin="6 0" />
+            <TextBlock Grid.Row="0" Grid.Column="2" x:Name="RLabel" VerticalAlignment="Center" FontSize="11" TextAlignment="Right"/>
+            <!-- G -->
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="G" FontWeight="SemiBold" Foreground="#55CC55" VerticalAlignment="Center" FontSize="11"/>
+            <Slider Grid.Row="2" Grid.Column="1" x:Name="GSlider" Minimum="0" Maximum="255" Margin="6 0" />
+            <TextBlock Grid.Row="2" Grid.Column="2" x:Name="GLabel" VerticalAlignment="Center" FontSize="11" TextAlignment="Right"/>
+            <!-- B -->
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="B" FontWeight="SemiBold" Foreground="#5588FF" VerticalAlignment="Center" FontSize="11"/>
+            <Slider Grid.Row="4" Grid.Column="1" x:Name="BSlider" Minimum="0" Maximum="255" Margin="6 0" />
+            <TextBlock Grid.Row="4" Grid.Column="2" x:Name="BLabel" VerticalAlignment="Center" FontSize="11" TextAlignment="Right"/>
+        </Grid>
+
+        <!-- Buttons -->
+        <Grid ColumnDefinitions="*,8,*" Margin="0 4 0 0">
+            <Button Grid.Column="0" Content="Cancel" Click="Cancel_Click" HorizontalAlignment="Stretch" />
+            <Button Grid.Column="2" Content="OK"     Click="Ok_Click"     HorizontalAlignment="Stretch" Classes="accent" />
+        </Grid>
+
+    </StackPanel>
+</Window>

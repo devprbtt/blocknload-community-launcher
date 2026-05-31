@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BnlCommunityFixes.Avalonia.ViewModels"
+        x:Class="BnlCommunityFixes.Avalonia.Views.ConfigTransferWindow"
+        x:DataType="vm:ConfigTransferViewModel"
+        Title="Import / Export Configs"
+        Width="440" Height="480"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="14">
+
+        <TextBlock DockPanel.Dock="Top"
+                   Text="Select which features to include in the import or export:"
+                   TextWrapping="Wrap" Margin="0 0 0 8" />
+
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0 0 0 6">
+            <Button Content="Select All"  Command="{Binding SelectAllCommand}"  />
+            <Button Content="Select None" Command="{Binding SelectNoneCommand}" />
+        </StackPanel>
+
+        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,8,*,8,*" Margin="0 10 0 0">
+            <Button Grid.Column="0" Content="Import…" Command="{Binding ImportCommand}" HorizontalAlignment="Stretch" />
+            <Button Grid.Column="2" Content="Export…" Command="{Binding ExportCommand}" HorizontalAlignment="Stretch" />
+            <Button Grid.Column="4" Content="Close"   Click="Close_Click"               HorizontalAlignment="Stretch" />
+        </Grid>
+
+        <ListBox ItemsSource="{Binding Features}" SelectionMode="Multiple">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:ConfigTransferViewModel+FeatureItem">
+                    <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsChecked}" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+    </DockPanel>
+</Window>

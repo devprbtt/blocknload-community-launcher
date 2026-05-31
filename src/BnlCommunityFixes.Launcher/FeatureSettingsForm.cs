@@ -974,7 +974,7 @@ public sealed class FeatureSettingsForm : Form
         {
             // Extract textures to CustomTextures folder
             var customTexturesDir = gameInstallInfo?.IsDetected == true
-                ? Path.Combine(gameInstallInfo.GameRoot, "Win64", "BlockNLoad_Data", "CustomTextures")
+                ? gameInstallInfo.CustomTexturesDirectoryPath
                 : null;
 
             if (customTexturesDir != null)

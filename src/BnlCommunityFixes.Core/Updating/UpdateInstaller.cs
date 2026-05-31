@@ -6,6 +6,8 @@ namespace BnlCommunityFixes.Core.Updating;
 public sealed class UpdateInstaller
 {
     private readonly Logger logger;
+    private static readonly StringComparison PathComparison =
+        OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
     public UpdateInstaller(Logger logger)
     {
@@ -74,6 +76,7 @@ public sealed class UpdateInstaller
         }
 
         File.Move(arguments.SourcePath, arguments.TargetPath, true);
+        EnsureExecutable(arguments.TargetPath);
         logger.Info($"Installed launcher update to {arguments.TargetPath}.");
     }
 
@@ -88,7 +91,7 @@ public sealed class UpdateInstaller
         {
             var externalTarget = Path.GetFullPath(arguments.ExternalTargetPath);
             var installedTarget = Path.GetFullPath(arguments.TargetPath);
-            if (string.Equals(externalTarget, installedTarget, StringComparison.OrdinalIgnoreCase) ||
+            if (string.Equals(externalTarget, installedTarget, PathComparison) ||
                 !File.Exists(externalTarget) ||
                 !File.Exists(installedTarget))
             {
@@ -103,6 +106,7 @@ public sealed class UpdateInstaller
             }
 
             CopyWithRetry(installedTarget, externalTarget);
+            EnsureExecutable(externalTarget);
             logger.Info($"Updated external launcher copy at {externalTarget}.");
         }
         catch (Exception exception)
@@ -117,7 +121,7 @@ public sealed class UpdateInstaller
         var startInfo = new ProcessStartInfo
         {
             FileName = targetPath,
-            UseShellExecute = true,
+            UseShellExecute = OperatingSystem.IsWindows(),
             WorkingDirectory = Path.GetDirectoryName(targetPath)!
         };
 
@@ -206,5 +210,20 @@ public sealed class UpdateInstaller
                 Thread.Sleep(500);
             }
         }
+    }
+
+    private static void EnsureExecutable(string path)
+    {
+        if (OperatingSystem.IsWindows() || !File.Exists(path))
+        {
+            return;
+        }
+
+        File.SetUnixFileMode(
+            path,
+            File.GetUnixFileMode(path) |
+            UnixFileMode.UserExecute |
+            UnixFileMode.GroupExecute |
+            UnixFileMode.OtherExecute);
     }
 }

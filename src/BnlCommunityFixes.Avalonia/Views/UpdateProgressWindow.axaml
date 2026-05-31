@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="BnlCommunityFixes.Avalonia.Views.UpdateProgressWindow"
+        Title="BNL Community Fixes — Updating"
+        Width="440" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True">
+
+    <StackPanel Margin="16 14 16 14" Spacing="6">
+        <TextBlock Text="Installing update…" FontWeight="SemiBold" FontSize="12" />
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBlock x:Name="StatusLabel"  Grid.Column="0" Text="Preparing…" Foreground="Gray" FontSize="11" />
+            <TextBlock x:Name="PercentLabel" Grid.Column="1" Foreground="Gray" FontSize="11" />
+        </Grid>
+        <ProgressBar x:Name="Bar" Minimum="0" Maximum="1000" Value="0" Height="18" />
+    </StackPanel>
+</Window>

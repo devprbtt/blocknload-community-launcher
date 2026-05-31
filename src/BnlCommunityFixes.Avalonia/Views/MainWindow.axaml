@@ -1,0 +1,134 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BnlCommunityFixes.Avalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="BnlCommunityFixes.Avalonia.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="{Binding Title}"
+        Width="760" Height="580"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+
+    <DockPanel Margin="20 14 20 14">
+
+        <!-- Header -->
+        <StackPanel DockPanel.Dock="Top" Margin="0 0 0 10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Text="Block N Load Community Fixes V2"
+                           FontSize="22"
+                           FontFamily="{StaticResource EdoFont}"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Title, StringFormat='Version {0}'}"
+                           Foreground="Gray" FontSize="11"
+                           VerticalAlignment="Center" />
+            </Grid>
+            <TextBlock Text="{Binding GamePathText}" Margin="0 6 0 0" FontSize="11" />
+            <TextBlock Text="{Binding DetectionText}" FontSize="11" />
+        </StackPanel>
+
+        <!-- Server selection + Launch -->
+        <Grid DockPanel.Dock="Top" Margin="0 0 0 8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="210" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Server" FontSize="11" Margin="0 0 0 4" />
+                <ComboBox ItemsSource="{Binding Servers}"
+                          SelectedItem="{Binding SelectedServer}"
+                          HorizontalAlignment="Stretch"
+                          Margin="0 0 12 0" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    Command="{Binding LaunchCommand}"
+                    IsEnabled="{Binding LaunchEnabled}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    FontSize="13" FontWeight="Bold"
+                    Height="44"
+                    Margin="0 18 0 0"
+                    Classes="accent">
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                    <Image Source="avares://BnlCommunityFixes/Assets/game-icon.ico" Width="20" Height="20" />
+                    <TextBlock Text="Launch Game" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Settings profile -->
+        <StackPanel DockPanel.Dock="Top" Margin="0 0 0 8">
+            <TextBlock Text="Settings profile" FontSize="11" Margin="0 0 0 4" />
+            <ComboBox SelectedIndex="{Binding SelectedProfileIndex}" Width="220" HorizontalAlignment="Left">
+                <ComboBoxItem>Recommended Settings</ComboBoxItem>
+                <ComboBoxItem>Personal Settings</ComboBoxItem>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- Action buttons row -->
+        <WrapPanel DockPanel.Dock="Top" Margin="0 0 0 8">
+            <Button x:Name="FeatureSettingsButton" Content="Feature Settings"  Click="FeatureSettingsButton_Click"  Margin="0 0 4 4" />
+            <Button x:Name="ImportExportButton"    Content="Import / Export..." Click="ImportExportButton_Click"    Margin="0 0 4 4" />
+            <Button x:Name="MoreOptionsButton"     Content="More options..."    Click="MoreOptionsButton_Click"     Margin="0 0 4 4" />
+            <Button x:Name="AudioReplacerButton"   Content="Audio Replacer"    Click="AudioReplacerButton_Click"   Margin="0 0 4 4" />
+            <Button x:Name="MeshReplacerButton"    Content="Mesh Replacer"     Click="MeshReplacerButton_Click"    Margin="0 0 4 4" />
+            <Button x:Name="TextureReplacerButton" Content="Texture Replacer"  Click="TextureReplacerButton_Click" Margin="0 0 4 4" />
+        </WrapPanel>
+
+        <!-- Replays section -->
+        <StackPanel DockPanel.Dock="Top" Margin="0 0 0 8">
+            <TextBlock Text="Match Replays" FontWeight="SemiBold" FontSize="12" Margin="0 0 0 6" />
+            <WrapPanel>
+                <Button x:Name="OpenReplayFolderButton"
+                        Content="Open Folder"
+                        Command="{Binding OpenReplayFolderCommand}"
+                        IsEnabled="{Binding ReplayControlsEnabled}"
+                        Margin="0 0 4 4" />
+                <Button x:Name="ReplayBrowserButton"
+                        Content="Browse Replays"
+                        Click="ReplayBrowserButton_Click"
+                        IsEnabled="{Binding ReplayControlsEnabled}"
+                        Margin="0 0 12 4" />
+                <CheckBox Content="Record match replays"
+                          IsChecked="{Binding RecordReplays}"
+                          IsEnabled="{Binding ReplayControlsEnabled}"
+                          VerticalAlignment="Center" Margin="0 0 8 0" />
+                <CheckBox Content="Custom"
+                          IsChecked="{Binding RecordCustom}"
+                          IsEnabled="{Binding RecordSubOptionsEnabled}"
+                          VerticalAlignment="Center" Margin="0 0 6 0" />
+                <CheckBox Content="Casual"
+                          IsChecked="{Binding RecordCasual}"
+                          IsEnabled="{Binding RecordSubOptionsEnabled}"
+                          VerticalAlignment="Center" Margin="0 0 6 0" />
+                <CheckBox Content="Ranked"
+                          IsChecked="{Binding RecordRanked}"
+                          IsEnabled="{Binding RecordSubOptionsEnabled}"
+                          VerticalAlignment="Center" />
+            </WrapPanel>
+        </StackPanel>
+
+        <!-- Status log (fills remaining space) -->
+        <TextBox DockPanel.Dock="Bottom"
+                 Text="{Binding StatusText}"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 FontFamily="Consolas,Courier New,monospace"
+                 FontSize="11"
+                 MinHeight="140" />
+
+    </DockPanel>
+
+</Window>

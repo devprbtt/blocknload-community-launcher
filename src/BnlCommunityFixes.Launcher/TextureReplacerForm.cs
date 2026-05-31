@@ -29,7 +29,7 @@ public sealed class TextureReplacerForm : Form
         mappingPath = Path.Combine(paths.PatchingDir, "texture-replacements.txt");
 
         customTextureFolder = installInfo?.IsDetected == true
-            ? Path.Combine(installInfo.GameRoot, "Win64", "BlockNLoad_Data", "CustomTextures")
+            ? installInfo.CustomTexturesDirectoryPath
             : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
         Text = "Texture Replacer";

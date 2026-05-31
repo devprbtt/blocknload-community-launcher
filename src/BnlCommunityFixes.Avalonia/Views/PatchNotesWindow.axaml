@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="BnlCommunityFixes.Avalonia.Views.PatchNotesWindow"
+        Title="Block N Load Community Fixes — Update"
+        Width="580" Height="440"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True">
+
+    <DockPanel Margin="16 14 16 14">
+        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0 0 0 8">
+            <TextBlock x:Name="TitleLabel"    FontSize="15" FontWeight="Bold" />
+            <TextBlock x:Name="SubtitleLabel" Foreground="Gray" FontSize="11" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Spacing="8" Margin="0 10 0 0">
+            <Button x:Name="SkipButton"    Content="Skip for now" Width="100" Click="Skip_Click" />
+            <Button x:Name="InstallButton" Content="Install now"  Width="140" Classes="accent" Click="Install_Click" />
+        </StackPanel>
+
+        <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="2">
+            <ScrollViewer>
+                <TextBlock x:Name="NotesText" Margin="8" TextWrapping="Wrap" FontSize="12" />
+            </ScrollViewer>
+        </Border>
+    </DockPanel>
+</Window>

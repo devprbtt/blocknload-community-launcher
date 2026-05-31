@@ -1,6 +1,7 @@
 param(
     [string]$VersionFrom = "2.0.0",
     [string]$VersionTo = "2.0.1",
+    [string]$RuntimeIdentifier = "win-x64",
     [string]$TestRoot = ""
 )
 
@@ -10,7 +11,7 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 if ([string]::IsNullOrWhiteSpace($TestRoot)) {
     $TestRoot = Join-Path $RepoRoot "test-output\smoke"
 }
-$LauncherProject = Join-Path $RepoRoot "src\BnlCommunityFixes.Launcher\BnlCommunityFixes.Launcher.csproj"
+$LauncherProject = Join-Path $RepoRoot "src\BnlCommunityFixes.Avalonia\BnlCommunityFixes.Avalonia.csproj"
 $PublishRoot = Join-Path $TestRoot "publish"
 $InstallRoot = Join-Path $TestRoot "install-root"
 $ManifestPath = Join-Path $TestRoot "manifest-local.json"
@@ -26,23 +27,25 @@ $FromLauncherDir = Join-Path $FromDir "launcher"
 $ToLauncherDir = Join-Path $ToDir "launcher"
 $PublishArgs = @(
     "-c", "Release",
-    "-r", "win-x64",
+    "-r", $RuntimeIdentifier,
     "--self-contained", "true",
     "-p:PublishSingleFile=true",
     "-p:IncludeNativeLibrariesForSelfExtract=true"
 )
 
+$LauncherFileName = if ($RuntimeIdentifier -like "win-*") { "BnlCommunityFixes.exe" } else { "BnlCommunityFixes" }
+
 dotnet publish $LauncherProject @PublishArgs -o $FromLauncherDir -p:Version=$VersionFrom -p:AssemblyVersion=$VersionFrom -p:FileVersion=$VersionFrom | Out-Null
 dotnet publish $LauncherProject @PublishArgs -o $ToLauncherDir -p:Version=$VersionTo -p:AssemblyVersion=$VersionTo -p:FileVersion=$VersionTo | Out-Null
 
-$ToLauncherExe = Join-Path $ToLauncherDir "BnlCommunityFixes.exe"
+$ToLauncherExe = Join-Path $ToLauncherDir $LauncherFileName
 & (Join-Path $RepoRoot "tools\New-LocalUpdateManifest.ps1") -LauncherPath $ToLauncherExe -Version $VersionTo -OutputPath $ManifestPath | Out-Null
 
 $AppDir = Join-Path $InstallRoot "app"
 $DataDir = Join-Path $InstallRoot "data"
 New-Item -ItemType Directory -Force -Path $AppDir, $DataDir | Out-Null
 
-Copy-Item -LiteralPath (Join-Path $FromLauncherDir "BnlCommunityFixes.exe") -Destination (Join-Path $AppDir "BnlCommunityFixes.exe") -Force
+Copy-Item -LiteralPath (Join-Path $FromLauncherDir $LauncherFileName) -Destination (Join-Path $AppDir $LauncherFileName) -Force
 
 $Settings = @"
 {
@@ -54,7 +57,7 @@ $Settings = @"
 Set-Content -LiteralPath (Join-Path $DataDir "launcher-settings.json") -Value $Settings -Encoding UTF8
 
 $env:BNL_INSTALL_ROOT = $InstallRoot
-$LauncherPath = Join-Path $AppDir "BnlCommunityFixes.exe"
+$LauncherPath = Join-Path $AppDir $LauncherFileName
 $Process = Start-Process -FilePath $LauncherPath -ArgumentList "--headless-smoke-test" -PassThru
 
 if (-not $Process.WaitForExit(30000)) {

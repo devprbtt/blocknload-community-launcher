@@ -1,0 +1,263 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BnlCommunityFixes.Avalonia.ViewModels"
+        xmlns:v="using:BnlCommunityFixes.Avalonia.Views"
+        x:Class="BnlCommunityFixes.Avalonia.Views.FeatureSettingsWindow"
+        x:DataType="vm:FeatureSettingsViewModel"
+        Title="Feature Settings"
+        Width="800" Height="600"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="14 10 14 10">
+
+        <TextBlock DockPanel.Dock="Top"
+                   Text="Settings are written into the local patching config files and rebuilt/applied on next launch."
+                   Margin="0 0 0 8" FontSize="11" Foreground="Gray" />
+
+        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,8,80" Margin="0 10 0 0">
+            <TextBlock Grid.Column="0" Text="" />
+            <Button Grid.Column="2" Content="Save &amp; Close"
+                    Command="{Binding SaveCommand}"
+                    HorizontalAlignment="Stretch" Classes="accent" />
+        </Grid>
+
+        <TabControl>
+
+            <!-- Crosshair -->
+            <TabItem Header="Crosshair">
+                <ScrollViewer>
+                    <StackPanel Margin="8" Spacing="8">
+                        <TextBlock Text="Custom weapon reticle. Colors change by damage state: idle / at full damage range / beyond max range. Size x scales the whole reticle, spread x controls tightness, brightness x boosts RGB, alpha controls opacity." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding CrosshairEnabled}" />
+                        <Grid ColumnDefinitions="*,8,*,8,*">
+                            <v:ColorPickerField Grid.Column="0" Label="Idle color"        ColorHex="{Binding CrosshairIdleColor}" />
+                            <v:ColorPickerField Grid.Column="2" Label="Full damage color"  ColorHex="{Binding CrosshairFullDamageColor}" />
+                            <v:ColorPickerField Grid.Column="4" Label="Below max color"    ColorHex="{Binding CrosshairBelowMaxColor}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,8,*,8,*,8,*">
+                            <StackPanel Grid.Column="0"><TextBlock Text="Brightness" FontSize="11"/><NumericUpDown Value="{Binding CrosshairBrightness}" Minimum="0.25" Maximum="3" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Size" FontSize="11"/><NumericUpDown Value="{Binding CrosshairSize}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="4"><TextBlock Text="Spread" FontSize="11"/><NumericUpDown Value="{Binding CrosshairSpread}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="6"><TextBlock Text="Alpha" FontSize="11"/><NumericUpDown Value="{Binding CrosshairAlpha}" Minimum="0.1" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        </Grid>
+                        <Grid ColumnDefinitions="220,8,Auto,8,Auto">
+                            <StackPanel Grid.Column="0"><TextBlock Text="Shape" FontSize="11"/><ComboBox ItemsSource="{Binding CrosshairShapes}" SelectedItem="{Binding CrosshairShape}" HorizontalAlignment="Stretch" /></StackPanel>
+                            <CheckBox Grid.Column="2" Content="Force show in ADS" IsChecked="{Binding CrosshairForceShowInAds}" VerticalAlignment="Bottom" />
+                            <CheckBox Grid.Column="4" Content="Hide crosshair" IsChecked="{Binding CrosshairHide}" VerticalAlignment="Bottom" />
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- FOV -->
+            <TabItem Header="FOV">
+                <StackPanel Margin="8" Spacing="6">
+                    <TextBlock Text="Overrides the camera field of view and ADS sensitivity. Higher FOV gives a wider view at the cost of less zoom. Weapon model FOV controls how large the gun appears in first-person." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                    <CheckBox Content="Enabled" IsChecked="{Binding FovEnabled}" />
+                    <Grid ColumnDefinitions="*,8,*,8,*">
+                        <StackPanel Grid.Column="0"><TextBlock Text="FOV" FontSize="11"/><NumericUpDown Value="{Binding Fov}" Minimum="1" Maximum="180" Increment="1" FormatString="0" /></StackPanel>
+                        <StackPanel Grid.Column="2"><TextBlock Text="ADS sensitivity" FontSize="11"/><NumericUpDown Value="{Binding AdsSensitivity}" Minimum="0" Maximum="10" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        <StackPanel Grid.Column="4"><TextBlock Text="Weapon model FOV" FontSize="11"/><NumericUpDown Value="{Binding WeaponModelFov}" Minimum="0" Maximum="180" Increment="1" FormatString="0" /></StackPanel>
+                    </Grid>
+                </StackPanel>
+            </TabItem>
+
+            <!-- Team Colors -->
+            <TabItem Header="Team Colors">
+                <StackPanel Margin="8" Spacing="8">
+                    <TextBlock Text="Changes the color of friendly and enemy indicators — nameplates, health bars, hit effects. Use the preset buttons for colors from past community seasons, or pick your own." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                    <CheckBox Content="Enabled" IsChecked="{Binding TeamColorsEnabled}" />
+                    <Grid ColumnDefinitions="*,8,*">
+                        <v:ColorPickerField Grid.Column="0" Label="Friendly color" ColorHex="{Binding FriendlyColor}" />
+                        <v:ColorPickerField Grid.Column="2" Label="Enemy color"    ColorHex="{Binding EnemyColor}" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="Season presets:" VerticalAlignment="Center" />
+                        <Button Content="Beta"    Command="{Binding ApplyBetaColorsCommand}" />
+                        <Button Content="Classic" Command="{Binding ApplyClassicColorsCommand}" />
+                        <Button Content="Default" Command="{Binding ApplyDefaultColorsCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+
+            <!-- Damage/Healing -->
+            <TabItem Header="Damage/Healing">
+                <ScrollViewer>
+                    <StackPanel Margin="8" Spacing="8">
+                        <TextBlock Text="Customizes floating damage and heal numbers in combat. Combine options merge rapid-fire hits into one number until it fades. Minimum heal filters out heals below the set threshold." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding DamageHealingEnabled}" />
+                        <Grid ColumnDefinitions="*,8,*,8,*">
+                            <v:ColorPickerField Grid.Column="0" Label="Damage color"      ColorHex="{Binding DamageColor}" />
+                            <v:ColorPickerField Grid.Column="2" Label="Crit damage color" ColorHex="{Binding CritDamageColor}" />
+                            <v:ColorPickerField Grid.Column="4" Label="Heal color"        ColorHex="{Binding HealColor}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,8,*,8,*,8,*">
+                            <StackPanel Grid.Column="0"><TextBlock Text="Damage size" FontSize="11"/><NumericUpDown Value="{Binding DamageSize}" Minimum="0.25" Maximum="10" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Heal size" FontSize="11"/><NumericUpDown Value="{Binding HealSize}" Minimum="0.25" Maximum="10" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="4"><TextBlock Text="Alpha" FontSize="11"/><NumericUpDown Value="{Binding DamageAlpha}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="6"><TextBlock Text="Min heal" FontSize="11"/><NumericUpDown Value="{Binding MinimumHeal}" Minimum="0" Maximum="1000" Increment="1" FormatString="0" /></StackPanel>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <CheckBox Content="Show friendly healing" IsChecked="{Binding ShowFriendlyHealing}" />
+                            <CheckBox Content="Show self healing"     IsChecked="{Binding ShowSelfHealing}" />
+                            <CheckBox Content="Combine damage"        IsChecked="{Binding CombineDamage}" />
+                            <CheckBox Content="Combine healing"       IsChecked="{Binding CombineHealing}" />
+                        </StackPanel>
+                        <TextBlock Text="Self-healing numbers" FontWeight="SemiBold" FontSize="11" Margin="0 4 0 0" />
+                        <Grid ColumnDefinitions="*,8,*,8,*">
+                            <StackPanel Grid.Column="0"><TextBlock Text="Self-heal size" FontSize="11"/><NumericUpDown Value="{Binding SelfHealSize}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Self-heal X offset" FontSize="11"/><NumericUpDown Value="{Binding SelfHealX}" Minimum="-2000" Maximum="2000" Increment="1" FormatString="0" /></StackPanel>
+                            <StackPanel Grid.Column="4"><TextBlock Text="Self-heal Y offset" FontSize="11"/><NumericUpDown Value="{Binding SelfHealY}" Minimum="-2000" Maximum="2000" Increment="1" FormatString="0" /></StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Heal Alerts -->
+            <TabItem Header="Heal Alerts">
+                <StackPanel Margin="8" Spacing="8">
+                    <TextBlock Text="Shows a directional indicator when a heal or damage event lands — separate from the floating numbers and larger in scale. Damage indicator color supports __DEFAULT__ to keep the game's built-in color." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                    <CheckBox Content="Enabled" IsChecked="{Binding HealAlertEnabled}" />
+                    <Grid ColumnDefinitions="*,8,*">
+                        <v:ColorPickerField Grid.Column="0" Label="Damage color" ColorHex="{Binding HealAlertDamageColor}" />
+                        <v:ColorPickerField Grid.Column="2" Label="Heal color"   ColorHex="{Binding HealAlertHealColor}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,8,*,8,*,8,*">
+                        <StackPanel Grid.Column="0"><TextBlock Text="Damage size" FontSize="11"/><NumericUpDown Value="{Binding HealAlertDamageSize}" Minimum="0.25" Maximum="10" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        <StackPanel Grid.Column="2"><TextBlock Text="Heal size" FontSize="11"/><NumericUpDown Value="{Binding HealAlertHealSize}" Minimum="0.25" Maximum="10" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        <StackPanel Grid.Column="4"><TextBlock Text="Alpha" FontSize="11"/><NumericUpDown Value="{Binding HealAlertAlpha}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        <StackPanel Grid.Column="6"><TextBlock Text="Min heal" FontSize="11"/><NumericUpDown Value="{Binding HealAlertMinimumHeal}" Minimum="0" Maximum="1000" Increment="1" FormatString="0" /></StackPanel>
+                    </Grid>
+                    <CheckBox Content="Show direction" IsChecked="{Binding HealAlertShowDirection}" />
+                </StackPanel>
+            </TabItem>
+
+            <!-- Friendly Low Health -->
+            <TabItem Header="Low Health">
+                <StackPanel Margin="8" Spacing="8">
+                    <TextBlock Text="Changes the health bar and name color of friendly players when their health drops below a configurable threshold. The direction indicator shows where the low-health ally is on screen." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                    <CheckBox Content="Enabled" IsChecked="{Binding FriendlyLowHealthEnabled}" />
+                    <Grid ColumnDefinitions="160,8,*">
+                        <v:ColorPickerField Grid.Column="0" Label="Alert color" ColorHex="{Binding FriendlyLowHealthColor}" />
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Threshold (0–1)" FontSize="11" />
+                            <NumericUpDown Value="{Binding FriendlyLowHealthThreshold}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" />
+                        </StackPanel>
+                    </Grid>
+                    <CheckBox Content="Show direction indicator" IsChecked="{Binding FriendlyLowHealthIndicator}" />
+                    <Grid ColumnDefinitions="*,8,*">
+                        <StackPanel Grid.Column="0"><TextBlock Text="Indicator size" FontSize="11"/><NumericUpDown Value="{Binding FriendlyLowHealthIndicatorSize}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        <StackPanel Grid.Column="2"><TextBlock Text="Indicator alpha" FontSize="11"/><NumericUpDown Value="{Binding FriendlyLowHealthIndicatorAlpha}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                    </Grid>
+                </StackPanel>
+            </TabItem>
+
+            <!-- Shield Timer -->
+            <TabItem Header="Shield Timer">
+                <StackPanel Margin="8" Spacing="8">
+                    <TextBlock Text="Countdown timer for the shield buff bar. Circle mode draws a clock-style ring, numeric shows a number, off hides it. Offsets move the element relative to its default screen position." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                    <CheckBox Content="Enabled" IsChecked="{Binding ShieldEnabled}" />
+                    <Grid ColumnDefinitions="160,8,*">
+                        <v:ColorPickerField Grid.Column="0" Label="Bar color" ColorHex="{Binding ShieldColor}" />
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Display mode" FontSize="11" />
+                            <ComboBox ItemsSource="{Binding ShieldDisplayModes}" SelectedItem="{Binding ShieldDisplayMode}" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,8,*,8,*">
+                        <StackPanel Grid.Column="0"><TextBlock Text="Clock size" FontSize="11"/><NumericUpDown Value="{Binding ShieldSize}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        <StackPanel Grid.Column="2"><TextBlock Text="Offset X" FontSize="11"/><NumericUpDown Value="{Binding ShieldOffsetX}" Minimum="-500" Maximum="500" Increment="1" FormatString="0" /></StackPanel>
+                        <StackPanel Grid.Column="4"><TextBlock Text="Offset Y" FontSize="11"/><NumericUpDown Value="{Binding ShieldOffsetY}" Minimum="-500" Maximum="500" Increment="1" FormatString="0" /></StackPanel>
+                    </Grid>
+                </StackPanel>
+            </TabItem>
+
+            <!-- Misc (no color options) -->
+            <TabItem Header="Misc">
+                <ScrollViewer>
+                    <StackPanel Margin="8" Spacing="6">
+
+                        <!-- Aim healthbar -->
+                        <CheckBox Content="Aim healthbar" IsChecked="{Binding AimHealthbarEnabled}" />
+                        <TextBlock Text="Shows the enemy health bar whenever your crosshair is aimed at them, even if they haven't taken damage yet." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <!-- Deathcam healthbar -->
+                        <CheckBox Content="Deathcam healthbar" IsChecked="{Binding DeathCamHealthbarEnabled}" />
+                        <TextBlock Text="Shows friendly health bars when spectating teammates during the death cam." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <!-- Local build preview -->
+                        <CheckBox Content="Local build preview" IsChecked="{Binding LocalBuildPreviewEnabled}" />
+                        <TextBlock Text="Only enable if you have high ping. Blocks and devices appear on your screen immediately when placed, without waiting for server confirmation — eliminating the visual delay caused by network latency." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <!-- Auto casual queue -->
+                        <CheckBox Content="Auto casual queue" IsChecked="{Binding AutoCasualQueueEnabled}" />
+                        <TextBlock Text="Automatically joins the casual matchmaking queue as soon as you enter a custom game lobby, and auto-accepts the match popup when a game is found — pulling you out of the custom game into the casual match." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <!-- Teammate HP -->
+                        <CheckBox Content="Teammate HP display" IsChecked="{Binding TeammateHpEnabled}" />
+                        <TextBlock Text="Shows each teammate's current HP next to their name in the team panel while you are alive." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <!-- Auto-crouch -->
+                        <CheckBox Content="Disable auto-crouch" IsChecked="{Binding AutoCrouchEnabled}" />
+                        <TextBlock Text="Disables the forced-crouch behaviour that triggers when the ceiling is too low to stand. Can also be toggled in-game via the runtime menu." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <!-- Segmented healthbar -->
+                        <CheckBox Content="Segmented healthbar" IsChecked="{Binding SegmentedHealthbarEnabled}" />
+                        <TextBlock Text="Replaces the overhead health bars with the segmented style from the beta version of the game. Requires the game to be installed — textures are copied into the game's CustomTextures folder on save." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <!-- Font override -->
+                        <CheckBox Content="Font override (Edo SZ)" IsChecked="{Binding FontOverrideEnabled}" />
+                        <TextBlock Text="Restores the stylized Edo SZ font to kill feed messages and center-screen notices (e.g. &quot;You've killed...&quot;, &quot;Our cube is under attack!&quot;). Requires a feature bundle rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <!-- Skip intro -->
+                        <CheckBox Content="Skip intro screen on game start" IsChecked="{Binding SkipIntro}" />
+                        <TextBlock Text="Bypasses the warning screen and video that play each time the game starts." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <!-- Frame cap -->
+                        <CheckBox Content="Disable main menu frame cap" IsChecked="{Binding DisableMainMenuFrameCap}" />
+                        <TextBlock Text="Removes the frame rate cap that applies in the main menu, allowing higher FPS while not in a match." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
+                        <TextBlock Text="Objective Beam" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Adds a tall vertical beam above the capture objective so it is visible from anywhere on the map. No additional options — this is a simple enable/disable toggle." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled"   IsChecked="{Binding ObjectiveBeamEnabled}" />
+                        <CheckBox Content="Hide beam" IsChecked="{Binding ObjectiveBeamHide}" />
+
+                        <TextBlock Text="Unit GUI Scale" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Scales the healthbar and name label shown above all units (friendlies and enemies). Use values below 1.0 to shrink them for a cleaner view. Adjustable in-game via F8." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding UnitGuiScaleEnabled}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Scale" VerticalAlignment="Center" />
+                            <NumericUpDown Value="{Binding UnitGuiScale}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" Width="120" />
+                        </StackPanel>
+
+                        <TextBlock Text="WSI Scale" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Scales the world-space indicators (WSI) shown above units in the game world. Adjustable in-game via F8." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding WsiScaleEnabled}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Scale" VerticalAlignment="Center" />
+                            <NumericUpDown Value="{Binding WsiScale}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" Width="120" />
+                        </StackPanel>
+
+                        <TextBlock Text="Map Render" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Override the map's environmental lighting preset. &quot;Default&quot; uses the map's own preset. Cycle through options in-game via F8." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding MapRenderEnabled}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Preset" VerticalAlignment="Center" />
+                            <ComboBox ItemsSource="{Binding MapRenderPresets}" SelectedItem="{Binding MapRenderPreset}" Width="160" />
+                        </StackPanel>
+
+                        <TextBlock Text="Hide Impact VFX" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Suppress explosion and impact visual effects (bombs, rockets, grenades, cannons, etc.). Only the visual particles are hidden — sound and damage still apply." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled"               IsChecked="{Binding HideImpactVfxEnabled}" />
+                        <CheckBox Content="Hide impact VFX"       IsChecked="{Binding HideImpactVfx}" />
+                        <CheckBox Content="Hide lava/water plane"  IsChecked="{Binding HideLavaWaterPlane}" />
+                        <CheckBox Content="Hide falling blocks"   IsChecked="{Binding HideFallingBlocks}" />
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+    </DockPanel>
+</Window>

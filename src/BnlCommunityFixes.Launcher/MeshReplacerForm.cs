@@ -27,7 +27,7 @@ public sealed class MeshReplacerForm : Form
         configPath = Path.Combine(paths.PatchingDir, "experimental-mesh-replacer-config.json");
 
         customMeshFolder = installInfo?.IsDetected == true
-            ? Path.Combine(installInfo.GameRoot, "Win64", "BlockNLoad_Data", "CustomMeshes")
+            ? installInfo.CustomMeshesDirectoryPath
             : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
         Text = "Mesh Replacer";

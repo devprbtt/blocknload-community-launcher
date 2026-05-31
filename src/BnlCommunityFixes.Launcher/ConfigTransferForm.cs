@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using System.Windows.Forms;
+using BnlCommunityFixes.Core.Features;
 using BnlCommunityFixes.Core.Services;
 
 namespace BnlCommunityFixes.Launcher;
@@ -11,25 +12,9 @@ public sealed class ConfigTransferForm : Form
 {
     private readonly AppPaths paths;
 
-    private static readonly FeatureEntry[] Features =
-    [
-        new("Crosshair",         "crosshair-config.json"),
-        new("FOV / ADS",         "fov-config.json"),
-        new("Team Colors",       "experimental-team-color-config.json"),
-        new("Damage / Healing",  "damage-healing-indicator-config.json"),
-        new("Heal Alerts",       "heal-alert-indicator-config.json"),
-        new("Objective Beam",    "experimental-base-objective-beam-config.json"),
-        new("Shield Timer",      "experimental-enemy-shield-buffbar-config.json"),
-        new("Build Preview",     "experimental-local-build-preview-config.json"),
-        new("Aim Healthbar",     "aim-healthbar-config.json"),
-        new("Death Cam HP",      "deathcam-healthbar-config.json"),
-        new("Auto Queue",        "experimental-auto-casual-queue-config.json"),
-        new("Low HP Alert",      "friendly-low-health-config.json"),
-        new("Misc",              "experimental-debug-menu-config.json"),
-        new("Unit GUI Scale",    "unit-gui-scale-config.json"),
-        new("WSI Scale",         "wsi-config.json"),
-        new("Map Render",        "experimental-map-render-config.json"),
-    ];
+    private static readonly FeatureEntry[] Features = FeatureConfigCatalog.ConfigTransferFeatures
+        .Select(static feature => new FeatureEntry(feature.DisplayName, feature.FileName))
+        .ToArray();
 
     private readonly CheckedListBox featureList;
     private readonly Button importButton;

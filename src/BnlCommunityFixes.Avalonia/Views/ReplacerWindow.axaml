@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BnlCommunityFixes.Avalonia.ViewModels"
+        x:Class="BnlCommunityFixes.Avalonia.Views.ReplacerWindow"
+        x:DataType="vm:ReplacerViewModel"
+        Title="{Binding Title}"
+        Width="660" Height="440"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="12">
+
+        <TextBlock DockPanel.Dock="Top"
+                   Text="{Binding InfoText}"
+                   TextWrapping="Wrap"
+                   Margin="0 0 0 8" FontSize="11" />
+
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="6" Margin="0 8 0 0">
+            <Button Content="Add"           Command="{Binding AddCommand}" />
+            <Button Content="Remove"        Command="{Binding RemoveCommand}" IsEnabled="{Binding SelectedRow, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <Button Content="Browse…"       Command="{Binding BrowseCommand}" IsEnabled="{Binding SelectedRow, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <Button Content="Import Folder" Command="{Binding ImportFolderCommand}" />
+            <Button Content="Close" Click="Close_Click" HorizontalAlignment="Right" Margin="8 0 0 0" />
+        </StackPanel>
+
+        <DataGrid x:Name="ReplacerGrid"
+                  ItemsSource="{Binding Rows}"
+                  SelectedItem="{Binding SelectedRow}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Source"
+                                    Binding="{Binding SourceKey}"
+                                    Width="*" />
+                <DataGridTextColumn Header="Replacement"
+                                    Binding="{Binding TargetFile}"
+                                    Width="2*" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+    </DockPanel>
+</Window>

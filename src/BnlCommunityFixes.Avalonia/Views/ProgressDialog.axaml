@@ -1,0 +1,17 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BnlCommunityFixes.Avalonia.ViewModels"
+        x:Class="BnlCommunityFixes.Avalonia.Views.ProgressDialog"
+        x:DataType="vm:ProgressDialogViewModel"
+        Title="{Binding Title}"
+        Width="400" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="False">
+
+    <StackPanel Margin="12 16 12 16" Spacing="8">
+        <TextBlock Text="{Binding Status}" />
+        <ProgressBar Value="{Binding Percent}" Minimum="0" Maximum="100" Height="18" />
+    </StackPanel>
+
+</Window>

@@ -30,7 +30,12 @@ Write-Output ""
 Write-Output "Next steps:"
 Write-Output "1. Create GitHub release tag: $ReleaseTag"
 Write-Output "2. Upload:"
-Write-Output "   - $ReleaseRoot\launcher\BnlCommunityFixes.exe"
+Get-ChildItem -Path $ReleaseRoot -Directory | Where-Object { $_.Name -like "launcher-*" } | ForEach-Object {
+    $launcherAsset = Get-ChildItem -Path $_.FullName -File | Where-Object { $_.Name -like "BnlCommunityFixes*" }
+    foreach ($asset in $launcherAsset) {
+        Write-Output "   - $($asset.FullName)"
+    }
+}
 Write-Output "3. Publish manifest:"
 Write-Output "   & `"$RepoRoot\tools\Publish-ReleaseManifest.ps1`" -SourceManifestPath `"$ManifestPath`" -Channel `"$Channel`""
 Write-Output "4. Commit and push: v2\updates\manifest-$Channel.json"

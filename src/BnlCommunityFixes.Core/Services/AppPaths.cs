@@ -6,6 +6,7 @@ namespace BnlCommunityFixes.Core.Services;
 public sealed class AppPaths
 {
     private const string InstallRootEnvironmentVariable = "BNL_INSTALL_ROOT";
+    private readonly string executableExtension;
 
     public string InstallRoot { get; }
     public string AppDir { get; }
@@ -14,13 +15,13 @@ public sealed class AppPaths
     public string LogsDir { get; }
     public string BackupDir { get; }
 
-    public string LauncherPath => Path.Combine(AppDir, "BnlCommunityFixes.exe");
-    public string UpdaterPath => Path.Combine(AppDir, "BnlUpdater.exe");
-    public string LauncherTempPath => Path.Combine(UpdatesDir, "BnlCommunityFixes.new.exe");
-    public string LauncherUpdateHelperPath => Path.Combine(UpdatesDir, "BnlCommunityFixes.UpdateHelper.exe");
-    public string UpdaterTempPath => Path.Combine(UpdatesDir, "BnlUpdater.new.exe");
-    public string LauncherBackupPath => Path.Combine(BackupDir, "BnlCommunityFixes.previous.exe");
-    public string UpdaterPendingPath => Path.Combine(UpdatesDir, "BnlUpdater.pending.exe");
+    public string LauncherPath => Path.Combine(AppDir, "BnlCommunityFixes" + executableExtension);
+    public string UpdaterPath => Path.Combine(AppDir, "BnlUpdater" + executableExtension);
+    public string LauncherTempPath => Path.Combine(UpdatesDir, "BnlCommunityFixes.new" + executableExtension);
+    public string LauncherUpdateHelperPath => Path.Combine(UpdatesDir, "BnlCommunityFixes.UpdateHelper" + executableExtension);
+    public string UpdaterTempPath => Path.Combine(UpdatesDir, "BnlUpdater.new" + executableExtension);
+    public string LauncherBackupPath => Path.Combine(BackupDir, "BnlCommunityFixes.previous" + executableExtension);
+    public string UpdaterPendingPath => Path.Combine(UpdatesDir, "BnlUpdater.pending" + executableExtension);
     public string LauncherLogPath => Path.Combine(LogsDir, "launcher.log");
     public string UpdaterLogPath => Path.Combine(LogsDir, "updater.log");
     public string BootstrapSourcePath => Path.Combine(DataDir, "bootstrap-source.txt");
@@ -30,6 +31,7 @@ public sealed class AppPaths
     public AppPaths()
     {
         InstallRoot = ResolveInstallRoot();
+        executableExtension = ResolveExecutableExtension();
 
         AppDir = Path.Combine(InstallRoot, "app");
         DataDir = Path.Combine(InstallRoot, "data");
@@ -55,8 +57,40 @@ public sealed class AppPaths
             return Path.GetFullPath(overrideRoot);
         }
 
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "BNL-CommunityFixes");
+        if (OperatingSystem.IsWindows())
+        {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "BNL-CommunityFixes");
+        }
+
+        var xdgDataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+        if (!string.IsNullOrWhiteSpace(xdgDataHome))
+        {
+            return Path.Combine(Path.GetFullPath(xdgDataHome), "BNL-CommunityFixes");
+        }
+
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (!string.IsNullOrWhiteSpace(home))
+        {
+            return Path.Combine(home, ".local", "share", "BNL-CommunityFixes");
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, "BNL-CommunityFixes");
+    }
+
+    private static string ResolveExecutableExtension()
+    {
+        var currentProcessPath = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(currentProcessPath))
+        {
+            var extension = Path.GetExtension(currentProcessPath);
+            if (!string.IsNullOrWhiteSpace(extension))
+            {
+                return extension;
+            }
+        }
+
+        return OperatingSystem.IsWindows() ? ".exe" : string.Empty;
     }
 }

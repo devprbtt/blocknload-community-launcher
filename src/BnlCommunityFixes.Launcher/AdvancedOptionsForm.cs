@@ -154,7 +154,7 @@ public sealed class AdvancedOptionsForm : Form
 
         try
         {
-            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+            PlatformShell.OpenPath(path);
         }
         catch (Exception exception)
         {

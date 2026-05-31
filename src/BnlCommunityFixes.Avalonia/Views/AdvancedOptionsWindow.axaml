@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:BnlCommunityFixes.Avalonia.ViewModels"
+        x:Class="BnlCommunityFixes.Avalonia.Views.AdvancedOptionsWindow"
+        x:DataType="vm:AdvancedOptionsViewModel"
+        Title="Block N Load Community Fixes V2"
+        Width="400" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+    <StackPanel Margin="14 12 14 14" Spacing="6">
+
+        <TextBlock Text="Game" FontWeight="SemiBold" />
+        <Grid ColumnDefinitions="*,8,*">
+            <Button Grid.Column="0" Content="Verify Files"   Command="{Binding VerifyFilesCommand}"   IsEnabled="{Binding GameDetected}" HorizontalAlignment="Stretch" />
+            <Button Grid.Column="2" Content="Refresh"        Command="{Binding RefreshCommand}"        HorizontalAlignment="Stretch" />
+        </Grid>
+        <Button Content="Manage Servers" Command="{Binding ManageServersCommand}" IsEnabled="{Binding GameDetected}" HorizontalAlignment="Stretch" />
+
+        <TextBlock Text="Open files" FontWeight="SemiBold" Margin="0 8 0 0" />
+        <Grid ColumnDefinitions="*,8,*">
+            <Button Grid.Column="0" Content="config.json"       Command="{Binding OpenConfigJsonCommand}"  IsEnabled="{Binding GameDetected}" HorizontalAlignment="Stretch" />
+            <Button Grid.Column="2" Content="custom.json"       Command="{Binding OpenCustomJsonCommand}"  IsEnabled="{Binding GameDetected}" HorizontalAlignment="Stretch" />
+        </Grid>
+        <Grid ColumnDefinitions="*,8,*">
+            <Button Grid.Column="0" Content="Patching folder"   Command="{Binding OpenPatchingFolderCommand}" HorizontalAlignment="Stretch" />
+            <Button Grid.Column="2" Content="Launcher settings" Command="{Binding OpenSettingsCommand}"       HorizontalAlignment="Stretch" />
+        </Grid>
+        <Button Content="Launcher log" Command="{Binding OpenLogCommand}" HorizontalAlignment="Stretch" />
+
+        <Button Content="Close" Click="Close_Click" HorizontalAlignment="Stretch" Margin="0 8 0 0" />
+    </StackPanel>
+</Window>

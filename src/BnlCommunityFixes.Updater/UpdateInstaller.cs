@@ -87,15 +87,16 @@ public sealed class UpdateInstaller
         {
             var externalTarget = Path.GetFullPath(arguments.ExternalTargetPath);
             var installedTarget = Path.GetFullPath(arguments.TargetPath);
-            if (string.Equals(externalTarget, installedTarget, StringComparison.OrdinalIgnoreCase) ||
+            var pathComparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            if (string.Equals(externalTarget, installedTarget, pathComparison) ||
                 !File.Exists(externalTarget) ||
                 !File.Exists(installedTarget))
             {
                 return;
             }
 
-            var installedVersion = FileVersionInfo.GetVersionInfo(installedTarget).FileVersion;
-            var externalVersion = FileVersionInfo.GetVersionInfo(externalTarget).FileVersion;
+            var installedVersion = ExeVersionReader.GetVersion(installedTarget);
+            var externalVersion = ExeVersionReader.GetVersion(externalTarget);
             if (!VersionService.IsRemoteNewer(externalVersion ?? "0.0.0", installedVersion ?? "0.0.0"))
             {
                 return;
@@ -127,10 +128,11 @@ public sealed class UpdateInstaller
     private void RestartLauncher(string targetPath, IReadOnlyList<string> restartArguments)
     {
         logger.Info($"Restarting launcher at {targetPath}.");
+        EnsureExecutable(targetPath);
         var startInfo = new ProcessStartInfo
         {
             FileName = targetPath,
-            UseShellExecute = true,
+            UseShellExecute = OperatingSystem.IsWindows(),
             WorkingDirectory = Path.GetDirectoryName(targetPath)!
         };
 
@@ -140,6 +142,15 @@ public sealed class UpdateInstaller
         }
 
         Process.Start(startInfo);
+    }
+
+    private static void EnsureExecutable(string path)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(path,
+                File.GetUnixFileMode(path) | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute);
+        }
     }
 
     private void TryRollback(UpdaterArguments arguments)

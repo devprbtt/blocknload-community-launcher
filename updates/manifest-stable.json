@@ -1,16 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-05-29T10:42:34.2185473+00:00",
-  "notes": "## What's new\n\n- Added built-in settings profiles on the main launcher UI: Recommended Settings and Personal Settings\n- Launcher updates now reset the shipped Recommended Settings profile to the new bundled defaults\n- Added a one-time post-update notice explaining that recommended settings were refreshed\n- Fixed profile switching so both Recommended and Personal persist independently\n- Updated the shipped recommended feature settings to match the latest launcher-saved recommended profile\n\n## Other included improvements\n\n- Segmented healthbar toggle\n- Edo SZ font override expansion and chat font flash fix\n- WSI scale runtime sync improvements\n- Auto-import of newly added files in audio, mesh, and texture replacers",
+  "published_at": "2026-05-31T13:03:04.8134456+00:00",
+  "notes": "## What's new\n\n- Added a cross-platform `Avalonia` launcher project as the new release target\n- Added platform-aware update manifests with per-RID launcher assets\n- Added Linux-aware launcher asset selection in the updater flow\n- Migrated more launcher/runtime services into `Core` for shared use between Windows and cross-platform frontends\n- Added Linux-friendly command resolution and path handling improvements across launch, Steam, and file-opening flows\n\n## Included fixes\n\n- Local update smoke tests now target the Avalonia launcher\n- Headless smoke test mode now exercises the update path instead of exiting too early\n- Update helper install/restart now preserves executable bits on Unix-like systems\n- Restart/update path handling is safer on Linux case-sensitive filesystems\n\n## Notes\n\n- `launcher_exe` remains in the manifest as a Windows compatibility alias\n- New manifests now also expose keys like `launcher_win_x64` and `launcher_linux_x64`\n",
   "assets": {
+    "launcher_linux_x64": {
+      "file_name": "BnlCommunityFixes",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.0/BnlCommunityFixes",
+      "sha256": "72315293AE603952DC61BF2D25A75178317579EFA6BC4CFC0E56DFC27893F4FF",
+      "size": 110383828
+    },
+    "launcher_win_x64": {
+      "file_name": "BnlCommunityFixes.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.0/BnlCommunityFixes.exe",
+      "sha256": "B861CCCFA715A34483DA5341452C65862BAAB6988967F62A16DF0ACA9344E8D4",
+      "size": 115284206
+    },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.5.1/BnlCommunityFixes.exe",
-      "sha256": "835C6E4C52F6C1C110D558F15CA4769C474B8CB5E7C1A3B4503A34D77AE3D704",
-      "size": 164279474
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.0/BnlCommunityFixes.exe",
+      "sha256": "B861CCCFA715A34483DA5341452C65862BAAB6988967F62A16DF0ACA9344E8D4",
+      "size": 115284206
     }
   }
 }

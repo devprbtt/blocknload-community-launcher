@@ -40,7 +40,7 @@ public sealed class AudioReplacerForm : Form
         // Resolve the CustomAudio folder from the game install path
         if (installInfo?.IsDetected == true)
         {
-            customAudioFolder = Path.Combine(installInfo.GameRoot, "Win64", "BlockNLoad_Data", "CustomAudio");
+            customAudioFolder = installInfo.CustomAudioDirectoryPath;
         }
         else
         {

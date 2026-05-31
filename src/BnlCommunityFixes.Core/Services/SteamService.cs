@@ -1,20 +1,32 @@
 using System.Diagnostics;
-using System.Runtime.Versioning;
-using Microsoft.Win32;
 using BnlCommunityFixes.Core.Models;
 
 namespace BnlCommunityFixes.Core.Services;
 
-[SupportedOSPlatform("windows")]
 public sealed class SteamService
 {
-    private const string SteamActiveProcessRegistryPath = @"HKEY_CURRENT_USER\Software\Valve\Steam\ActiveProcess";
     private const string SteamAppId = "299360";
+    private static readonly string[] LinuxUriOpenCandidates =
+    [
+        "xdg-open",
+        "gio",
+        "sensible-open",
+        "gvfs-open",
+        "kde-open",
+        "kioclient5",
+        "kioclient",
+        "exo-open"
+    ];
 
     public string? GetReadinessError()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
         var steamProcess = Process.GetProcessesByName("steam");
-        if (steamProcess.Length == 0)
+        if (steamProcess.Length == 0 && Process.GetProcessesByName("steamwebhelper").Length == 0)
         {
             return "Steam is not running. Please start Steam.";
         }
@@ -24,9 +36,21 @@ public sealed class SteamService
 
     public string? GetReadinessWarning()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        return ReadWindowsSteamActiveUserWarning();
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static string? ReadWindowsSteamActiveUserWarning()
+    {
         try
         {
-            var activeUserValue = Registry.GetValue(SteamActiveProcessRegistryPath, "ActiveUser", null);
+            var activeUserValue = Microsoft.Win32.Registry.GetValue(
+                @"HKEY_CURRENT_USER\Software\Valve\Steam\ActiveProcess", "ActiveUser", null);
             if (activeUserValue is null)
             {
                 return "Steam is running but its logged-in user could not be verified.";
@@ -47,20 +71,12 @@ public sealed class SteamService
 
     public void OpenSteamMain()
     {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "steam://open/main",
-            UseShellExecute = true
-        });
+        StartUri("steam://open/main");
     }
 
     public void StartSteamVerify()
     {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = $"steam://validate/{SteamAppId}",
-            UseShellExecute = true
-        });
+        StartUri($"steam://validate/{SteamAppId}");
     }
 
     public void EnsureSteamAppIdFile(GameInstallInfo installInfo)
@@ -74,11 +90,74 @@ public sealed class SteamService
 
     public void LaunchGame(GameInstallInfo installInfo)
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            StartUri($"steam://rungameid/{SteamAppId}");
+            return;
+        }
+
         Process.Start(new ProcessStartInfo
         {
             FileName = installInfo.GameExecutablePath,
             WorkingDirectory = installInfo.GameRoot,
             UseShellExecute = true
         });
+    }
+
+    private static void StartUri(string uri)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = uri,
+                UseShellExecute = true
+            });
+            return;
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "open",
+                ArgumentList = { uri },
+                UseShellExecute = false
+            });
+            return;
+        }
+
+        var opener = ResolveLinuxUriOpener();
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = opener,
+            UseShellExecute = false
+        };
+
+        foreach (var argument in BuildLinuxUriArguments(opener, uri))
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        Process.Start(startInfo);
+    }
+
+    private static string ResolveLinuxUriOpener()
+    {
+        return PlatformCommandResolver.ResolveFromPath(LinuxUriOpenCandidates)
+            ?? throw new InvalidOperationException("No supported Linux URI opener was found. Install xdg-open, gio, or an equivalent desktop opener.");
+    }
+
+    private static IEnumerable<string> BuildLinuxUriArguments(string opener, string uri)
+    {
+        var openerName = Path.GetFileName(opener);
+        if (string.Equals(openerName, "gio", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(openerName, "kioclient5", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(openerName, "kioclient", StringComparison.OrdinalIgnoreCase))
+        {
+            return new[] { "open", uri };
+        }
+
+        return new[] { uri };
     }
 }

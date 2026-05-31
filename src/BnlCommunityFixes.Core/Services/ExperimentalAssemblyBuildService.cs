@@ -1,35 +1,29 @@
-using System.Diagnostics;
+using BnlCommunityFixes.Core.Features.Build;
+using BnlCommunityFixes.Core.Features.Build.Patching;
+using BnlCommunityFixes.Core.Features;
 using BnlCommunityFixes.Core.Models;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace BnlCommunityFixes.Core.Services;
 
 public sealed class ExperimentalAssemblyBuildService
 {
-    private static readonly string[] TriggerConfigFileNames =
+    private const string GeneratedHelperSourceFileName = "BnlCommunityFixes.generated.cs";
+    private const string HelperAssemblyFileName = "BnlCommunityFixes.dll";
+    private const string ExperimentalAssemblyFileName = "Assembly-CSharp.experimental.dll";
+    private static readonly string[] HelperFrameworkReferenceFileNames =
     [
-        "crosshair-config.json",
-        "fov-config.json",
-        "experimental-team-color-config.json",
-        "damage-healing-indicator-config.json",
-        "heal-alert-indicator-config.json",
-        "experimental-base-objective-beam-config.json",
-        "experimental-enemy-shield-buffbar-config.json",
-        "experimental-match-replay-recorder-config.json",
-        "aim-healthbar-config.json",
-        "experimental-debug-menu-config.json",
-        "experimental-auto-casual-queue-config.json",
-        "experimental-local-build-preview-config.json",
-        "deathcam-healthbar-config.json",
-        "friendly-low-health-config.json",
-        "teammate-hp-config.json",
-        "experimental-hide-impact-vfx-config.json",
-        "unit-gui-scale-config.json",
-        "experimental-map-render-config.json",
-        "experimental-audio-replacer-config.json",
-        "experimental-mesh-replacer-config.json"
+        "ref-mscorlib.dll",
+        "ref-System.dll",
+        "ref-System.Core.dll"
     ];
 
     private readonly AppPaths paths;
+    private readonly ExperimentalFeatureBuildPlanService buildPlanService = new();
+    private readonly ExperimentalFeaturePatchRunner patchRunner = new();
+    private readonly HelperSourceGeneratorService helperSourceGenerator = new();
+    private readonly AssemblyBaselinePatcher baselinePatcher = new();
 
     public ExperimentalAssemblyBuildService(AppPaths paths)
     {
@@ -38,88 +32,148 @@ public sealed class ExperimentalAssemblyBuildService
 
     public bool WillBuildFromLocalConfig()
     {
-        var buildScriptPath = Path.Combine(paths.PatchingDir, "Build-ExperimentalCrosshairAssembly.ps1");
-        if (!File.Exists(buildScriptPath))
-        {
-            return false;
-        }
-
-        return TriggerConfigFileNames
-            .Select(fileName => Path.Combine(paths.PatchingDir, fileName))
-            .Any(File.Exists);
+        return buildPlanService.Create(paths.PatchingDir).HasAnyTriggerConfig;
     }
 
     public bool BuildFromLocalConfig(GameInstallInfo installInfo, Logger logger)
     {
-        var buildScriptPath = Path.Combine(paths.PatchingDir, "Build-ExperimentalCrosshairAssembly.ps1");
-        if (!File.Exists(buildScriptPath))
+        var plan = buildPlanService.Create(paths.PatchingDir);
+        if (!plan.HasAnyTriggerConfig)
         {
             return false;
         }
 
-        var hasAnyConfig = TriggerConfigFileNames
-            .Select(fileName => Path.Combine(paths.PatchingDir, fileName))
-            .Any(File.Exists);
-        if (!hasAnyConfig)
+        var enabledFeatureKeys = plan.EnabledTriggerEntries
+            .Select(static entry => entry.Definition.Key)
+            .ToArray();
+        var csharpFeatureKeys = patchRunner.GetApplicableFeatureKeys(enabledFeatureKeys);
+
+        if (plan.HasEnabledTriggerFeature)
         {
-            return false;
+            logger.Info($"Feature config detected. Rebuilding Assembly-CSharp DLL for: {plan.DescribeEnabledTriggerFeatures()}");
+            if (csharpFeatureKeys.Count > 0)
+            {
+                logger.Info($"C# patchers enabled for: {string.Join(", ", csharpFeatureKeys)}");
+            }
+        }
+        else
+        {
+            logger.Info("Feature config detected. Rebuilding Assembly-CSharp DLL...");
         }
 
-        logger.Info("Feature config detected. Rebuilding Assembly-CSharp DLL...");
+        // Generate helper source and compile it in-process
+        helperSourceGenerator.Generate(paths.PatchingDir, installInfo.GameRoot);
+        logger.Info("Generated helper source in-process (C# generator).");
 
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "powershell.exe",
-            WorkingDirectory = paths.PatchingDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+        CompileHelperAssembly(installInfo, logger);
 
-        startInfo.ArgumentList.Add("-NoProfile");
-        startInfo.ArgumentList.Add("-ExecutionPolicy");
-        startInfo.ArgumentList.Add("Bypass");
-        startInfo.ArgumentList.Add("-File");
-        startInfo.ArgumentList.Add(buildScriptPath);
-        startInfo.ArgumentList.Add("-GameRoot");
-        startInfo.ArgumentList.Add(installInfo.GameRoot);
+        // Create the experimental assembly baseline from the backup
+        var backupAssemblyPath = Path.Combine(installInfo.ManagedDirectoryPath, "Assembly-CSharp-backup.dll");
+        baselinePatcher.CreateExperimentalAssembly(backupAssemblyPath, paths.PatchingDir, installInfo.ManagedDirectoryPath, logger);
 
-        using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Failed to start the feature assembly builder.");
-
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
-
-        var output = outputTask.GetAwaiter().GetResult();
-        var error = errorTask.GetAwaiter().GetResult();
-
-        LogProcessLines(output, logger);
-        LogProcessLines(error, logger);
-
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException("Feature bundle Assembly-CSharp build failed.");
-        }
+        ApplyCSharpFeaturePatchers(installInfo, csharpFeatureKeys, logger);
 
         return true;
     }
 
-    private static void LogProcessLines(string content, Logger logger)
+    private void CompileHelperAssembly(GameInstallInfo installInfo, Logger logger)
     {
-        if (string.IsNullOrWhiteSpace(content))
+        var helperSourcePath = Path.Combine(paths.PatchingDir, GeneratedHelperSourceFileName);
+        if (!File.Exists(helperSourcePath))
         {
+            throw new InvalidOperationException($"Generated helper source was not found: {helperSourcePath}");
+        }
+
+        var helperOutputPath = Path.Combine(paths.PatchingDir, HelperAssemblyFileName);
+        var backupAssemblyPath = Path.Combine(installInfo.ManagedDirectoryPath, "Assembly-CSharp-backup.dll");
+        var unityEnginePath = Path.Combine(installInfo.ManagedDirectoryPath, "UnityEngine.dll");
+        var unityEngineUiPath = Path.Combine(installInfo.ManagedDirectoryPath, "UnityEngine.UI.dll");
+
+        foreach (var requiredPath in new[] { backupAssemblyPath, unityEnginePath, unityEngineUiPath })
+        {
+            if (!File.Exists(requiredPath))
+            {
+                throw new InvalidOperationException($"Required helper compilation reference was not found: {requiredPath}");
+            }
+        }
+
+        var metadataReferences = new List<MetadataReference>();
+        foreach (var referenceFileName in HelperFrameworkReferenceFileNames)
+        {
+            var referencePath = Path.Combine(paths.PatchingDir, referenceFileName);
+            if (!File.Exists(referencePath))
+            {
+                throw new InvalidOperationException($"Bundled framework reference was not found: {referencePath}");
+            }
+
+            metadataReferences.Add(MetadataReference.CreateFromFile(referencePath));
+        }
+
+        metadataReferences.Add(MetadataReference.CreateFromFile(unityEnginePath));
+        metadataReferences.Add(MetadataReference.CreateFromFile(unityEngineUiPath));
+        metadataReferences.Add(MetadataReference.CreateFromFile(backupAssemblyPath));
+
+        var sourceText = File.ReadAllText(helperSourcePath);
+        var syntaxTree = CSharpSyntaxTree.ParseText(
+            sourceText,
+            new CSharpParseOptions(languageVersion: LanguageVersion.Latest),
+            path: helperSourcePath);
+
+        var compilation = CSharpCompilation.Create(
+            assemblyName: Path.GetFileNameWithoutExtension(helperOutputPath),
+            syntaxTrees: new[] { syntaxTree },
+            references: metadataReferences,
+            options: new CSharpCompilationOptions(
+                OutputKind.DynamicallyLinkedLibrary,
+                optimizationLevel: OptimizationLevel.Release,
+                deterministic: true));
+
+        using var outputStream = File.Create(helperOutputPath);
+        var emitResult = compilation.Emit(outputStream);
+        if (emitResult.Success)
+        {
+            outputStream.Flush();
+            logger.Info("Compiled helper assembly in-process.");
+            if (!File.Exists(helperOutputPath))
+            {
+                throw new InvalidOperationException($"Feature bundle helper assembly was not created: {helperOutputPath}");
+            }
+
             return;
         }
 
-        foreach (var rawLine in content.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries))
+        outputStream.Dispose();
+        File.Delete(helperOutputPath);
+
+        foreach (var diagnostic in emitResult.Diagnostics.Where(static d => d.Severity == DiagnosticSeverity.Error))
         {
-            var line = rawLine.Trim();
-            if (!string.IsNullOrWhiteSpace(line))
-            {
-                logger.Info(line);
-            }
+            logger.Info(diagnostic.ToString());
         }
+
+        throw new InvalidOperationException("Feature bundle helper compilation failed.");
     }
+
+    private void ApplyCSharpFeaturePatchers(GameInstallInfo installInfo, IReadOnlyList<string> featureKeys, Logger logger)
+    {
+        var targetAssemblyPath = Path.Combine(paths.PatchingDir, ExperimentalAssemblyFileName);
+        if (!File.Exists(targetAssemblyPath))
+        {
+            throw new InvalidOperationException($"Experimental assembly was not found for C# patchers: {targetAssemblyPath}");
+        }
+
+        var helperAssemblyPath = Path.Combine(paths.PatchingDir, HelperAssemblyFileName);
+        if (!File.Exists(helperAssemblyPath))
+        {
+            throw new InvalidOperationException($"Helper assembly was not found for C# patchers: {helperAssemblyPath}");
+        }
+
+        patchRunner.ApplyToAssembly(
+            targetAssemblyPath,
+            helperAssemblyPath,
+            featureKeys,
+            logger,
+            installInfo.ManagedDirectoryPath,
+            paths.PatchingDir);
+    }
+
 }
