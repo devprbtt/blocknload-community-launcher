@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 
 namespace BnlCommunityFixes.Core.Services;
@@ -6,6 +7,21 @@ public static class LauncherVersion
 {
     public static string GetCurrentVersion()
     {
+        var processPath = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(processPath))
+        {
+            var fileVersion = FileVersionInfo.GetVersionInfo(processPath);
+            if (!string.IsNullOrWhiteSpace(fileVersion.ProductVersion))
+            {
+                return fileVersion.ProductVersion;
+            }
+
+            if (!string.IsNullOrWhiteSpace(fileVersion.FileVersion))
+            {
+                return fileVersion.FileVersion;
+            }
+        }
+
         var informational = Assembly.GetExecutingAssembly()
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
             .InformationalVersion;

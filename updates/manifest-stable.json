@@ -1,16 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.5.1",
+  "version": "2.6.3",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-05-31T13:40:00+00:00",
-  "notes": "## Stable rollback notice\n\n- The `stable` channel has been rolled back to `2.5.1`\n- Do not use the `2.6.x` line for now while a regression is investigated\n\n## What's new in 2.5.1\n\n- Added built-in settings profiles on the main launcher UI: Recommended Settings and Personal Settings\n- Launcher updates now reset the shipped Recommended Settings profile to the new bundled defaults\n- Added a one-time post-update notice explaining that recommended settings were refreshed\n- Fixed profile switching so both Recommended and Personal persist independently\n- Updated the shipped recommended feature settings to match the latest launcher-saved recommended profile\n\n## Other included improvements\n\n- Segmented healthbar toggle\n- Edo SZ font override expansion and chat font flash fix\n- WSI scale runtime sync improvements\n- Auto-import of newly added files in audio, mesh, and texture replacers",
+  "published_at": "2026-05-31T14:06:48.0772901+00:00",
+  "notes": "## 2.6.3 hotfix\n\n- Fixed a replay recorder regression that could make players invisible to others when replay recording was enabled\n- Removed the replay player bootstrap from normal gameplay while keeping replay recording available\n- Kept the launcher platform-aware update flow introduced in 2.6.x\n\n## Linux and Windows\n\n- `BnlCommunityFixes.exe` is the Windows launcher\n- `BnlCommunityFixes` is the Linux launcher\n- On Linux, the launcher is native, but the game still launches through Steam/Proton\r\n",
   "assets": {
+    "launcher_linux_x64": {
+      "file_name": "BnlCommunityFixes",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.3/BnlCommunityFixes",
+      "sha256": "FC492CE6F8833D0A3867615B3B7B0184E919E991EFA585724EA10E528C01475B",
+      "size": 110384801
+    },
+    "launcher_win_x64": {
+      "file_name": "BnlCommunityFixes.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.3/BnlCommunityFixes.exe",
+      "sha256": "2B74348F772A90A4067188C648148E0A1B2ED71FC579736D24B9100BF556F24A",
+      "size": 115284283
+    },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.5.1/BnlCommunityFixes.exe",
-      "sha256": "835C6E4C52F6C1C110D558F15CA4769C474B8CB5E7C1A3B4503A34D77AE3D704",
-      "size": 164279474
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.3/BnlCommunityFixes.exe",
+      "sha256": "2B74348F772A90A4067188C648148E0A1B2ED71FC579736D24B9100BF556F24A",
+      "size": 115284283
     }
   }
 }

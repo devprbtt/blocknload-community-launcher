@@ -19,8 +19,6 @@ public sealed class MatchReplayRecorderFeaturePatcher : IExperimentalFeaturePatc
         var runtimeType = context.HelperModule.Types.FirstOrDefault(static t => t.FullName == "BnlCommunityFixes.MatchReplayRecorderRuntime")
             ?? throw new InvalidOperationException("MatchReplayRecorderRuntime not found in helper assembly.");
 
-        var replayPlayerType = context.HelperModule.Types.FirstOrDefault(static t => t.FullName == "BnlCommunityFixes.ReplayPlayerRuntime");
-
         MethodReference Imp(string name, int? paramCount = null) => context.TargetModule.ImportReference(
             (paramCount is null
                 ? runtimeType.Methods.FirstOrDefault(m => m.Name == name)
@@ -56,16 +54,6 @@ public sealed class MatchReplayRecorderFeaturePatcher : IExperimentalFeaturePatc
             il.InsertBefore(first, il.Create(OpCodes.Ldc_I4, recordRankedGames ? 1 : 0));
             il.InsertBefore(first, il.Create(OpCodes.Call, configure));
 
-            // Also inject ReplayPlayerRuntime.EnsureInstance() so the replay player is available
-            if (replayPlayerType is not null)
-            {
-                var ensureInstance = replayPlayerType.Methods.FirstOrDefault(static m => m.Name == "EnsureInstance");
-                if (ensureInstance is not null)
-                {
-                    var importedEnsure = context.TargetModule.ImportReference(ensureInstance);
-                    il.InsertBefore(first, il.Create(OpCodes.Call, importedEnsure));
-                }
-            }
         }
 
         // Patch all Protocol.ServiceZone and Protocol.ServiceChat Recv_* methods
@@ -80,7 +68,7 @@ public sealed class MatchReplayRecorderFeaturePatcher : IExperimentalFeaturePatc
         InjectServiceZoneRecorder(serviceZoneType, "CreateProjectile",  recordLocalProjectileInfo,    2);
         InjectServiceZoneRecorder(serviceZoneType, "MoveProjectile",    recordLocalProjectileMove,    3);
         InjectServiceZoneRecorder(serviceZoneType, "DropProjectile",    recordLocalProjectileDrop,    1);
-        InjectServiceZoneRecorder(serviceZoneType, "UnitMove",          recordLocalUnitMove,          1);
+        InjectServiceZoneRecorder(serviceZoneType, "UnitMove",          recordLocalUnitMove,          3);
         InjectServiceZoneRecorder(serviceZoneType, "UnitProjectileHit", recordLocalUnitProjectileHit, 2);
     }
 
