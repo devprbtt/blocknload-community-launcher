@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BnlCommunityFixes.Core.Models;
 using BnlCommunityFixes.Core.Services;
+using System.Reflection;
 
 namespace BnlCommunityFixes.Avalonia.ViewModels;
 
@@ -86,6 +87,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         var shouldNotify = _settingsProfileService.ApplyUpdateDefaultsIfNeeded(settings, _launcherVersion, logger);
         _settingsProfileService.SyncActiveSettingsToRuntime(installInfo);
+        EnsureSegmentedHealthbarTextureState();
         _settingsService.Save(settings);
 
         Reload();
@@ -348,6 +350,77 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private static bool GetBool(JsonElement el, string key, bool def) =>
         el.TryGetProperty(key, out var p) && p.ValueKind is JsonValueKind.True or JsonValueKind.False
             ? p.GetBoolean() : def;
+
+    private void EnsureSegmentedHealthbarTextureState()
+    {
+        var configPath = Path.Combine(_paths.PatchingDir, "experimental-segmented-healthbar-config.json");
+        var enabled = false;
+
+        try
+        {
+            if (File.Exists(configPath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(configPath));
+                enabled = doc.RootElement.TryGetProperty("enabled", out var p) &&
+                          p.ValueKind is JsonValueKind.True or JsonValueKind.False &&
+                          p.GetBoolean();
+            }
+        }
+        catch
+        {
+            enabled = false;
+        }
+
+        var mappingPath = Path.Combine(_paths.PatchingDir, "texture-replacements.txt");
+        const string fillEntry = "white_rect=white_rect.png";
+        const string bgEntry = "white_rect_bg=white_rect_bg.png";
+        var lines = File.Exists(mappingPath)
+            ? File.ReadAllLines(mappingPath, System.Text.Encoding.UTF8).ToList()
+            : [];
+
+        if (enabled)
+        {
+            if (_installInfo.IsDetected)
+            {
+                Directory.CreateDirectory(_installInfo.CustomTexturesDirectoryPath);
+                var asm = typeof(MainWindowViewModel).Assembly;
+                foreach (var (resName, fileName) in new[]
+                {
+                    ("Patching.white_rect.png", "white_rect.png"),
+                    ("Patching.white_rect_bg.png", "white_rect_bg.png")
+                })
+                {
+                    using var stream = asm.GetManifestResourceStream(resName);
+                    if (stream == null)
+                    {
+                        continue;
+                    }
+
+                    using var dest = File.Create(Path.Combine(_installInfo.CustomTexturesDirectoryPath, fileName));
+                    stream.CopyTo(dest);
+                }
+            }
+
+            if (!lines.Any(static l => l.StartsWith("white_rect=", StringComparison.OrdinalIgnoreCase)))
+            {
+                lines.Add(fillEntry);
+            }
+
+            if (!lines.Any(static l => l.StartsWith("white_rect_bg=", StringComparison.OrdinalIgnoreCase)))
+            {
+                lines.Add(bgEntry);
+            }
+        }
+        else
+        {
+            lines.RemoveAll(static l =>
+                l.StartsWith("white_rect=", StringComparison.OrdinalIgnoreCase) ||
+                l.StartsWith("white_rect_bg=", StringComparison.OrdinalIgnoreCase));
+        }
+
+        Directory.CreateDirectory(_paths.PatchingDir);
+        File.WriteAllLines(mappingPath, lines, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+    }
 
     // ── Error notification (raised to View) ───────────────────────────────────
 

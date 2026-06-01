@@ -32,13 +32,13 @@ public sealed class ExperimentalAssemblyBuildService
 
     public bool WillBuildFromLocalConfig()
     {
-        return buildPlanService.Create(paths.PatchingDir).HasAnyTriggerConfig;
+        return buildPlanService.Create(paths.PatchingDir).HasEnabledTriggerFeature;
     }
 
     public bool BuildFromLocalConfig(GameInstallInfo installInfo, Logger logger)
     {
         var plan = buildPlanService.Create(paths.PatchingDir);
-        if (!plan.HasAnyTriggerConfig)
+        if (!plan.HasEnabledTriggerFeature)
         {
             return false;
         }

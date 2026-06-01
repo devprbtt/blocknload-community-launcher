@@ -10,6 +10,12 @@ public sealed class ShopImagePatcher : IExperimentalFeaturePatcher
 
     public void Apply(ExperimentalPatchContext context)
     {
+        var config = PatcherConfigReader.Read(context.PatchingDir, "experimental-texture-replacer-config.json");
+        if (!PatcherConfigReader.GetBool(config, "enabled"))
+        {
+            return;
+        }
+
         var helperTextureType = context.HelperModule.Types.FirstOrDefault(static t => t.FullName == "BnlCommunityFixes.TextureReplacementBootstrapper");
         if (helperTextureType is null) return;
 

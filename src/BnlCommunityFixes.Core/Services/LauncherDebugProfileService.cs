@@ -8,6 +8,7 @@ public sealed class LauncherDebugProfileService
 {
     private readonly AppPaths paths;
     private readonly Logger logger;
+    private readonly DebugMenuConfigService debugMenuConfigService = new();
 
     public LauncherDebugProfileService(AppPaths paths, Logger logger)
     {
@@ -24,27 +25,11 @@ public sealed class LauncherDebugProfileService
     public void ApplyCurrentLauncherProfile()
     {
         var currentExe = Environment.ProcessPath;
-        if (!IsDebugLauncherPath(currentExe))
-        {
-            return;
-        }
-
         var configPath = Path.Combine(paths.PatchingDir, "experimental-debug-menu-config.json");
-        var config = new
-        {
-            enabled = true,
-            debug_menu_key = "F9",
-            main_menu_key = "F10",
-            lobby_menu_key = "F11",
-            zone_menu_key = "F12"
-        };
-
-        var json = JsonSerializer.Serialize(config, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
-
-        File.WriteAllText(configPath, json, new UTF8Encoding(false));
-        logger.Info($"Applied debug launcher profile to '{configPath}'.");
+        var isDebugLauncher = IsDebugLauncherPath(currentExe);
+        debugMenuConfigService.ApplyLauncherProfile(configPath, isDebugLauncher);
+        logger.Info(isDebugLauncher
+            ? $"Applied debug launcher profile to '{configPath}'."
+            : $"Normalized debug menu profile for non-debug launcher at '{configPath}'.");
     }
 }

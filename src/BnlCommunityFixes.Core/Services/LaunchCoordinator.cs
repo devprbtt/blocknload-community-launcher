@@ -61,18 +61,21 @@ public sealed class LaunchCoordinator
         if (!string.IsNullOrWhiteSpace(server.Patch))
         {
             var skipPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var experimentalEnabled = gameAssemblyService.HasExperimentalAssembly();
             var willBuildExperimental = experimentalAssemblyBuildService.WillBuildFromLocalConfig();
 
-            if (experimentalEnabled || willBuildExperimental)
+            if (willBuildExperimental)
             {
                 gameAssemblyService.EnsureAssemblyBackup(installInfo, config, server.Patch, logger);
-            }
-
-            if (experimentalEnabled)
-            {
                 logger.Info("Feature Assembly-CSharp mode enabled.");
                 skipPaths.Add(@"Win64/BlockNLoad_Data/Managed/Assembly-CSharp.dll");
+            }
+            else
+            {
+                gameAssemblyService.ClearExperimentalAssemblyCache(logger);
+                if (gameAssemblyService.HasAssemblyBackup(installInfo))
+                {
+                    gameAssemblyService.RestoreAssemblyBackup(installInfo, logger);
+                }
             }
 
             var builtExperimentalAssembly = experimentalAssemblyBuildService.BuildFromLocalConfig(installInfo, logger);
@@ -84,7 +87,7 @@ public sealed class LaunchCoordinator
             gameAssemblyService.SyncCommunityFixAssembly(installInfo, logger);
             patchService.ApplyPatchSet(installInfo.GameRoot, config, server.Patch, logger, skipPaths);
 
-            if ((experimentalEnabled || builtExperimentalAssembly) && !gameAssemblyService.DeployExperimentalAssembly(installInfo, logger))
+            if (builtExperimentalAssembly && !gameAssemblyService.DeployExperimentalAssembly(installInfo, logger))
             {
                 throw new InvalidOperationException("Feature Assembly-CSharp mode was enabled but the DLL could not be deployed.");
             }

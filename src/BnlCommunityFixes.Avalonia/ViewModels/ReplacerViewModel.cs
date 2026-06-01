@@ -13,9 +13,11 @@ public abstract partial class ReplacerViewModel : ViewModelBase
 {
     protected readonly string ConfigPath;
     protected readonly string CustomFolder;
+    private bool _suppressAutoSave = true;
 
     [ObservableProperty] private ObservableCollection<ReplacerRow> _rows = [];
     [ObservableProperty] private ReplacerRow? _selectedRow;
+    [ObservableProperty] private bool _isFeatureEnabled;
 
     public Func<string, Task<string?>>? PickFile { get; set; }
     public Func<string, Task<string[]?>>? PickFolder { get; set; }
@@ -26,6 +28,7 @@ public abstract partial class ReplacerViewModel : ViewModelBase
         ConfigPath = configPath;
         CustomFolder = customFolder;
         Load();
+        _suppressAutoSave = false;
     }
 
     public abstract string Title { get; }
@@ -36,6 +39,16 @@ public abstract partial class ReplacerViewModel : ViewModelBase
     protected abstract void SaveRows(List<ReplacerRow> rows);
 
     protected virtual void Load() { }
+
+    partial void OnIsFeatureEnabledChanged(bool value)
+    {
+        if (_suppressAutoSave)
+        {
+            return;
+        }
+
+        Save();
+    }
 
     [RelayCommand]
     private void Add()
@@ -80,6 +93,18 @@ public abstract partial class ReplacerViewModel : ViewModelBase
     {
         try { SaveRows(Rows.ToList()); }
         catch (Exception ex) { ErrorOccurred?.Invoke("Save failed", ex.Message); }
+    }
+
+    protected bool ReadEnabledFlag(JsonElement root, bool defaultValue)
+    {
+        if (root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty("enabled", out var prop) &&
+            (prop.ValueKind == JsonValueKind.True || prop.ValueKind == JsonValueKind.False))
+        {
+            return prop.GetBoolean();
+        }
+
+        return defaultValue;
     }
 
     protected static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true, PropertyNameCaseInsensitive = true };

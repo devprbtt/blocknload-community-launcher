@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BnlCommunityFixes.Core.Models;
 using BnlCommunityFixes.Core.Services;
+using System.Reflection;
 
 namespace BnlCommunityFixes.Avalonia.ViewModels;
 
@@ -10,6 +11,8 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     private readonly AppPaths _paths;
     private readonly FeatureSettingsService _svc;
     private readonly FeaturePresetsService _presets;
+    private readonly GameInstallInfo? _installInfo;
+    private readonly DebugMenuConfigService _debugMenuConfigService = new();
 
     public event Action<string, string>? ErrorOccurred;
     public event Action? Saved;
@@ -119,6 +122,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         _paths = paths;
         _svc = new FeatureSettingsService(paths);
         _presets = new FeaturePresetsService(paths);
+        _installInfo = installInfo;
 
         if (installInfo?.IsDetected == true)
         {
@@ -251,6 +255,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
                 IndicatorAlpha = FriendlyLowHealthIndicatorAlpha
             });
             _svc.SaveSegmentedHealthbarSettings(new SegmentedHealthbarSettings { Enabled = SegmentedHealthbarEnabled });
+            ApplySegmentedHealthbarTextures(SegmentedHealthbarEnabled);
             _svc.SaveFontOverrideSettings(new FontOverrideSettings { Enabled = FontOverrideEnabled });
             SaveDebugMenuBool("skip_intro", SkipIntro);
             SaveDebugMenuBool("disable_main_menu_frame_cap", DisableMainMenuFrameCap);
@@ -265,35 +270,78 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [RelayCommand] private void ApplyClassicColors() { TeamColorsEnabled = true; FriendlyColor = "#B4D0FB"; EnemyColor = "#D7373F"; }
     [RelayCommand] private void ApplyDefaultColors() { TeamColorsEnabled = true; FriendlyColor = "#4AA3FF"; EnemyColor = "#FF5A5A"; }
 
+    private void ApplySegmentedHealthbarTextures(bool enabled)
+    {
+        var mappingPath = Path.Combine(_paths.PatchingDir, "texture-replacements.txt");
+        const string fillEntry = "white_rect=white_rect.png";
+        const string bgEntry = "white_rect_bg=white_rect_bg.png";
+
+        var lines = File.Exists(mappingPath)
+            ? File.ReadAllLines(mappingPath, System.Text.Encoding.UTF8).ToList()
+            : [];
+
+        if (enabled)
+        {
+            var customTexturesDir = _installInfo?.IsDetected == true
+                ? _installInfo.CustomTexturesDirectoryPath
+                : null;
+
+            if (!string.IsNullOrWhiteSpace(customTexturesDir))
+            {
+                Directory.CreateDirectory(customTexturesDir);
+                var asm = typeof(FeatureSettingsViewModel).Assembly;
+                foreach (var (resName, fileName) in new[]
+                {
+                    ("Patching.white_rect.png", "white_rect.png"),
+                    ("Patching.white_rect_bg.png", "white_rect_bg.png")
+                })
+                {
+                    using var stream = asm.GetManifestResourceStream(resName);
+                    if (stream == null)
+                    {
+                        continue;
+                    }
+
+                    using var dest = File.Create(Path.Combine(customTexturesDir, fileName));
+                    stream.CopyTo(dest);
+                }
+            }
+
+            if (!lines.Any(static l => l.StartsWith("white_rect=", StringComparison.OrdinalIgnoreCase)))
+            {
+                lines.Add(fillEntry);
+            }
+
+            if (!lines.Any(static l => l.StartsWith("white_rect_bg=", StringComparison.OrdinalIgnoreCase)))
+            {
+                lines.Add(bgEntry);
+            }
+        }
+        else
+        {
+            lines.RemoveAll(static l =>
+                l.StartsWith("white_rect=", StringComparison.OrdinalIgnoreCase) ||
+                l.StartsWith("white_rect_bg=", StringComparison.OrdinalIgnoreCase));
+        }
+
+        Directory.CreateDirectory(_paths.PatchingDir);
+        File.WriteAllLines(mappingPath, lines, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+    }
+
     // ── Debug menu JSON helpers ───────────────────────────────────────────────
     private string DebugMenuConfigPath => Path.Combine(_paths.PatchingDir, "experimental-debug-menu-config.json");
 
     private bool LoadDebugMenuBool(string key)
     {
-        try
-        {
-            if (!File.Exists(DebugMenuConfigPath)) return false;
-            using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(DebugMenuConfigPath));
-            return doc.RootElement.TryGetProperty(key, out var p) && p.GetBoolean();
-        }
-        catch { return false; }
+        return _debugMenuConfigService.LoadBool(DebugMenuConfigPath, key);
     }
 
     private void SaveDebugMenuBool(string key, bool value)
     {
-        var path = DebugMenuConfigPath;
-        var dict = new Dictionary<string, object>();
-        try
-        {
-            if (File.Exists(path))
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
-                foreach (var prop in doc.RootElement.EnumerateObject())
-                    dict[prop.Name] = prop.Value.ValueKind == System.Text.Json.JsonValueKind.True;
-            }
-        }
-        catch { }
-        dict[key] = value;
-        File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(dict, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        _debugMenuConfigService.SaveBooleanOption(
+            DebugMenuConfigPath,
+            key,
+            value,
+            LauncherDebugProfileService.IsDebugLauncherPath(Environment.ProcessPath));
     }
 }

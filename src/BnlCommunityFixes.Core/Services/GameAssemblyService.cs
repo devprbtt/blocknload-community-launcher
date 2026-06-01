@@ -39,6 +39,11 @@ public sealed class GameAssemblyService
         return File.Exists(Path.Combine(paths.PatchingDir, "Assembly-CSharp.experimental.dll"));
     }
 
+    public bool HasAssemblyBackup(GameInstallInfo installInfo)
+    {
+        return File.Exists(Path.Combine(installInfo.ManagedDirectoryPath, "Assembly-CSharp-backup.dll"));
+    }
+
     public bool DeployExperimentalAssembly(GameInstallInfo installInfo, Logger logger)
     {
         var localDll = Path.Combine(paths.PatchingDir, "Assembly-CSharp.experimental.dll");
@@ -58,6 +63,47 @@ public sealed class GameAssemblyService
         File.Copy(localDll, targetDll, true);
         logger.Info("Feature Assembly-CSharp DLL deployed.");
         return true;
+    }
+
+    public bool RestoreAssemblyBackup(GameInstallInfo installInfo, Logger logger)
+    {
+        var backupDll = Path.Combine(installInfo.ManagedDirectoryPath, "Assembly-CSharp-backup.dll");
+        var liveDll = Path.Combine(installInfo.ManagedDirectoryPath, "Assembly-CSharp.dll");
+
+        if (!File.Exists(backupDll) || !Directory.Exists(installInfo.ManagedDirectoryPath))
+        {
+            return false;
+        }
+
+        File.Copy(backupDll, liveDll, true);
+        logger.Info("Restored Assembly-CSharp.dll from Assembly-CSharp-backup.dll.");
+        return true;
+    }
+
+    public void ClearExperimentalAssemblyCache(Logger logger)
+    {
+        var pathsToDelete = new[]
+        {
+            Path.Combine(paths.PatchingDir, "Assembly-CSharp.experimental.dll")
+        };
+
+        foreach (var path in pathsToDelete)
+        {
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                File.Delete(path);
+                logger.Info($"Deleted stale experimental cache: {path}");
+            }
+            catch (Exception ex)
+            {
+                logger.Warning($"Failed to delete stale experimental cache {path}: {ex.Message}");
+            }
+        }
     }
 
     public void EnsureAssemblyBackup(GameInstallInfo installInfo, LauncherConfig config, string patchId, Logger logger)

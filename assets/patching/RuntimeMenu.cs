@@ -2862,6 +2862,22 @@ namespace BnlCommunityFixes
             UnityEngine.Application.dataPath,
             "CustomTextures");
 
+        private static readonly string TextureReplacerConfigFile = System.IO.Path.Combine(
+            System.IO.Path.Combine(
+                System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                    "BNL-CommunityFixes"),
+                "app"),
+            System.IO.Path.Combine("patching", "experimental-texture-replacer-config.json"));
+
+        private static readonly string SegmentedHealthbarConfigFile = System.IO.Path.Combine(
+            System.IO.Path.Combine(
+                System.IO.Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                    "BNL-CommunityFixes"),
+                "app"),
+            System.IO.Path.Combine("patching", "experimental-segmented-healthbar-config.json"));
+
         private System.Collections.Generic.Dictionary<string, UnityEngine.Texture2D> replacements;
         private System.Collections.Generic.Dictionary<string, string> replacementFiles;
         private System.Collections.Generic.HashSet<string> pendingTargets;
@@ -2872,6 +2888,8 @@ namespace BnlCommunityFixes
 
         private static System.Collections.Generic.Dictionary<string, UnityEngine.Sprite> spriteCache =
             new System.Collections.Generic.Dictionary<string, UnityEngine.Sprite>();
+        private static System.Collections.Generic.Dictionary<string, UnityEngine.Sprite> uiSpriteCache =
+            new System.Collections.Generic.Dictionary<string, UnityEngine.Sprite>(System.StringComparer.OrdinalIgnoreCase);
 
         public static UnityEngine.Sprite GetShopImageOverride(string iconName)
         {
@@ -2942,9 +2960,12 @@ namespace BnlCommunityFixes
             replacements.Clear();
             replacementFiles.Clear();
             spriteCache.Clear();
+            uiSpriteCache.Clear();
             pendingTargets.Clear();
             appliedTargets.Clear();
             patchedImageInstanceIds.Clear();
+            bool textureReplacerEnabled = ReadConfigEnabled(TextureReplacerConfigFile);
+            bool segmentedHealthbarEnabled = ReadConfigEnabled(SegmentedHealthbarConfigFile);
             if (!System.IO.File.Exists(TextureMappingsFile))
             {
                 UnityEngine.Debug.Log("[BNL] TextureReplacement: texture-replacements.txt not found, skipping.");
@@ -2967,6 +2988,12 @@ namespace BnlCommunityFixes
                 var targetName = line.Substring(0, separator).Trim();
                 var fileName = line.Substring(separator + 1).Trim();
                 if (targetName.Length == 0 || fileName.Length == 0) continue;
+                bool segmentedTexture = string.Equals(targetName, "white_rect", System.StringComparison.OrdinalIgnoreCase) ||
+                                       string.Equals(targetName, "white_rect_bg", System.StringComparison.OrdinalIgnoreCase);
+                if ((!textureReplacerEnabled && !segmentedTexture) || (segmentedTexture && !segmentedHealthbarEnabled && !textureReplacerEnabled))
+                {
+                    continue;
+                }
 
                 var fullPath = System.IO.Path.Combine(CustomTexturesFolder, fileName);
                 if (!System.IO.File.Exists(fullPath))
@@ -2986,6 +3013,27 @@ namespace BnlCommunityFixes
             }
         }
 
+        private static bool ReadConfigEnabled(string path)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(path)) return false;
+                string text = System.IO.File.ReadAllText(path);
+                if (string.IsNullOrEmpty(text)) return false;
+                string needle = "\"enabled\"";
+                int index = text.IndexOf(needle, System.StringComparison.OrdinalIgnoreCase);
+                if (index < 0) return false;
+                int colon = text.IndexOf(':', index + needle.Length);
+                if (colon < 0) return false;
+                string remainder = text.Substring(colon + 1).TrimStart();
+                return remainder.StartsWith("true", System.StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private void Update()
         {
             if (pendingTargets.Count == 0) return;
@@ -3000,24 +3048,41 @@ namespace BnlCommunityFixes
             int replaced = 0;
             // Track which pending keys we matched this pass (to drain them after)
             var matchedThisPass = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
-
-            foreach (var renderer in UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.Renderer>())
+            bool segmentedOnly = pendingTargets.Count > 0;
+            if (segmentedOnly)
             {
-                if (renderer == null) continue;
-                foreach (var mat in renderer.materials)
+                foreach (var key in pendingTargets)
                 {
-                    if (mat == null || mat.mainTexture == null) continue;
-                    string texName = mat.mainTexture.name;
-                    if (!pendingTargets.Contains(texName)) continue;
-                    UnityEngine.Texture2D replacement;
-                    if (replacements.TryGetValue(texName, out replacement))
+                    if (!string.Equals(key, "white_rect", System.StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(key, "white_rect_bg", System.StringComparison.OrdinalIgnoreCase))
                     {
-                        mat.mainTexture = replacement;
-                        matchedThisPass.Add(texName);
-                        replaced++;
+                        segmentedOnly = false;
+                        break;
                     }
                 }
             }
+
+            if (!segmentedOnly)
+            {
+                foreach (var renderer in UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.Renderer>())
+                {
+                    if (renderer == null) continue;
+                    foreach (var mat in renderer.materials)
+                    {
+                        if (mat == null || mat.mainTexture == null) continue;
+                        string texName = mat.mainTexture.name;
+                        if (!pendingTargets.Contains(texName)) continue;
+                        UnityEngine.Texture2D replacement;
+                        if (replacements.TryGetValue(texName, out replacement))
+                        {
+                            mat.mainTexture = replacement;
+                            matchedThisPass.Add(texName);
+                            replaced++;
+                        }
+                    }
+                }
+            }
+
             foreach (var image in UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.UI.Image>())
             {
                 if (image == null || image.sprite == null) continue;
@@ -3057,20 +3122,42 @@ namespace BnlCommunityFixes
                     }
 
                     UnityEngine.Texture2D finalTex = replacement;
+                    string finalSpriteKey = matchedKey;
                     if (isHealthbarBg)
                     {
                         UnityEngine.Texture2D bgTex;
                         if (replacements.TryGetValue("white_rect_bg", out bgTex) && bgTex != null)
                             finalTex = bgTex;
+                        finalSpriteKey = "white_rect_bg";
                         image.color = new UnityEngine.Color(0f, 0f, 0f, 0.75f);
                     }
+                    else
+                    {
+                        finalSpriteKey = "white_rect";
+                    }
 
-                    image.sprite = UnityEngine.Sprite.Create(
-                        finalTex,
-                        new UnityEngine.Rect(0, 0, finalTex.width, finalTex.height),
-                        new UnityEngine.Vector2(0.5f, 0.5f),
-                        100f);
-                    matchedThisPass.Add(matchedKey == "white_rect_bg" ? "white_rect" : matchedKey);
+                    UnityEngine.Sprite finalSprite;
+                    if (!uiSpriteCache.TryGetValue(finalSpriteKey, out finalSprite) || finalSprite == null)
+                    {
+                        finalSprite = UnityEngine.Sprite.Create(
+                            finalTex,
+                            new UnityEngine.Rect(0, 0, finalTex.width, finalTex.height),
+                            new UnityEngine.Vector2(0.5f, 0.5f),
+                            100f);
+                        finalSprite.name = finalSpriteKey;
+                        uiSpriteCache[finalSpriteKey] = finalSprite;
+                    }
+
+                    image.sprite = finalSprite;
+                    if (matchedKey == "white_rect" || matchedKey == "white_rect_bg")
+                    {
+                        matchedThisPass.Add("white_rect");
+                        matchedThisPass.Add("white_rect_bg");
+                    }
+                    else
+                    {
+                        matchedThisPass.Add(matchedKey);
+                    }
                     patchedImageInstanceIds.Add(instanceId);
                     replaced++;
                     UnityEngine.Debug.Log("[BNL] TextureReplacement: swapped " + image.gameObject.name + " sprite=" + spriteName + " bg=" + isHealthbarBg);

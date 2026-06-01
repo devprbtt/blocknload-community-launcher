@@ -138,6 +138,37 @@ namespace BnlCommunityFixes
             Debug.Log("[BNL Replay] Runtime initialized");
         }
 
+        public static void EnsureIfReplayLaunchRequested()
+        {
+            if (instance != null)
+            {
+                return;
+            }
+
+            string requestPath = GetReplayLaunchRequestJsonPath();
+            if (string.IsNullOrEmpty(requestPath) || !File.Exists(requestPath))
+            {
+                return;
+            }
+
+            try
+            {
+                string json = File.ReadAllText(requestPath);
+                bool launchReplayMode = ExtractJsonBool(json, "LaunchReplayMode") || ExtractJsonBool(json, "launchReplayMode");
+                if (!launchReplayMode)
+                {
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[BNL Replay] Failed checking replay launch request during bootstrap: " + ex.Message);
+                return;
+            }
+
+            EnsureInstance();
+        }
+
         private void Update()
         {
             TryStartLauncherReplayMode();

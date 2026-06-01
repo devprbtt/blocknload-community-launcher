@@ -15,11 +15,16 @@
                    TextWrapping="Wrap"
                    Margin="0 0 0 8" FontSize="11" />
 
+        <CheckBox DockPanel.Dock="Top"
+                  Content="Enabled"
+                  IsChecked="{Binding IsFeatureEnabled}"
+                  Margin="0 0 0 8" />
+
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="6" Margin="0 8 0 0">
-            <Button Content="Add"           Command="{Binding AddCommand}" />
-            <Button Content="Remove"        Command="{Binding RemoveCommand}" IsEnabled="{Binding SelectedRow, Converter={x:Static ObjectConverters.IsNotNull}}" />
-            <Button Content="Browse…"       Command="{Binding BrowseCommand}" IsEnabled="{Binding SelectedRow, Converter={x:Static ObjectConverters.IsNotNull}}" />
-            <Button Content="Import Folder" Command="{Binding ImportFolderCommand}" />
+            <Button Content="Add"           Command="{Binding AddCommand}" IsEnabled="{Binding IsFeatureEnabled}" />
+            <Button Content="Remove"        Command="{Binding RemoveCommand}" IsEnabled="{Binding IsFeatureEnabled}" />
+            <Button Content="Browse…"       Command="{Binding BrowseCommand}" IsEnabled="{Binding IsFeatureEnabled}" />
+            <Button Content="Import Folder" Command="{Binding ImportFolderCommand}" IsEnabled="{Binding IsFeatureEnabled}" />
             <Button Content="Close" Click="Close_Click" HorizontalAlignment="Right" Margin="8 0 0 0" />
         </StackPanel>
 
@@ -27,7 +32,8 @@
                   ItemsSource="{Binding Rows}"
                   SelectedItem="{Binding SelectedRow}"
                   AutoGenerateColumns="False"
-                  IsReadOnly="False">
+                  IsReadOnly="False"
+                  IsEnabled="{Binding IsFeatureEnabled}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Source"
                                     Binding="{Binding SourceKey}"

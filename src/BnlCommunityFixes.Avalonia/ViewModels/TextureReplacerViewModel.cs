@@ -33,6 +33,7 @@ public sealed class TextureReplacerViewModel : ReplacerViewModel
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(ConfigPath));
                 var root = doc.RootElement;
+                IsFeatureEnabled = ReadEnabledFlag(root, false);
                 if (root.TryGetProperty("textures", out var textures) &&
                     textures.ValueKind == JsonValueKind.Object)
                 {
@@ -41,7 +42,10 @@ public sealed class TextureReplacerViewModel : ReplacerViewModel
                     return;
                 }
             }
-            catch { }
+            catch
+            {
+                IsFeatureEnabled = false;
+            }
         }
 
         // Fallback: legacy texture-replacements.txt (tab-separated "name=file" lines)
@@ -64,13 +68,43 @@ public sealed class TextureReplacerViewModel : ReplacerViewModel
 
     protected override void SaveRows(List<ReplacerRow> rows)
     {
+        var existing = new Dictionary<string, JsonElement>();
+        if (File.Exists(ConfigPath))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(ConfigPath));
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                    if (prop.Name != "textures" && prop.Name != "enabled")
+                        existing[prop.Name] = prop.Value.Clone();
+            }
+            catch { }
+        }
+
         var dict = rows
             .Where(static r => !string.IsNullOrWhiteSpace(r.SourceKey))
             .ToDictionary(static r => r.SourceKey, static r => r.TargetFile);
 
-        // Save JSON config
-        var config = new { enabled = dict.Count > 0, textures = dict };
-        File.WriteAllText(ConfigPath, JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
+        using var ms = new MemoryStream();
+        using var writer = new Utf8JsonWriter(ms, new JsonWriterOptions { Indented = true });
+        writer.WriteStartObject();
+        writer.WriteBoolean("enabled", IsFeatureEnabled);
+        foreach (var kvp in existing)
+        {
+            writer.WritePropertyName(kvp.Key);
+            kvp.Value.WriteTo(writer);
+        }
+
+        writer.WritePropertyName("textures");
+        writer.WriteStartObject();
+        foreach (var kvp in dict)
+        {
+            writer.WriteString(kvp.Key, kvp.Value);
+        }
+        writer.WriteEndObject();
+        writer.WriteEndObject();
+        writer.Flush();
+        File.WriteAllBytes(ConfigPath, ms.ToArray());
 
         // Keep texture-replacements.txt in sync (legacy format)
         var lines = dict.Select(static kvp => $"{kvp.Key}={kvp.Value}");

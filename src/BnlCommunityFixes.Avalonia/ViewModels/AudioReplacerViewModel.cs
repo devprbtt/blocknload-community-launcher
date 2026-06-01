@@ -26,6 +26,7 @@ public sealed class AudioReplacerViewModel : ReplacerViewModel
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(ConfigPath));
             var root = doc.RootElement;
+            IsFeatureEnabled = ReadEnabledFlag(root, true);
 
             // Primary replacements: "custom_audio" dict (event name → file/event name)
             if (root.TryGetProperty("custom_audio", out var customAudio) &&
@@ -42,12 +43,15 @@ public sealed class AudioReplacerViewModel : ReplacerViewModel
                     Rows.Add(new ReplacerRow(kvp.Name, kvp.Value.GetString() ?? string.Empty));
             }
         }
-        catch { }
+        catch
+        {
+            IsFeatureEnabled = true;
+        }
     }
 
     protected override void SaveRows(List<ReplacerRow> rows)
     {
-        // Preserve existing config fields (enabled, log_all_events, volume, volumes, ignored_events)
+        // Preserve existing config fields (log_all_events, volume, volumes, ignored_events, etc.)
         var existing = new Dictionary<string, JsonElement>();
         if (File.Exists(ConfigPath))
         {
@@ -55,7 +59,7 @@ public sealed class AudioReplacerViewModel : ReplacerViewModel
             {
                 using var doc = JsonDocument.Parse(File.ReadAllText(ConfigPath));
                 foreach (var prop in doc.RootElement.EnumerateObject())
-                    if (prop.Name != "custom_audio" && prop.Name != "replacements")
+                    if (prop.Name != "custom_audio" && prop.Name != "replacements" && prop.Name != "enabled")
                         existing[prop.Name] = prop.Value.Clone();
             }
             catch { }
@@ -68,6 +72,8 @@ public sealed class AudioReplacerViewModel : ReplacerViewModel
         using var ms = new MemoryStream();
         using var writer = new Utf8JsonWriter(ms, new JsonWriterOptions { Indented = true });
         writer.WriteStartObject();
+
+        writer.WriteBoolean("enabled", IsFeatureEnabled);
 
         // Write preserved fields first (existing is Dictionary<string,JsonElement>)
         foreach (var kvp in existing)

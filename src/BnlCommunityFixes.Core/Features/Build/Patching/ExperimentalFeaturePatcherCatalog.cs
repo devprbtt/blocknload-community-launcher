@@ -5,7 +5,6 @@ public static class ExperimentalFeaturePatcherCatalog
     /// <summary>Patchers that always run whenever any experimental build happens.</summary>
     public static IReadOnlyList<IExperimentalFeaturePatcher> AlwaysRun { get; } =
     [
-        new DpsOverlayPatcher(),
         new NullGuardsPatcher(),
         new ShopImagePatcher(),
         new FontUiFeaturePatcher(),

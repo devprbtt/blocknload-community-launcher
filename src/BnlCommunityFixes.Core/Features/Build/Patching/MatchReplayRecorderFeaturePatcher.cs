@@ -18,6 +18,7 @@ public sealed class MatchReplayRecorderFeaturePatcher : IExperimentalFeaturePatc
 
         var runtimeType = context.HelperModule.Types.FirstOrDefault(static t => t.FullName == "BnlCommunityFixes.MatchReplayRecorderRuntime")
             ?? throw new InvalidOperationException("MatchReplayRecorderRuntime not found in helper assembly.");
+        var replayPlayerType = context.HelperModule.Types.FirstOrDefault(static t => t.FullName == "BnlCommunityFixes.ReplayPlayerRuntime");
 
         MethodReference Imp(string name, int? paramCount = null) => context.TargetModule.ImportReference(
             (paramCount is null
@@ -33,6 +34,11 @@ public sealed class MatchReplayRecorderFeaturePatcher : IExperimentalFeaturePatc
         var recordLocalProjectileDrop    = Imp("RecordLocalProjectileDrop");
         var recordLocalUnitMove          = Imp("RecordLocalUnitMove");
         var recordLocalUnitProjectileHit = Imp("RecordLocalUnitProjectileHit");
+        var ensureReplayIfRequested = replayPlayerType is null
+            ? null
+            : context.TargetModule.ImportReference(
+                replayPlayerType.Methods.FirstOrDefault(static m => m.Name == "EnsureIfReplayLaunchRequested")
+                ?? throw new InvalidOperationException("ReplayPlayerRuntime.EnsureIfReplayLaunchRequested not found."));
 
         // Inject Configure(...) at MainMenu.Start
         var mainMenuType = context.TargetModule.Types.FirstOrDefault(static t => t.Name == "MainMenu")
@@ -53,7 +59,13 @@ public sealed class MatchReplayRecorderFeaturePatcher : IExperimentalFeaturePatc
             il.InsertBefore(first, il.Create(OpCodes.Ldc_I4, recordCasualGames ? 1 : 0));
             il.InsertBefore(first, il.Create(OpCodes.Ldc_I4, recordRankedGames ? 1 : 0));
             il.InsertBefore(first, il.Create(OpCodes.Call, configure));
+        }
 
+        if (ensureReplayIfRequested is not null && !HasReplayBootstrapCall(startMethod))
+        {
+            var il = startMethod.Body.GetILProcessor();
+            var first = startMethod.Body.Instructions[0];
+            il.InsertBefore(first, il.Create(OpCodes.Call, ensureReplayIfRequested));
         }
 
         // Patch all Protocol.ServiceZone and Protocol.ServiceChat Recv_* methods
@@ -125,5 +137,14 @@ public sealed class MatchReplayRecorderFeaturePatcher : IExperimentalFeaturePatc
             i.Operand is MethodReference mr &&
             mr.Name == helperMethodName &&
             mr.DeclaringType.Name == "MatchReplayRecorderRuntime");
+    }
+
+    private static bool HasReplayBootstrapCall(MethodDefinition method)
+    {
+        return method.Body.Instructions.Any(i =>
+            (i.OpCode.Code == Code.Call || i.OpCode.Code == Code.Callvirt) &&
+            i.Operand is MethodReference mr &&
+            mr.Name == "EnsureIfReplayLaunchRequested" &&
+            mr.DeclaringType.Name == "ReplayPlayerRuntime");
     }
 }
