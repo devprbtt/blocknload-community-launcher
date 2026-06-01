@@ -15,7 +15,7 @@ public static partial class FeatureConfigCatalog
         new("teammate-hp", "Teammate HP", "teammate-hp-config.json"),
         new("unit-gui-scale", "Unit GUI Scale", "unit-gui-scale-config.json", IncludeInConfigTransfer: true),
         new("wsi-scale", "WSI Scale", "wsi-config.json", EnabledPropertyName: "scale_enabled", IncludeInConfigTransfer: true),
-        new("segmented-healthbar", "Segmented Healthbar", "experimental-segmented-healthbar-config.json", TriggersExperimentalBuild: false, IncludeInConfigTransfer: true),
+        new("segmented-healthbar", "Segmented Healthbar", "experimental-segmented-healthbar-config.json", IncludeInConfigTransfer: true),
         new("font-override", "Font Override", "experimental-font-override-config.json")
     ];
 }

@@ -22,6 +22,7 @@ public static class ExperimentalFeaturePatcherCatalog
         new ShieldTimerFeaturePatcher(),
         new UnitGuiScaleFeaturePatcher(),
         new WsiScaleFeaturePatcher(),
+        new SegmentedHealthbarFeaturePatcher(),
         new MapRenderFeaturePatcher(),
         new TeammateHpFeaturePatcher(),
         new BaseObjectiveBeamFeaturePatcher(),

@@ -2947,11 +2947,9 @@ namespace BnlCommunityFixes
 
         private void OnLevelWasLoaded(int level)
         {
-            // Re-arm targets on level load — new scene has fresh UI instances to swap.
-            // Only re-arm targets that were previously applied (not ones that never appeared).
-            foreach (var key in appliedTargets)
-                pendingTargets.Add(key);
-            patchedImageInstanceIds.Clear();
+            // Reload from disk on every level load so texture file changes (add/remove/replace)
+            // are picked up without requiring a game restart.
+            LoadReplacementTextures();
             nextScanTime = UnityEngine.Time.realtimeSinceStartup + ScanInterval;
         }
 

@@ -7,6 +7,9 @@ namespace BnlCommunityFixes.Avalonia.ViewModels;
 public sealed class TextureReplacerViewModel : ReplacerViewModel
 {
     private readonly string _mappingPath;
+    private readonly string _segmentedHealthbarConfigPath;
+    private const string SegmentedFillEntry = "white_rect=white_rect.png";
+    private const string SegmentedBgEntry = "white_rect_bg=white_rect_bg.png";
 
     public TextureReplacerViewModel(AppPaths paths, GameInstallInfo? installInfo = null)
         : base(
@@ -14,6 +17,7 @@ public sealed class TextureReplacerViewModel : ReplacerViewModel
             installInfo?.IsDetected == true ? installInfo.CustomTexturesDirectoryPath : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments))
     {
         _mappingPath = Path.Combine(paths.PatchingDir, "texture-replacements.txt");
+        _segmentedHealthbarConfigPath = Path.Combine(paths.PatchingDir, "experimental-segmented-healthbar-config.json");
     }
 
     public override string Title => "Texture Replacer";
@@ -38,7 +42,11 @@ public sealed class TextureReplacerViewModel : ReplacerViewModel
                     textures.ValueKind == JsonValueKind.Object)
                 {
                     foreach (var kvp in textures.EnumerateObject())
+                    {
+                        if (IsSegmentedHealthbarEntry(kvp.Name))
+                            continue;
                         Rows.Add(new ReplacerRow(kvp.Name, kvp.Value.GetString() ?? string.Empty));
+                    }
                     return;
                 }
             }
@@ -59,7 +67,12 @@ public sealed class TextureReplacerViewModel : ReplacerViewModel
                     var sep = line.Contains('\t') ? '\t' : '=';
                     var idx = line.IndexOf(sep);
                     if (idx > 0)
-                        Rows.Add(new ReplacerRow(line[..idx].Trim(), line[(idx + 1)..].Trim()));
+                    {
+                        var key = line[..idx].Trim();
+                        if (IsSegmentedHealthbarEntry(key))
+                            continue;
+                        Rows.Add(new ReplacerRow(key, line[(idx + 1)..].Trim()));
+                    }
                 }
             }
             catch { }
@@ -101,13 +114,47 @@ public sealed class TextureReplacerViewModel : ReplacerViewModel
         {
             writer.WriteString(kvp.Key, kvp.Value);
         }
+        if (IsSegmentedHealthbarEnabled())
+        {
+            writer.WriteString("white_rect", "white_rect.png");
+            writer.WriteString("white_rect_bg", "white_rect_bg.png");
+        }
         writer.WriteEndObject();
         writer.WriteEndObject();
         writer.Flush();
         File.WriteAllBytes(ConfigPath, ms.ToArray());
 
         // Keep texture-replacements.txt in sync (legacy format)
-        var lines = dict.Select(static kvp => $"{kvp.Key}={kvp.Value}");
+        var lines = dict.Select(static kvp => $"{kvp.Key}={kvp.Value}").ToList();
+        if (IsSegmentedHealthbarEnabled())
+        {
+            if (!lines.Any(static line => line.StartsWith("white_rect=", StringComparison.OrdinalIgnoreCase)))
+                lines.Add(SegmentedFillEntry);
+            if (!lines.Any(static line => line.StartsWith("white_rect_bg=", StringComparison.OrdinalIgnoreCase)))
+                lines.Add(SegmentedBgEntry);
+        }
         File.WriteAllLines(_mappingPath, lines);
     }
+
+    private bool IsSegmentedHealthbarEnabled()
+    {
+        try
+        {
+            if (!File.Exists(_segmentedHealthbarConfigPath))
+                return false;
+
+            using var doc = JsonDocument.Parse(File.ReadAllText(_segmentedHealthbarConfigPath));
+            return doc.RootElement.TryGetProperty("enabled", out var prop) &&
+                   prop.ValueKind is JsonValueKind.True or JsonValueKind.False &&
+                   prop.GetBoolean();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsSegmentedHealthbarEntry(string key) =>
+        string.Equals(key, "white_rect", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "white_rect_bg", StringComparison.OrdinalIgnoreCase);
 }

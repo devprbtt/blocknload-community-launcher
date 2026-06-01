@@ -80,6 +80,10 @@ namespace BnlCommunityFixes
         private const float ShieldClockOffsetY = $(Format-FloatLiteral $EnemyShieldClockOffsetY);
         private const string ShieldTimerDisplayMode = "$($EnemyShieldTimerDisplayMode.Replace('\', '\\').Replace('"', '\"'))";
         private static readonly Color ShieldBarColor = new Color($(Format-FloatLiteral $EnemyShieldBuffBarColor.R), $(Format-FloatLiteral $EnemyShieldBuffBarColor.G), $(Format-FloatLiteral $EnemyShieldBuffBarColor.B), $(Format-FloatLiteral $EnemyShieldBuffBarColor.A));
+        private static readonly bool IsNumericTimer =
+            string.Equals(ShieldTimerDisplayMode, "text", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(ShieldTimerDisplayMode, "number", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(ShieldTimerDisplayMode, "numeric", StringComparison.OrdinalIgnoreCase);
         private static readonly FieldInfo UnitField = typeof(GuiHealthbar).GetField("unit", BindingFlags.Instance | BindingFlags.NonPublic);
         private static Sprite cachedClockSprite;
 
@@ -103,6 +107,9 @@ namespace BnlCommunityFixes
         private float lastBarFill = -1f;
         private float lastClockFill = -1f;
         private string lastTimerText = null;
+        private float lastRemainingRounded = -1f;
+        private string cachedTimeText = string.Empty;
+        private bool barColorSet;
 
         public void Init(GuiHealthbar source)
         {
@@ -177,21 +184,20 @@ namespace BnlCommunityFixes
             }
 
             PositionVisualsIfNeeded(force: false);
-            bar.color = ShieldBarColor;
             if (Mathf.Abs(lastBarFill - shieldFill) > 0.0001f)
             {
                 bar.fillAmount = shieldFill;
                 lastBarFill = shieldFill;
             }
 
-            float timerFill;
-            bool hasTimer = TryGetShieldTimerFraction(unit, strongestShieldEffect, out timerFill);
+            ConstEffectInfo timerEffect;
+            float timerRemaining;
+            bool hasTimer = TryGetShieldTimerEffect(unit, strongestShieldEffect, out timerEffect, out timerRemaining);
             if (hasTimer)
             {
-                if (UseNumericTimer())
+                if (IsNumericTimer)
                 {
-                    string text = GetRemainingTimeText(unit, strongestShieldEffect);
-                    timerText.color = ShieldBarColor;
+                    string text = BuildRemainingTimeText(timerRemaining);
                     bool textEnabled = !string.IsNullOrEmpty(text);
                     if (!string.Equals(lastTimerText, text, StringComparison.Ordinal))
                     {
@@ -203,7 +209,9 @@ namespace BnlCommunityFixes
                 }
                 else
                 {
-                    clock.color = ShieldBarColor;
+                    float timerFill = timerEffect.Card.Duration.Value > Mathf.Epsilon
+                        ? Mathf.Clamp01(timerRemaining / timerEffect.Card.Duration.Value)
+                        : 1f;
                     if (Mathf.Abs(lastClockFill - timerFill) > 0.0001f)
                     {
                         clock.fillAmount = timerFill;
@@ -299,6 +307,14 @@ namespace BnlCommunityFixes
                 timerText.font = healthbar.Title != null ? healthbar.Title.font : null;
                 timerText.fontStyle = healthbar.Title != null ? healthbar.Title.fontStyle : FontStyle.Normal;
                 timerText.material = healthbar.Title != null ? healthbar.Title.material : null;
+            }
+
+            if (!barColorSet && bar != null && clock != null && timerText != null)
+            {
+                bar.color = ShieldBarColor;
+                clock.color = ShieldBarColor;
+                timerText.color = ShieldBarColor;
+                barColorSet = true;
             }
         }
 
@@ -424,13 +440,16 @@ namespace BnlCommunityFixes
             return 0f;
         }
 
-        private static bool TryGetShieldTimerFraction(Unit unit, ConstEffectInfo strongestShieldEffect, out float fillAmount)
+        private static bool TryGetShieldTimerEffect(Unit unit, ConstEffectInfo strongestShieldEffect, out ConstEffectInfo effectInfo, out float remaining)
         {
-            fillAmount = 1f;
-            ConstEffectInfo effectInfo = strongestShieldEffect;
-            if ((effectInfo == null || !effectInfo.HasDuration) && !TryGetTimedShieldEffect(unit, out effectInfo))
+            remaining = 0f;
+            effectInfo = strongestShieldEffect;
+            if (effectInfo == null || !effectInfo.HasDuration)
             {
-                return false;
+                if (!TryGetTimedShieldEffect(unit, out effectInfo))
+                {
+                    return false;
+                }
             }
 
             if (effectInfo == null || !effectInfo.HasDuration || effectInfo.Card == null || effectInfo.Card.Duration == null || effectInfo.Card.Duration.Value <= Mathf.Epsilon || effectInfo.TimestampEnd == null || Singleton<IServerTime>.Instance == null)
@@ -438,54 +457,31 @@ namespace BnlCommunityFixes
                 return false;
             }
 
-            float remaining = Mathf.Max(0f, Singleton<IServerTime>.Instance.TimeTill((long)effectInfo.TimestampEnd.Value));
-            fillAmount = Mathf.Clamp01(remaining / effectInfo.Card.Duration.Value);
+            remaining = Mathf.Max(0f, Singleton<IServerTime>.Instance.TimeTill((long)effectInfo.TimestampEnd.Value));
             return true;
         }
 
-        private static string GetRemainingTimeText(Unit unit, ConstEffectInfo strongestShieldEffect)
+        private string BuildRemainingTimeText(float remaining)
         {
-            ConstEffectInfo effectInfo = strongestShieldEffect;
-            if ((effectInfo == null || !effectInfo.HasDuration) && !TryGetTimedShieldEffect(unit, out effectInfo))
-            {
-                return string.Empty;
-            }
-
-            return FormatRemainingTime(effectInfo);
-        }
-
-        private static string FormatRemainingTime(ConstEffectInfo effectInfo)
-        {
-            if (effectInfo == null || effectInfo.TimestampEnd == null || Singleton<IServerTime>.Instance == null)
-            {
-                return string.Empty;
-            }
-
-            float remaining = Mathf.Max(0f, Singleton<IServerTime>.Instance.TimeTill((long)effectInfo.TimestampEnd.Value));
             if (remaining <= Mathf.Epsilon)
             {
+                lastRemainingRounded = -1f;
+                cachedTimeText = string.Empty;
                 return string.Empty;
             }
 
-            return remaining.ToString("0.0") + "s";
-        }
+            float rounded = Mathf.Floor(remaining * 10f) / 10f;
+            if (Mathf.Abs(rounded - lastRemainingRounded) > 0.001f)
+            {
+                lastRemainingRounded = rounded;
+                cachedTimeText = rounded.ToString("0.0") + "s";
+            }
 
-        private static bool UseNumericTimer()
-        {
-            return string.Equals(ShieldTimerDisplayMode, "text", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(ShieldTimerDisplayMode, "number", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(ShieldTimerDisplayMode, "numeric", StringComparison.OrdinalIgnoreCase);
+            return cachedTimeText;
         }
 
         private static bool TryGetTimedShieldEffect(Unit unit, out ConstEffectInfo match)
         {
-            match = null;
-            float strongestValue;
-            if (TryGetStrongestShieldEffect(unit, out match, out strongestValue) && match != null && match.HasDuration)
-            {
-                return true;
-            }
-
             match = null;
             if (unit == null || unit.ActualConstEffects == null)
             {
