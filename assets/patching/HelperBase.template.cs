@@ -13,6 +13,64 @@ using UnityEngine.UI;
 
 namespace BnlCommunityFixes
 {
+    public sealed class ShieldBuffBarManager : MonoBehaviour
+    {
+        private static ShieldBuffBarManager instance;
+        private readonly List<ShieldBuffBarController> controllers = new List<ShieldBuffBarController>();
+
+        public static void Register(ShieldBuffBarController controller)
+        {
+            if (controller == null) return;
+            EnsureInstance();
+            if (instance == null) return;
+            if (!instance.controllers.Contains(controller))
+                instance.controllers.Add(controller);
+        }
+
+        public static void Unregister(ShieldBuffBarController controller)
+        {
+            if (instance == null || controller == null) return;
+            instance.controllers.Remove(controller);
+        }
+
+        public static void EnsureInstance()
+        {
+            if (instance != null) return;
+            GameObject go = GameObject.Find("BNL_SHIELD_BUFFBAR_MANAGER");
+            if (go == null) go = new GameObject("BNL_SHIELD_BUFFBAR_MANAGER");
+            instance = go.GetComponent<ShieldBuffBarManager>();
+            if (instance == null) instance = go.AddComponent<ShieldBuffBarManager>();
+        }
+
+        private void Awake()
+        {
+            if (instance != null && instance != this)
+            {
+                UnityEngine.Object.Destroy(gameObject);
+                return;
+            }
+
+            instance = this;
+            UnityEngine.Object.DontDestroyOnLoad(gameObject);
+        }
+
+        private void LateUpdate()
+        {
+            float now = Time.unscaledTime;
+            for (int i = controllers.Count - 1; i >= 0; i--)
+            {
+                ShieldBuffBarController controller = controllers[i];
+                if (controller == null)
+                {
+                    controllers.RemoveAt(i);
+                    continue;
+                }
+
+                controller.Tick(now);
+            }
+        }
+    }
+
     public sealed class ShieldBuffBarController : MonoBehaviour
     {
         private static readonly bool FeatureEnabled = $(Format-BoolLiteral $EnemyShieldBuffBarEnabled);
@@ -26,6 +84,7 @@ namespace BnlCommunityFixes
         private static Sprite cachedClockSprite;
 
         private GuiHealthbar healthbar;
+        private Unit unit;
         private Image bar;
         private RectTransform barRect;
         private Image clock;
@@ -33,19 +92,45 @@ namespace BnlCommunityFixes
         private Text timerText;
         private RectTransform timerTextRect;
         private float observedShieldMax;
+        private Rect lastHealthBarRect;
+        private Vector2 lastHealthBarSizeDelta;
+        private Vector3 lastHealthBarScale;
+        private Quaternion lastHealthBarRotation;
+        private bool visualsPositioned;
+        private float nextUpdateTime;
+        private const float UpdateInterval = 0.1f;
+        private bool lastVisible;
+        private float lastBarFill = -1f;
+        private float lastClockFill = -1f;
+        private string lastTimerText = null;
 
         public void Init(GuiHealthbar source)
         {
             healthbar = source;
+            unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(source) as Unit;
+            nextUpdateTime = Time.unscaledTime + ((GetInstanceID() & 7) * 0.0125f);
+            ShieldBuffBarManager.Register(this);
             EnsureVisuals();
+            PositionVisualsIfNeeded(force: true);
         }
 
-        private void LateUpdate()
+        private void OnDestroy()
+        {
+            ShieldBuffBarManager.Unregister(this);
+        }
+
+        public void Tick(float now)
         {
             if (!FeatureEnabled || healthbar == null || healthbar.HealthBar == null)
             {
                 return;
             }
+
+            if (now < nextUpdateTime)
+            {
+                return;
+            }
+            nextUpdateTime = now + UpdateInterval;
 
             EnsureVisuals();
             if (bar == null || clock == null || timerText == null)
@@ -53,17 +138,20 @@ namespace BnlCommunityFixes
                 return;
             }
 
-            Unit unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(healthbar) as Unit;
             ZoneData zoneData = Singleton<ZoneData>.Instance;
             if (unit == null || zoneData == null)
             {
-                bar.enabled = false;
-                clock.enabled = false;
-                timerText.enabled = false;
+                ApplyVisibility(false);
                 return;
             }
 
             bool isEnemy = unit.Team != TeamType.Neutral && unit.Team != zoneData.MyTeam;
+            if (!isEnemy || healthbar.Content == null || healthbar.Content.alpha <= 0.01f)
+            {
+                ApplyVisibility(false);
+                return;
+            }
+
             ConstEffectInfo strongestShieldEffect;
             float strongestShieldValue;
             bool hasStrongestShieldEffect = TryGetStrongestShieldEffect(unit, out strongestShieldEffect, out strongestShieldValue);
@@ -81,18 +169,20 @@ namespace BnlCommunityFixes
 
             float shieldMax = Mathf.Max(configuredShieldMax, observedShieldMax);
             float shieldFill = ResolveShieldFill(shieldValue, shieldMax);
-            bool visible = isEnemy && shieldFill > Mathf.Epsilon && healthbar.Content != null && healthbar.Content.alpha > 0.01f;
-            bar.enabled = visible;
-            clock.enabled = false;
-            timerText.enabled = false;
+            bool visible = shieldFill > Mathf.Epsilon;
+            ApplyVisibility(visible);
             if (!visible)
             {
                 return;
             }
 
-            PositionVisuals();
+            PositionVisualsIfNeeded(force: false);
             bar.color = ShieldBarColor;
-            bar.fillAmount = shieldFill;
+            if (Mathf.Abs(lastBarFill - shieldFill) > 0.0001f)
+            {
+                bar.fillAmount = shieldFill;
+                lastBarFill = shieldFill;
+            }
 
             float timerFill;
             bool hasTimer = TryGetShieldTimerFraction(unit, strongestShieldEffect, out timerFill);
@@ -100,16 +190,54 @@ namespace BnlCommunityFixes
             {
                 if (UseNumericTimer())
                 {
+                    string text = GetRemainingTimeText(unit, strongestShieldEffect);
                     timerText.color = ShieldBarColor;
-                    timerText.text = GetRemainingTimeText(unit, strongestShieldEffect);
-                    timerText.enabled = !string.IsNullOrEmpty(timerText.text);
+                    bool textEnabled = !string.IsNullOrEmpty(text);
+                    if (!string.Equals(lastTimerText, text, StringComparison.Ordinal))
+                    {
+                        timerText.text = text;
+                        lastTimerText = text;
+                    }
+                    timerText.enabled = textEnabled;
+                    clock.enabled = false;
                 }
                 else
                 {
                     clock.color = ShieldBarColor;
-                    clock.fillAmount = timerFill;
+                    if (Mathf.Abs(lastClockFill - timerFill) > 0.0001f)
+                    {
+                        clock.fillAmount = timerFill;
+                        lastClockFill = timerFill;
+                    }
                     clock.enabled = true;
+                    timerText.enabled = false;
                 }
+            }
+            else
+            {
+                clock.enabled = false;
+                timerText.enabled = false;
+            }
+        }
+
+        private void ApplyVisibility(bool visible)
+        {
+            if (lastVisible == visible)
+            {
+                if (!visible)
+                {
+                    clock.enabled = false;
+                    timerText.enabled = false;
+                }
+                return;
+            }
+
+            lastVisible = visible;
+            bar.enabled = visible;
+            if (!visible)
+            {
+                clock.enabled = false;
+                timerText.enabled = false;
             }
         }
 
@@ -216,7 +344,7 @@ namespace BnlCommunityFixes
             return cachedClockSprite;
         }
 
-        private void PositionVisuals()
+        private void PositionVisualsIfNeeded(bool force)
         {
             if (barRect == null || clockRect == null || timerTextRect == null || healthbar == null || healthbar.HealthBar == null)
             {
@@ -224,6 +352,22 @@ namespace BnlCommunityFixes
             }
 
             RectTransform src = healthbar.HealthBar.rectTransform;
+            if (!force &&
+                visualsPositioned &&
+                src.rect.Equals(lastHealthBarRect) &&
+                src.sizeDelta == lastHealthBarSizeDelta &&
+                src.localScale == lastHealthBarScale &&
+                src.localRotation == lastHealthBarRotation)
+            {
+                return;
+            }
+
+            visualsPositioned = true;
+            lastHealthBarRect = src.rect;
+            lastHealthBarSizeDelta = src.sizeDelta;
+            lastHealthBarScale = src.localScale;
+            lastHealthBarRotation = src.localRotation;
+
             float sourceHeight = Mathf.Abs(src.rect.height);
             if (sourceHeight <= Mathf.Epsilon)
             {
@@ -462,19 +606,24 @@ namespace BnlCommunityFixes
         private static readonly FieldInfo FollowFieldCtrl = typeof(GuiHealthbar).GetField("follow", BindingFlags.Instance | BindingFlags.NonPublic);
 
         private GuiHealthbar healthbar;
+        private Unit unit;
+        private GuiFollow follow;
+        private bool indicatorVisible;
+        private float nextIndicatorUpdateTime;
+        private const float IndicatorUpdateInterval = 0.1f;
 
         public void Init(GuiHealthbar source)
         {
             healthbar = source;
+            unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(source) as Unit;
+            follow = ReferenceEquals(FollowFieldCtrl, null) ? null : FollowFieldCtrl.GetValue(source) as GuiFollow;
         }
 
         private void OnDestroy()
         {
-            if (IndicatorEnabled)
+            if (IndicatorEnabled && unit != null)
             {
-                Unit unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(healthbar) as Unit;
-                if (unit != null)
-                    FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
+                FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
             }
         }
 
@@ -485,11 +634,13 @@ namespace BnlCommunityFixes
                 return;
             }
 
-            Unit unit = ReferenceEquals(UnitField, null) ? null : UnitField.GetValue(healthbar) as Unit;
             if (unit == null || unit.IsMyPlayer || !unit.PlayerId.HasValue || unit.Health <= 0f || unit.IsDeath)
             {
-                if (IndicatorEnabled && unit != null)
+                if (IndicatorEnabled && indicatorVisible && unit != null)
+                {
                     FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
+                    indicatorVisible = false;
+                }
                 return;
             }
 
@@ -501,8 +652,11 @@ namespace BnlCommunityFixes
 
             if (unit.Team == TeamType.Neutral || unit.Team != zoneData.MyTeam)
             {
-                if (IndicatorEnabled)
+                if (IndicatorEnabled && indicatorVisible)
+                {
                     FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
+                    indicatorVisible = false;
+                }
                 return;
             }
 
@@ -521,15 +675,31 @@ namespace BnlCommunityFixes
 
                 if (IndicatorEnabled)
                 {
-                    GuiFollow follow = ReferenceEquals(FollowFieldCtrl, null) ? null : FollowFieldCtrl.GetValue(healthbar) as GuiFollow;
-                    bool isOffScreen = follow == null || !follow.IsInFrontOfCamera;
-                    FriendlyLowHealthIndicatorService.UpdateIndicator(unit, isOffScreen, AlertColor);
+                    float now = Time.unscaledTime;
+                    if (now >= nextIndicatorUpdateTime)
+                    {
+                        nextIndicatorUpdateTime = now + IndicatorUpdateInterval;
+                        bool isOffScreen = follow == null || !follow.IsInFrontOfCamera;
+                        if (isOffScreen)
+                        {
+                            FriendlyLowHealthIndicatorService.UpdateIndicator(unit, true, AlertColor);
+                            indicatorVisible = true;
+                        }
+                        else if (indicatorVisible)
+                        {
+                            FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
+                            indicatorVisible = false;
+                        }
+                    }
                 }
             }
             else
             {
-                if (IndicatorEnabled)
+                if (IndicatorEnabled && indicatorVisible)
+                {
                     FriendlyLowHealthIndicatorService.RemoveIndicator(unit);
+                    indicatorVisible = false;
+                }
             }
         }
     }
