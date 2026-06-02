@@ -29,8 +29,7 @@ public partial class ReplacerWindow : Window
         {
             var folder = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions());
             if (!folder.Any()) return null;
-            var dir = folder[0].Path.LocalPath;
-            return Directory.GetFiles(dir);
+            return folder[0].Path.LocalPath;
         };
 
         vm.ErrorOccurred += (title, msg) => _ = new MessageDialog(title, msg, isError: true).ShowDialog(this);

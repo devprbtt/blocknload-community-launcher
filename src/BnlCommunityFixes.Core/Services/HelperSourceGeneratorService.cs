@@ -18,6 +18,7 @@ public sealed class HelperSourceGeneratorService
         AppendTemplateFile(sb, patchingDir, "AutoCasualQueueRuntime.template.cs", vars);
         AppendTemplateFile(sb, patchingDir, "TeammateHpRuntime.template.cs", vars);
         AppendTemplateFile(sb, patchingDir, "FontOverrideRuntime.template.cs", vars);
+        AppendTemplateFile(sb, patchingDir, "AutoCrouchRuntime.cs", vars);
 
         foreach (var staticFile in new[]
         {
@@ -25,8 +26,7 @@ public sealed class HelperSourceGeneratorService
             "MeshReplacerRuntime.cs",
             "MatchReplayRecorderRuntime.cs",
             "ReplayPlayerRuntime.cs",
-            "RuntimeMenu.cs",
-            "AutoCrouchRuntime.cs"
+            "RuntimeMenu.cs"
         })
         {
             var path = Path.Combine(patchingDir, staticFile);
@@ -385,6 +385,10 @@ public sealed class HelperSourceGeneratorService
         // Auto casual queue
         var acq = ReadJson(patchingDir, "experimental-auto-casual-queue-config.json");
         vars["AutoCasualQueueConfig.enabled"] = GetBool(acq, "enabled", false) ? "true" : "false";
+
+        // Auto crouch
+        var autoCrouch = ReadJson(patchingDir, "experimental-auto-crouch-config.json");
+        vars["AutoCrouchEnabled"] = GetBool(autoCrouch, "enabled", false) ? "true" : "false";
 
         // Teammate HP
         var thp = ReadJson(patchingDir, "teammate-hp-config.json");

@@ -28,8 +28,10 @@
         </WrapPanel>
 
         <!-- Replay grid -->
-        <DataGrid ItemsSource="{Binding Replays}"
+        <DataGrid x:Name="ReplayGrid"
+                  ItemsSource="{Binding Replays}"
                   SelectedItem="{Binding SelectedReplay}"
+                  SelectionMode="Extended"
                   AutoGenerateColumns="False"
                   IsReadOnly="True">
             <DataGrid.Columns>

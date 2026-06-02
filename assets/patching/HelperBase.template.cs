@@ -2636,12 +2636,11 @@ namespace BnlCommunityFixes
             pendingRpcBlockPos.Remove(rpc._Id);
             PredictionManager predictionManager = Manager;
             if (predictionManager == null) return;
-            if (accepted)
-                // Server accepted the build — resolve immediately so the prediction doesn't
-                // time out and roll back a block the server confirmed.
-                predictionManager.ResolveBlock(blockPos);
-            else
+            if (!accepted)
                 predictionManager.RollbackBlock(blockPos);
+            // On success, keep the prediction alive until a real BlockUpdates confirmation
+            // arrives from the server. Resolving here can strand a local-only block with no
+            // rollback owner if the world update is delayed or never arrives.
         }
 
         public static void TryInstantAcceptSwitchGear(Unit unit, ServiceZone.Rpc_SwitchGear rpc)
@@ -2856,4 +2855,3 @@ namespace BnlCommunityFixes
         }
     }
 }
-

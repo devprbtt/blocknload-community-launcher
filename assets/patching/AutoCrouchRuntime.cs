@@ -13,7 +13,7 @@ namespace BnlCommunityFixes
         {
             if (configured) return;
             configured = true;
-            RuntimeFeatureState.ConfigureAutoCrouchDisable(true, false);
+            RuntimeFeatureState.ConfigureAutoCrouchDisable(true, $(Format-BoolLiteral $AutoCrouchEnabled));
             RuntimeSettingsMenuManager.EnsureInstance();
             TextureReplacementBootstrapper.EnsureInstance();
         }

@@ -2884,7 +2884,11 @@ namespace BnlCommunityFixes
         private System.Collections.Generic.HashSet<string> appliedTargets;
         private System.Collections.Generic.HashSet<int> patchedImageInstanceIds;
         private float nextScanTime;
-        private const float ScanInterval = 1f;
+        private int remainingScanPasses;
+        private int consecutiveNoProgressPasses;
+        private const float ScanInterval = 0.25f;
+        private const int MaxScanPassesPerBurst = 8;
+        private const int MaxNoProgressPasses = 3;
 
         private static System.Collections.Generic.Dictionary<string, UnityEngine.Sprite> spriteCache =
             new System.Collections.Generic.Dictionary<string, UnityEngine.Sprite>();
@@ -2942,7 +2946,7 @@ namespace BnlCommunityFixes
             appliedTargets = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             patchedImageInstanceIds = new System.Collections.Generic.HashSet<int>();
             LoadReplacementTextures();
-            nextScanTime = UnityEngine.Time.realtimeSinceStartup + ScanInterval;
+            BeginScanBurst();
         }
 
         private void OnLevelWasLoaded(int level)
@@ -2950,7 +2954,14 @@ namespace BnlCommunityFixes
             // Reload from disk on every level load so texture file changes (add/remove/replace)
             // are picked up without requiring a game restart.
             LoadReplacementTextures();
-            nextScanTime = UnityEngine.Time.realtimeSinceStartup + ScanInterval;
+            BeginScanBurst();
+        }
+
+        private void BeginScanBurst()
+        {
+            remainingScanPasses = MaxScanPassesPerBurst;
+            consecutiveNoProgressPasses = 0;
+            nextScanTime = UnityEngine.Time.realtimeSinceStartup + 0.05f;
         }
 
         private void LoadReplacementTextures()
@@ -3035,6 +3046,7 @@ namespace BnlCommunityFixes
         private void Update()
         {
             if (pendingTargets.Count == 0) return;
+            if (remainingScanPasses <= 0) return;
             float now = UnityEngine.Time.realtimeSinceStartup;
             if (now < nextScanTime) return;
             nextScanTime = now + ScanInterval;
@@ -3166,6 +3178,20 @@ namespace BnlCommunityFixes
             {
                 pendingTargets.Remove(key);
                 appliedTargets.Add(key);
+            }
+            if (matchedThisPass.Count > 0)
+            {
+                consecutiveNoProgressPasses = 0;
+            }
+            else
+            {
+                consecutiveNoProgressPasses++;
+            }
+
+            remainingScanPasses--;
+            if (pendingTargets.Count == 0 || consecutiveNoProgressPasses >= MaxNoProgressPasses)
+            {
+                remainingScanPasses = 0;
             }
             if (replaced > 0)
                 UnityEngine.Debug.Log("[BNL] TextureReplacement: replaced " + replaced + " texture(s). Pending: " + pendingTargets.Count);

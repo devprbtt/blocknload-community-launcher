@@ -292,6 +292,49 @@ public sealed class RuntimeMenuSyncService
         catch { }
     }
 
+    public BaseObjectiveBeamSettings ReadBaseObjectiveBeamSettings(string runtimeConfigPath, BaseObjectiveBeamSettings current)
+    {
+        if (!File.Exists(runtimeConfigPath))
+            return current;
+
+        try
+        {
+            var lines = File.ReadAllLines(runtimeConfigPath);
+            foreach (var line in lines)
+            {
+                var sep = line.IndexOf('=');
+                if (sep <= 0) continue;
+                var key = line[..sep].Trim();
+                var val = line[(sep + 1)..].Trim();
+                if (key == "hide_base_objective_beam" && bool.TryParse(val, out var b))
+                    current.HideBeam = b;
+            }
+        }
+        catch { }
+
+        return current;
+    }
+
+    public void WriteBaseObjectiveBeamSettings(string runtimeConfigPath, BaseObjectiveBeamSettings settings)
+    {
+        try
+        {
+            var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(runtimeConfigPath))
+            {
+                foreach (var line in File.ReadAllLines(runtimeConfigPath))
+                {
+                    var sep = line.IndexOf('=');
+                    if (sep <= 0) continue;
+                    existing[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+                }
+            }
+            existing["hide_base_objective_beam"] = settings.HideBeam.ToString();
+            File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
+        }
+        catch { }
+    }
+
     private static void ApplyKeyValue(DamageHealingSettings s, string key, string val)
     {
         switch (key)
@@ -370,6 +413,49 @@ public sealed class RuntimeMenuSyncService
                 }
             }
             existing["teammate_hp_enabled"] = settings.Enabled.ToString();
+            File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
+        }
+        catch { }
+    }
+
+    public AutoCrouchSettings ReadAutoCrouchSettings(string runtimeConfigPath, AutoCrouchSettings current)
+    {
+        if (!File.Exists(runtimeConfigPath))
+            return current;
+
+        try
+        {
+            var lines = File.ReadAllLines(runtimeConfigPath);
+            foreach (var line in lines)
+            {
+                var sep = line.IndexOf('=');
+                if (sep <= 0) continue;
+                var key = line[..sep].Trim();
+                var val = line[(sep + 1)..].Trim();
+                if (key == "disable_auto_crouch" && bool.TryParse(val, out var b))
+                    current.Enabled = b;
+            }
+        }
+        catch { }
+
+        return current;
+    }
+
+    public void WriteAutoCrouchSettings(string runtimeConfigPath, AutoCrouchSettings settings)
+    {
+        try
+        {
+            var existing = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(runtimeConfigPath))
+            {
+                foreach (var line in File.ReadAllLines(runtimeConfigPath))
+                {
+                    var sep = line.IndexOf('=');
+                    if (sep <= 0) continue;
+                    existing[line[..sep].Trim()] = line[(sep + 1)..].Trim();
+                }
+            }
+            existing["disable_auto_crouch"] = settings.Enabled.ToString();
             File.WriteAllText(runtimeConfigPath, string.Join("\n", existing.Select(kv => $"{kv.Key}={kv.Value}")));
         }
         catch { }

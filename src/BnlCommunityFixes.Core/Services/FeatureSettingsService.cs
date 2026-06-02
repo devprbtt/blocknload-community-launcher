@@ -118,8 +118,25 @@ public sealed class FeatureSettingsService
     public HealAlertSettings LoadHealAlertSettings() => Load("heal-alert-indicator-config.json", new HealAlertSettings());
     public void SaveHealAlertSettings(HealAlertSettings settings) => Save("heal-alert-indicator-config.json", settings);
 
-    public BaseObjectiveBeamSettings LoadBaseObjectiveBeamSettings() => Load("experimental-base-objective-beam-config.json", new BaseObjectiveBeamSettings());
-    public void SaveBaseObjectiveBeamSettings(BaseObjectiveBeamSettings settings) => Save("experimental-base-objective-beam-config.json", settings);
+    public BaseObjectiveBeamSettings LoadBaseObjectiveBeamSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "experimental-base-objective-beam-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("experimental-base-objective-beam-config.json", new BaseObjectiveBeamSettings());
+            settings = runtimeSync.ReadBaseObjectiveBeamSettings(runtimeConfigPath, settings);
+            Save("experimental-base-objective-beam-config.json", settings);
+            return settings;
+        }
+        return Load("experimental-base-objective-beam-config.json", new BaseObjectiveBeamSettings());
+    }
+
+    public void SaveBaseObjectiveBeamSettings(BaseObjectiveBeamSettings settings)
+    {
+        Save("experimental-base-objective-beam-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteBaseObjectiveBeamSettings(runtimeConfigPath, settings);
+    }
 
     public ShieldBuffBarSettings LoadShieldBuffBarSettings() => Load("experimental-enemy-shield-buffbar-config.json", new ShieldBuffBarSettings());
     public void SaveShieldBuffBarSettings(ShieldBuffBarSettings settings) => Save("experimental-enemy-shield-buffbar-config.json", settings);
@@ -157,8 +174,25 @@ public sealed class FeatureSettingsService
     public FriendlyLowHealthSettings LoadFriendlyLowHealthSettings() => Load("friendly-low-health-config.json", new FriendlyLowHealthSettings());
     public void SaveFriendlyLowHealthSettings(FriendlyLowHealthSettings settings) => Save("friendly-low-health-config.json", settings);
 
-    public AutoCrouchSettings LoadAutoCrouchSettings() => Load("experimental-auto-crouch-config.json", new AutoCrouchSettings());
-    public void SaveAutoCrouchSettings(AutoCrouchSettings settings) => Save("experimental-auto-crouch-config.json", settings);
+    public AutoCrouchSettings LoadAutoCrouchSettings()
+    {
+        var launcherConfigPath = Path.Combine(paths.PatchingDir, "experimental-auto-crouch-config.json");
+        if (runtimeConfigPath != null && runtimeSync.IsRuntimeNewer(runtimeConfigPath, launcherConfigPath))
+        {
+            var settings = Load("experimental-auto-crouch-config.json", new AutoCrouchSettings());
+            settings = runtimeSync.ReadAutoCrouchSettings(runtimeConfigPath, settings);
+            Save("experimental-auto-crouch-config.json", settings);
+            return settings;
+        }
+        return Load("experimental-auto-crouch-config.json", new AutoCrouchSettings());
+    }
+
+    public void SaveAutoCrouchSettings(AutoCrouchSettings settings)
+    {
+        Save("experimental-auto-crouch-config.json", settings);
+        if (runtimeConfigPath != null)
+            runtimeSync.WriteAutoCrouchSettings(runtimeConfigPath, settings);
+    }
 
     public HideImpactVfxSettings LoadHideImpactVfxSettings()
     {
@@ -278,7 +312,9 @@ public sealed class FeatureSettingsService
         runtimeSync.WriteTeamColorSettings(runtimeConfigPath, Load("experimental-team-color-config.json", new TeamColorSettings()));
         runtimeSync.WriteDamageHealingSettings(runtimeConfigPath, Load("damage-healing-indicator-config.json", new DamageHealingSettings()));
         runtimeSync.WriteLocalBuildPreviewSettings(runtimeConfigPath, Load("experimental-local-build-preview-config.json", new LocalBuildPreviewSettings()));
+        runtimeSync.WriteBaseObjectiveBeamSettings(runtimeConfigPath, Load("experimental-base-objective-beam-config.json", new BaseObjectiveBeamSettings()));
         runtimeSync.WriteTeammateHpSettings(runtimeConfigPath, Load("teammate-hp-config.json", new TeammateHpSettings()));
+        runtimeSync.WriteAutoCrouchSettings(runtimeConfigPath, Load("experimental-auto-crouch-config.json", new AutoCrouchSettings()));
         runtimeSync.WriteHideImpactVfxSettings(runtimeConfigPath, Load("experimental-hide-impact-vfx-config.json", new HideImpactVfxSettings()));
         runtimeSync.WriteUnitGuiScaleSettings(runtimeConfigPath, Load("unit-gui-scale-config.json", new UnitGuiScaleSettings()));
         runtimeSync.WriteWsiSettings(runtimeConfigPath, Load("wsi-config.json", new WsiSettings()));

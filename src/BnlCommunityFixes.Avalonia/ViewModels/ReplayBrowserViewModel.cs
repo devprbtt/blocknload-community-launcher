@@ -12,6 +12,7 @@ public sealed partial class ReplayBrowserViewModel : ViewModelBase
     private readonly GameInstallInfo _installInfo;
     private readonly ReplayLauncherService _replayService;
     private readonly Action _launchGame;
+    private readonly List<ReplayRow> _selectedReplays = [];
 
     [ObservableProperty] private ObservableCollection<ReplayRow> _replays = [];
     [ObservableProperty] private ReplayRow? _selectedReplay;
@@ -36,14 +37,38 @@ public sealed partial class ReplayBrowserViewModel : ViewModelBase
 
     partial void OnSelectedReplayChanged(ReplayRow? value) => UpdateButtons();
 
+    public void SetSelectedReplays(IEnumerable<ReplayRow?> rows)
+    {
+        _selectedReplays.Clear();
+        foreach (var row in rows)
+        {
+            if (row is not null && !_selectedReplays.Contains(row))
+            {
+                _selectedReplays.Add(row);
+            }
+        }
+
+        if (_selectedReplays.Count == 1)
+        {
+            SelectedReplay = _selectedReplays[0];
+        }
+        else if (_selectedReplays.Count == 0)
+        {
+            SelectedReplay = null;
+        }
+
+        UpdateButtons();
+    }
+
     private void UpdateButtons()
     {
-        var s = SelectedReplay;
-        AnalyzeEnabled = s is not null;
-        OpenValidationEnabled = s?.Capture.HasValidationReport == true;
-        OpenLocationEnabled = s is not null;
-        DeleteEnabled = s is not null;
-        LaunchReplayEnabled = s is not null && _replayService.HasAnalyzedReplay(s.Capture.File);
+        var selectedCount = _selectedReplays.Count;
+        var s = selectedCount == 1 ? _selectedReplays[0] : SelectedReplay;
+        AnalyzeEnabled = selectedCount == 1 && s is not null;
+        OpenValidationEnabled = selectedCount == 1 && s?.Capture.HasValidationReport == true;
+        OpenLocationEnabled = selectedCount == 1 && s is not null;
+        DeleteEnabled = selectedCount > 0;
+        LaunchReplayEnabled = selectedCount == 1 && s is not null && _replayService.HasAnalyzedReplay(s.Capture.File);
     }
 
     [RelayCommand]
@@ -93,9 +118,21 @@ public sealed partial class ReplayBrowserViewModel : ViewModelBase
     [RelayCommand]
     private async Task Delete()
     {
-        if (SelectedReplay is not { } row) return;
-        if (ConfirmDelete is not null && !await ConfirmDelete($"Delete replay:\n{row.Capture.File.Name}?")) return;
-        try { _replayService.DeleteCapture(row.Capture.File); Reload(); }
+        if (_selectedReplays.Count == 0) return;
+
+        var confirmMessage = _selectedReplays.Count == 1
+            ? $"Delete replay:\n{_selectedReplays[0].Capture.File.Name}?"
+            : $"Delete {_selectedReplays.Count} selected replays?";
+
+        if (ConfirmDelete is not null && !await ConfirmDelete(confirmMessage)) return;
+        try
+        {
+            foreach (var row in _selectedReplays.ToArray())
+            {
+                _replayService.DeleteCapture(row.Capture.File);
+            }
+            Reload();
+        }
         catch (Exception ex) { ErrorOccurred?.Invoke("Delete failed", ex.Message); }
     }
 
