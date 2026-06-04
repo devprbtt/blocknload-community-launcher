@@ -28,7 +28,7 @@
             <TabItem Header="Crosshair">
                 <ScrollViewer>
                     <StackPanel Margin="8" Spacing="8">
-                        <TextBlock Text="Custom weapon reticle. Colors change by damage state: idle / at full damage range / beyond max range. Size x scales the whole reticle, spread x controls tightness, brightness x boosts RGB, alpha controls opacity." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <TextBlock Text="Custom weapon reticle. Colors change by damage state: idle / at full damage range / beyond max range. Size scales the whole reticle, spread controls bloom while firing, line thickness thickens line-based reticles, and gap tightens or loosens crosshair arms." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled" IsChecked="{Binding CrosshairEnabled}" />
                         <Grid ColumnDefinitions="*,8,*,8,*">
                             <v:ColorPickerField Grid.Column="0" Label="Idle color"        ColorHex="{Binding CrosshairIdleColor}" />
@@ -40,6 +40,10 @@
                             <StackPanel Grid.Column="2"><TextBlock Text="Size" FontSize="11"/><NumericUpDown Value="{Binding CrosshairSize}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" /></StackPanel>
                             <StackPanel Grid.Column="4"><TextBlock Text="Spread" FontSize="11"/><NumericUpDown Value="{Binding CrosshairSpread}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" /></StackPanel>
                             <StackPanel Grid.Column="6"><TextBlock Text="Alpha" FontSize="11"/><NumericUpDown Value="{Binding CrosshairAlpha}" Minimum="0.1" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,8,*">
+                            <StackPanel Grid.Column="0"><TextBlock Text="Line thickness" FontSize="11"/><NumericUpDown Value="{Binding CrosshairLineThickness}" Minimum="0.25" Maximum="5" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Gap" FontSize="11"/><NumericUpDown Value="{Binding CrosshairGap}" Minimum="0.1" Maximum="5" Increment="0.05" FormatString="0.00" /></StackPanel>
                         </Grid>
                         <Grid ColumnDefinitions="220,8,Auto,8,Auto">
                             <StackPanel Grid.Column="0"><TextBlock Text="Shape" FontSize="11"/><ComboBox ItemsSource="{Binding CrosshairShapes}" SelectedItem="{Binding CrosshairShape}" HorizontalAlignment="Stretch" /></StackPanel>
@@ -197,6 +201,8 @@
                         <!-- Teammate HP -->
                         <CheckBox Content="Teammate HP display" IsChecked="{Binding TeammateHpEnabled}" />
                         <TextBlock Text="Shows each teammate's current HP next to their name in the team panel while you are alive." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+                        <CheckBox Content="Hide teammate name background" IsChecked="{Binding TeammateHideNameBackground}" />
+                        <TextBlock Text="Removes the dark rectangle shown behind teammate names in the top-left team HUD. Uses a runtime UI heuristic and requires rebuild to apply." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
 
                         <!-- Auto-crouch -->
                         <CheckBox Content="Disable auto-crouch" IsChecked="{Binding AutoCrouchEnabled}" />

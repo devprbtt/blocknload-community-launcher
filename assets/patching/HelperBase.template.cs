@@ -1115,6 +1115,8 @@ namespace BnlCommunityFixes
                 new Color($CrosshairBelowR, $CrosshairBelowG, $CrosshairBelowB, 1f),
                 $CrosshairSizeMultiplierLiteral,
                 $CrosshairSpreadMultiplierLiteral,
+                $CrosshairLineThicknessMultiplierLiteral,
+                $CrosshairGapMultiplierLiteral,
                 $CrosshairForceShowInAdsLiteral,
                 $(Format-BoolLiteral $CrosshairHideEntirely),
                 "$CrosshairForceShapeLiteral");
@@ -1206,7 +1208,10 @@ namespace BnlCommunityFixes
                         baseScale = rect.localScale;
                         OriginalCrosshairPartScales[id] = baseScale;
                     }
-                    rect.localScale = baseScale * RuntimeFeatureState.CrosshairSizeMultiplier;
+                    bool isRuntimeCrosshairPart = IsRuntimeCrosshairPart(blank, rect);
+                    rect.localScale = isRuntimeCrosshairPart
+                        ? ScaleCrosshairPartScale(baseScale, OriginalCrosshairPartSizes.ContainsKey(id) ? OriginalCrosshairPartSizes[id] : rect.sizeDelta)
+                        : (baseScale * RuntimeFeatureState.CrosshairSizeMultiplier);
 
                     Vector2 baseSize;
                     if (!OriginalCrosshairPartSizes.TryGetValue(id, out baseSize))
@@ -1214,15 +1219,19 @@ namespace BnlCommunityFixes
                         baseSize = rect.sizeDelta;
                         OriginalCrosshairPartSizes[id] = baseSize;
                     }
-                    rect.sizeDelta = baseSize * RuntimeFeatureState.CrosshairSizeMultiplier;
+                    rect.sizeDelta = isRuntimeCrosshairPart
+                        ? ScaleCrosshairPartSize(baseSize)
+                        : (baseSize * RuntimeFeatureState.CrosshairSizeMultiplier);
 
                     Vector3 basePosition;
-                    if (!OriginalCrosshairPartPositions.TryGetValue(id, out basePosition) || IsRuntimeCrosshairPart(blank, rect))
+                    if (!OriginalCrosshairPartPositions.TryGetValue(id, out basePosition) || isRuntimeCrosshairPart)
                     {
                         basePosition = rect.localPosition;
                         OriginalCrosshairPartPositions[id] = basePosition;
                     }
-                    rect.localPosition = basePosition * RuntimeFeatureState.CrosshairSizeMultiplier;
+                    rect.localPosition = isRuntimeCrosshairPart
+                        ? ScaleCrosshairPartPosition(basePosition)
+                        : (basePosition * RuntimeFeatureState.CrosshairSizeMultiplier);
                 }
                 return;
             }
@@ -1237,7 +1246,57 @@ namespace BnlCommunityFixes
 
         public static Vector3 ScaleSizeVector(Vector3 value)
         {
-            return value * RuntimeFeatureState.CrosshairSizeMultiplier;
+            return ScaleCrosshairPartPosition(value);
+        }
+
+        private static Vector2 ScaleCrosshairPartSize(Vector2 baseSize)
+        {
+            Vector2 scaled = baseSize * RuntimeFeatureState.CrosshairSizeMultiplier;
+            if (Mathf.Approximately(RuntimeFeatureState.CrosshairLineThicknessMultiplier, 1f))
+            {
+                return scaled;
+            }
+
+            if (Mathf.Abs(baseSize.x) >= Mathf.Abs(baseSize.y))
+            {
+                scaled.y *= RuntimeFeatureState.CrosshairLineThicknessMultiplier;
+            }
+            else
+            {
+                scaled.x *= RuntimeFeatureState.CrosshairLineThicknessMultiplier;
+            }
+
+            return scaled;
+        }
+
+        private static Vector3 ScaleCrosshairPartScale(Vector3 baseScale, Vector2 baseSize)
+        {
+            Vector3 scaled = baseScale * RuntimeFeatureState.CrosshairSizeMultiplier;
+            if (Mathf.Approximately(RuntimeFeatureState.CrosshairLineThicknessMultiplier, 1f))
+            {
+                return scaled;
+            }
+
+            if (IsWidthDominant(baseSize))
+            {
+                scaled.y *= RuntimeFeatureState.CrosshairLineThicknessMultiplier;
+            }
+            else
+            {
+                scaled.x *= RuntimeFeatureState.CrosshairLineThicknessMultiplier;
+            }
+
+            return scaled;
+        }
+
+        private static Vector3 ScaleCrosshairPartPosition(Vector3 basePosition)
+        {
+            return basePosition * (RuntimeFeatureState.CrosshairSizeMultiplier * RuntimeFeatureState.CrosshairGapMultiplier);
+        }
+
+        private static bool IsWidthDominant(Vector2 size)
+        {
+            return Mathf.Abs(size.x) >= Mathf.Abs(size.y);
         }
 
         private static bool IsRuntimeCrosshairPart(GuiCrosshairBlank blank, RectTransform rect)

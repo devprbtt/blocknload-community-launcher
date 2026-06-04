@@ -25,6 +25,12 @@ public sealed class CrosshairSettings
     [JsonPropertyName("spread_multiplier")]
     public double SpreadMultiplier { get; set; } = 1.0;
 
+    [JsonPropertyName("line_thickness_multiplier")]
+    public double LineThicknessMultiplier { get; set; } = 1.0;
+
+    [JsonPropertyName("gap_multiplier")]
+    public double GapMultiplier { get; set; } = 1.0;
+
     [JsonPropertyName("alpha")]
     public double Alpha { get; set; } = 1.0;
 

@@ -279,6 +279,8 @@ public sealed class HelperSourceGeneratorService
         vars["CrosshairBelowR"] = chBelow.r; vars["CrosshairBelowG"] = chBelow.g; vars["CrosshairBelowB"] = chBelow.b; vars["CrosshairBelowA"] = "1f";
         vars["CrosshairSizeMultiplierLiteral"] = GetFloat(ch, "size_multiplier", 1f);
         vars["CrosshairSpreadMultiplierLiteral"] = GetFloat(ch, "spread_multiplier", 1f);
+        vars["CrosshairLineThicknessMultiplierLiteral"] = GetFloat(ch, "line_thickness_multiplier", 1f);
+        vars["CrosshairGapMultiplierLiteral"] = GetFloat(ch, "gap_multiplier", 1f);
         vars["CrosshairForceShowInAdsLiteral"] = GetBool(ch, "force_show_in_ads", false) ? "true" : "false";
         vars["CrosshairForceShapeLiteral"] = GetString(ch, "force_shape", "__DEFAULT__").Replace("\\", "\\\\").Replace("\"", "\\\"");
 
@@ -392,7 +394,11 @@ public sealed class HelperSourceGeneratorService
 
         // Teammate HP
         var thp = ReadJson(patchingDir, "teammate-hp-config.json");
-        vars["TeammateHpEnabled"] = GetBool(thp, "enabled", false) ? "true" : "false";
+        bool teammateShowHpText = GetBool(thp, "show_hp_text", GetBool(thp, "enabled", false));
+        bool teammateHideNameBackground = GetBool(thp, "hide_name_background", false);
+        vars["TeammateHpEnabled"] = teammateShowHpText ? "true" : "false";
+        vars["TeammateHideNameBackground"] = teammateHideNameBackground ? "true" : "false";
+        vars["TeammateHpEnabledOrBackgroundHide"] = (teammateShowHpText || teammateHideNameBackground) ? "true" : "false";
 
         // Font override
         var fo = ReadJson(patchingDir, "experimental-font-override-config.json");

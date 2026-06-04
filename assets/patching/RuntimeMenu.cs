@@ -10,6 +10,8 @@ namespace BnlCommunityFixes
     {
         public float crosshair_size_multiplier = 1f;
         public float crosshair_spread_multiplier = 1f;
+        public float crosshair_line_thickness_multiplier = 1f;
+        public float crosshair_gap_multiplier = 1f;
         public float crosshair_alpha = 1f;
         public bool crosshair_force_show_in_ads;
         public bool crosshair_hide_entirely;
@@ -87,6 +89,8 @@ namespace BnlCommunityFixes
         private static Color defaultCrosshairBelowMaxColor;
         private static float defaultCrosshairSizeMultiplier = 1f;
         private static float defaultCrosshairSpreadMultiplier = 1f;
+        private static float defaultCrosshairLineThicknessMultiplier = 1f;
+        private static float defaultCrosshairGapMultiplier = 1f;
         private static float defaultCrosshairAlpha = 1f;
         private static bool defaultCrosshairForceShowInAds;
         private static bool defaultCrosshairHideEntirely;
@@ -181,6 +185,8 @@ namespace BnlCommunityFixes
 
         public static float CrosshairSizeMultiplier { get; private set; }
         public static float CrosshairSpreadMultiplier { get; private set; }
+        public static float CrosshairLineThicknessMultiplier { get; private set; }
+        public static float CrosshairGapMultiplier { get; private set; }
         public static float CrosshairAlpha { get; private set; }
         public static bool CrosshairForceShowInAds { get; private set; }
         public static bool CrosshairHideEntirely { get; private set; }
@@ -230,6 +236,8 @@ namespace BnlCommunityFixes
         {
             CrosshairSizeMultiplier = 1f;
             CrosshairSpreadMultiplier = 1f;
+            CrosshairLineThicknessMultiplier = 1f;
+            CrosshairGapMultiplier = 1f;
             CrosshairAlpha = 1f;
             CrosshairForceShape = "__DEFAULT__";
 
@@ -279,7 +287,7 @@ namespace BnlCommunityFixes
             }
         }
 
-        public static void ConfigureCrosshair(bool supported, Color idleColor, Color fullDamageColor, Color belowMaxColor, float sizeMultiplier, float spreadMultiplier, bool forceShowInAds, bool hideEntirely, string forceShape)
+        public static void ConfigureCrosshair(bool supported, Color idleColor, Color fullDamageColor, Color belowMaxColor, float sizeMultiplier, float spreadMultiplier, float lineThicknessMultiplier, float gapMultiplier, bool forceShowInAds, bool hideEntirely, string forceShape)
         {
             CrosshairSupported = CrosshairSupported || supported;
             defaultCrosshairIdleColor = new Color(idleColor.r, idleColor.g, idleColor.b, 1f);
@@ -287,6 +295,8 @@ namespace BnlCommunityFixes
             defaultCrosshairBelowMaxColor = new Color(belowMaxColor.r, belowMaxColor.g, belowMaxColor.b, 1f);
             defaultCrosshairSizeMultiplier = sizeMultiplier;
             defaultCrosshairSpreadMultiplier = spreadMultiplier;
+            defaultCrosshairLineThicknessMultiplier = lineThicknessMultiplier;
+            defaultCrosshairGapMultiplier = gapMultiplier;
             defaultCrosshairAlpha = Mathf.Clamp01(idleColor.a);
             defaultCrosshairForceShowInAds = forceShowInAds;
             defaultCrosshairHideEntirely = hideEntirely;
@@ -296,6 +306,8 @@ namespace BnlCommunityFixes
             {
                 CrosshairSizeMultiplier = defaultCrosshairSizeMultiplier;
                 CrosshairSpreadMultiplier = defaultCrosshairSpreadMultiplier;
+                CrosshairLineThicknessMultiplier = defaultCrosshairLineThicknessMultiplier;
+                CrosshairGapMultiplier = defaultCrosshairGapMultiplier;
                 CrosshairAlpha = defaultCrosshairAlpha;
                 CrosshairForceShowInAds = defaultCrosshairForceShowInAds;
                 CrosshairHideEntirely = defaultCrosshairHideEntirely;
@@ -686,6 +698,8 @@ namespace BnlCommunityFixes
             {
                 CrosshairSizeMultiplier = defaultCrosshairSizeMultiplier;
                 CrosshairSpreadMultiplier = defaultCrosshairSpreadMultiplier;
+                CrosshairLineThicknessMultiplier = defaultCrosshairLineThicknessMultiplier;
+                CrosshairGapMultiplier = defaultCrosshairGapMultiplier;
                 CrosshairAlpha = defaultCrosshairAlpha;
                 CrosshairForceShowInAds = defaultCrosshairForceShowInAds;
                 CrosshairHideEntirely = defaultCrosshairHideEntirely;
@@ -809,6 +823,16 @@ namespace BnlCommunityFixes
         public static void SetCrosshairSpreadMultiplier(float value)
         {
             CrosshairSpreadMultiplier = Mathf.Clamp(value, 0.25f, 4f);
+        }
+
+        public static void SetCrosshairLineThicknessMultiplier(float value)
+        {
+            CrosshairLineThicknessMultiplier = Mathf.Clamp(value, 0.25f, 5f);
+        }
+
+        public static void SetCrosshairGapMultiplier(float value)
+        {
+            CrosshairGapMultiplier = Mathf.Clamp(value, 0.1f, 5f);
         }
 
         public static void SetCrosshairAlpha(float value)
@@ -1012,6 +1036,8 @@ namespace BnlCommunityFixes
 
             CrosshairSizeMultiplier = Mathf.Clamp(loadedData.crosshair_size_multiplier, 0.5f, 4f);
             CrosshairSpreadMultiplier = Mathf.Clamp(loadedData.crosshair_spread_multiplier, 0.25f, 4f);
+            CrosshairLineThicknessMultiplier = Mathf.Clamp(loadedData.crosshair_line_thickness_multiplier, 0.25f, 5f);
+            CrosshairGapMultiplier = Mathf.Clamp(loadedData.crosshair_gap_multiplier, 0.1f, 5f);
             CrosshairAlpha = Mathf.Clamp01(loadedData.crosshair_alpha);
             CrosshairForceShowInAds = loadedData.crosshair_force_show_in_ads;
             CrosshairHideEntirely = loadedData.crosshair_hide_entirely;
@@ -1229,6 +1255,8 @@ namespace BnlCommunityFixes
             RuntimeMenuSettingsData data = new RuntimeMenuSettingsData();
             data.crosshair_size_multiplier = CrosshairSizeMultiplier;
             data.crosshair_spread_multiplier = CrosshairSpreadMultiplier;
+            data.crosshair_line_thickness_multiplier = CrosshairLineThicknessMultiplier;
+            data.crosshair_gap_multiplier = CrosshairGapMultiplier;
             data.crosshair_alpha = CrosshairAlpha;
             data.crosshair_force_show_in_ads = CrosshairForceShowInAds;
             data.crosshair_hide_entirely = CrosshairHideEntirely;
@@ -1278,6 +1306,8 @@ namespace BnlCommunityFixes
             List<string> lines = new List<string>();
             lines.Add("crosshair_size_multiplier=" + data.crosshair_size_multiplier.ToString(System.Globalization.CultureInfo.InvariantCulture));
             lines.Add("crosshair_spread_multiplier=" + data.crosshair_spread_multiplier.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            lines.Add("crosshair_line_thickness_multiplier=" + data.crosshair_line_thickness_multiplier.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            lines.Add("crosshair_gap_multiplier=" + data.crosshair_gap_multiplier.ToString(System.Globalization.CultureInfo.InvariantCulture));
             lines.Add("crosshair_alpha=" + data.crosshair_alpha.ToString(System.Globalization.CultureInfo.InvariantCulture));
             lines.Add("crosshair_force_show_in_ads=" + data.crosshair_force_show_in_ads);
             lines.Add("crosshair_hide_entirely=" + data.crosshair_hide_entirely);
@@ -1360,6 +1390,12 @@ namespace BnlCommunityFixes
                     break;
                 case "crosshair_spread_multiplier":
                     if (TryParseFloat(value, out parsedFloat)) data.crosshair_spread_multiplier = parsedFloat;
+                    break;
+                case "crosshair_line_thickness_multiplier":
+                    if (TryParseFloat(value, out parsedFloat)) data.crosshair_line_thickness_multiplier = parsedFloat;
+                    break;
+                case "crosshair_gap_multiplier":
+                    if (TryParseFloat(value, out parsedFloat)) data.crosshair_gap_multiplier = parsedFloat;
                     break;
                 case "crosshair_alpha":
                     if (TryParseFloat(value, out parsedFloat)) data.crosshair_alpha = parsedFloat;
@@ -1679,7 +1715,7 @@ namespace BnlCommunityFixes
             int count = 0;
             if (RuntimeFeatureState.CrosshairSupported)
             {
-                count += 6;
+                count += 8;
             }
 
             if (RuntimeFeatureState.CombatNumbersSupported)
@@ -1768,13 +1804,15 @@ namespace BnlCommunityFixes
                 {
                     case 0: return "Crosshair size";
                     case 1: return "Crosshair spread";
-                    case 2: return "Crosshair alpha";
-                    case 3: return "Crosshair force ADS";
-                    case 4: return "Crosshair hide";
-                    case 5: return "Crosshair shape";
+                    case 2: return "Crosshair thickness";
+                    case 3: return "Crosshair gap";
+                    case 4: return "Crosshair alpha";
+                    case 5: return "Crosshair force ADS";
+                    case 6: return "Crosshair hide";
+                    case 7: return "Crosshair shape";
                 }
 
-                index -= 6;
+                index -= 8;
             }
 
             if (RuntimeFeatureState.CombatNumbersSupported)
@@ -1911,13 +1949,15 @@ namespace BnlCommunityFixes
                 {
                     case 0: return RuntimeFeatureState.CrosshairSizeMultiplier.ToString("0.00");
                     case 1: return RuntimeFeatureState.CrosshairSpreadMultiplier.ToString("0.00");
-                    case 2: return RuntimeFeatureState.CrosshairAlpha.ToString("0.00");
-                    case 3: return RuntimeFeatureState.CrosshairForceShowInAds ? "ON" : "OFF";
-                    case 4: return RuntimeFeatureState.CrosshairHideEntirely ? "ON" : "OFF";
-                    case 5: return RuntimeFeatureState.CrosshairForceShape;
+                    case 2: return RuntimeFeatureState.CrosshairLineThicknessMultiplier.ToString("0.00");
+                    case 3: return RuntimeFeatureState.CrosshairGapMultiplier.ToString("0.00");
+                    case 4: return RuntimeFeatureState.CrosshairAlpha.ToString("0.00");
+                    case 5: return RuntimeFeatureState.CrosshairForceShowInAds ? "ON" : "OFF";
+                    case 6: return RuntimeFeatureState.CrosshairHideEntirely ? "ON" : "OFF";
+                    case 7: return RuntimeFeatureState.CrosshairForceShape;
                 }
 
-                index -= 6;
+                index -= 8;
             }
 
             if (RuntimeFeatureState.CombatNumbersSupported)
@@ -2059,20 +2099,26 @@ namespace BnlCommunityFixes
                         RuntimeFeatureState.SetCrosshairSpreadMultiplier(RuntimeFeatureState.CrosshairSpreadMultiplier + (0.05f * direction));
                         return;
                     case 2:
-                        RuntimeFeatureState.SetCrosshairAlpha(RuntimeFeatureState.CrosshairAlpha + (0.05f * direction));
+                        RuntimeFeatureState.SetCrosshairLineThicknessMultiplier(RuntimeFeatureState.CrosshairLineThicknessMultiplier + (0.05f * direction));
                         return;
                     case 3:
-                        RuntimeFeatureState.SetCrosshairForceShowInAds(!RuntimeFeatureState.CrosshairForceShowInAds);
+                        RuntimeFeatureState.SetCrosshairGapMultiplier(RuntimeFeatureState.CrosshairGapMultiplier + (0.05f * direction));
                         return;
                     case 4:
-                        RuntimeFeatureState.SetCrosshairHideEntirely(!RuntimeFeatureState.CrosshairHideEntirely);
+                        RuntimeFeatureState.SetCrosshairAlpha(RuntimeFeatureState.CrosshairAlpha + (0.05f * direction));
                         return;
                     case 5:
+                        RuntimeFeatureState.SetCrosshairForceShowInAds(!RuntimeFeatureState.CrosshairForceShowInAds);
+                        return;
+                    case 6:
+                        RuntimeFeatureState.SetCrosshairHideEntirely(!RuntimeFeatureState.CrosshairHideEntirely);
+                        return;
+                    case 7:
                         CycleCrosshairShape(direction);
                         return;
                 }
 
-                index -= 6;
+                index -= 8;
             }
 
             if (RuntimeFeatureState.CombatNumbersSupported)

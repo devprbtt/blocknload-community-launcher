@@ -25,6 +25,8 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private double _crosshairBrightness = 1.0;
     [ObservableProperty] private double _crosshairSize = 1.0;
     [ObservableProperty] private double _crosshairSpread = 1.0;
+    [ObservableProperty] private double _crosshairLineThickness = 1.0;
+    [ObservableProperty] private double _crosshairGap = 1.0;
     [ObservableProperty] private double _crosshairAlpha = 1.0;
     [ObservableProperty] private string _crosshairShape = "__DEFAULT__";
     [ObservableProperty] private bool _crosshairForceShowInAds;
@@ -86,6 +88,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _deathCamHealthbarEnabled = true;
     [ObservableProperty] private bool _autoCasualQueueEnabled;
     [ObservableProperty] private bool _teammateHpEnabled;
+    [ObservableProperty] private bool _teammateHideNameBackground;
     [ObservableProperty] private bool _autoCrouchEnabled;
     [ObservableProperty] private bool _hideImpactVfxEnabled;
     [ObservableProperty] private bool _hideImpactVfx;
@@ -138,7 +141,8 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         var ch = _svc.LoadCrosshairSettings();
         CrosshairEnabled = ch.Enabled; CrosshairIdleColor = ch.IdleColor; CrosshairFullDamageColor = ch.FullDamageColor;
         CrosshairBelowMaxColor = ch.BelowMaxColor; CrosshairBrightness = ch.BrightnessMultiplier;
-        CrosshairSize = ch.SizeMultiplier; CrosshairSpread = ch.SpreadMultiplier; CrosshairAlpha = ch.Alpha;
+        CrosshairSize = ch.SizeMultiplier; CrosshairSpread = ch.SpreadMultiplier; CrosshairLineThickness = ch.LineThicknessMultiplier;
+        CrosshairGap = ch.GapMultiplier; CrosshairAlpha = ch.Alpha;
         CrosshairShape = ch.ForceShape; CrosshairForceShowInAds = ch.ForceShowInAds; CrosshairHide = ch.HideCrosshair;
 
         var fov = _svc.LoadFovSettings();
@@ -171,7 +175,9 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         AimHealthbarEnabled = _svc.LoadAimHealthbarSettings().Enabled;
         DeathCamHealthbarEnabled = _svc.LoadDeathCamHealthbarSettings().Enabled;
         AutoCasualQueueEnabled = _svc.LoadAutoCasualQueueSettings().Enabled;
-        TeammateHpEnabled = _svc.LoadTeammateHpSettings().Enabled;
+        var teammateHp = _svc.LoadTeammateHpSettings();
+        TeammateHpEnabled = teammateHp.ShowHpText;
+        TeammateHideNameBackground = teammateHp.HideNameBackground;
         AutoCrouchEnabled = _svc.LoadAutoCrouchSettings().Enabled;
 
         var vfx = _svc.LoadHideImpactVfxSettings();
@@ -208,7 +214,8 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             {
                 Enabled = CrosshairEnabled, IdleColor = CrosshairIdleColor, FullDamageColor = CrosshairFullDamageColor,
                 BelowMaxColor = CrosshairBelowMaxColor, BrightnessMultiplier = CrosshairBrightness,
-                SizeMultiplier = CrosshairSize, SpreadMultiplier = CrosshairSpread, Alpha = CrosshairAlpha,
+                SizeMultiplier = CrosshairSize, SpreadMultiplier = CrosshairSpread,
+                LineThicknessMultiplier = CrosshairLineThickness, GapMultiplier = CrosshairGap, Alpha = CrosshairAlpha,
                 ForceShape = CrosshairShape, ForceShowInAds = CrosshairForceShowInAds, HideCrosshair = CrosshairHide
             });
             _svc.SaveFovSettings(new FovSettings { Enabled = FovEnabled, Fov = Fov, AdsSensitivityMultiplier = AdsSensitivity, WeaponModelFov = WeaponModelFov });
@@ -238,7 +245,12 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             _svc.SaveAimHealthbarSettings(new AimHealthbarSettings { Enabled = AimHealthbarEnabled });
             _svc.SaveDeathCamHealthbarSettings(new DeathCamHealthbarSettings { Enabled = DeathCamHealthbarEnabled });
             _svc.SaveAutoCasualQueueSettings(new AutoCasualQueueSettings { Enabled = AutoCasualQueueEnabled });
-            _svc.SaveTeammateHpSettings(new TeammateHpSettings { Enabled = TeammateHpEnabled });
+            _svc.SaveTeammateHpSettings(new TeammateHpSettings
+            {
+                Enabled = TeammateHpEnabled || TeammateHideNameBackground,
+                ShowHpText = TeammateHpEnabled,
+                HideNameBackground = TeammateHideNameBackground
+            });
             _svc.SaveAutoCrouchSettings(new AutoCrouchSettings { Enabled = AutoCrouchEnabled });
             _svc.SaveHideImpactVfxSettings(new HideImpactVfxSettings
             {

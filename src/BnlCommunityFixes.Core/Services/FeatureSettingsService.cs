@@ -281,17 +281,32 @@ public sealed class FeatureSettingsService
         {
             var settings = Load("teammate-hp-config.json", new TeammateHpSettings());
             settings = runtimeSync.ReadTeammateHpSettings(runtimeConfigPath, settings);
+            NormalizeTeammateHpSettings(settings);
             Save("teammate-hp-config.json", settings);
             return settings;
         }
-        return Load("teammate-hp-config.json", new TeammateHpSettings());
+        var loaded = Load("teammate-hp-config.json", new TeammateHpSettings());
+        NormalizeTeammateHpSettings(loaded);
+        return loaded;
     }
 
     public void SaveTeammateHpSettings(TeammateHpSettings settings)
     {
+        NormalizeTeammateHpSettings(settings);
         Save("teammate-hp-config.json", settings);
         if (runtimeConfigPath != null)
             runtimeSync.WriteTeammateHpSettings(runtimeConfigPath, settings);
+    }
+
+    private static void NormalizeTeammateHpSettings(TeammateHpSettings settings)
+    {
+        if (settings == null)
+            return;
+
+        if (!settings.ShowHpText && !settings.HideNameBackground && settings.Enabled)
+            settings.ShowHpText = true;
+
+        settings.Enabled = settings.ShowHpText || settings.HideNameBackground;
     }
 
     public SegmentedHealthbarSettings LoadSegmentedHealthbarSettings() => Load("experimental-segmented-healthbar-config.json", new SegmentedHealthbarSettings());

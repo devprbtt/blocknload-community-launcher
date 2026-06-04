@@ -153,6 +153,10 @@ public sealed class RuntimeMenuSyncService
                         if (TryParseDouble(val, out var d)) current.SizeMultiplier = d; break;
                     case "crosshair_spread_multiplier":
                         if (TryParseDouble(val, out d)) current.SpreadMultiplier = d; break;
+                    case "crosshair_line_thickness_multiplier":
+                        if (TryParseDouble(val, out d)) current.LineThicknessMultiplier = d; break;
+                    case "crosshair_gap_multiplier":
+                        if (TryParseDouble(val, out d)) current.GapMultiplier = d; break;
                     case "crosshair_alpha":
                         if (TryParseDouble(val, out d)) current.Alpha = d; break;
                     case "crosshair_force_show_in_ads":
@@ -185,6 +189,8 @@ public sealed class RuntimeMenuSyncService
             }
             existing["crosshair_size_multiplier"] = settings.SizeMultiplier.ToString(CultureInfo.InvariantCulture);
             existing["crosshair_spread_multiplier"] = settings.SpreadMultiplier.ToString(CultureInfo.InvariantCulture);
+            existing["crosshair_line_thickness_multiplier"] = settings.LineThicknessMultiplier.ToString(CultureInfo.InvariantCulture);
+            existing["crosshair_gap_multiplier"] = settings.GapMultiplier.ToString(CultureInfo.InvariantCulture);
             existing["crosshair_alpha"] = settings.Alpha.ToString(CultureInfo.InvariantCulture);
             existing["crosshair_force_show_in_ads"] = settings.ForceShowInAds.ToString();
             existing["crosshair_hide_entirely"] = settings.HideCrosshair.ToString();

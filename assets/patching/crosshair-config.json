@@ -6,6 +6,8 @@
   "brightness_multiplier": 1,
   "size_multiplier": 0.5,
   "spread_multiplier": 0.25,
+  "line_thickness_multiplier": 1,
+  "gap_multiplier": 1,
   "alpha": 1,
   "force_shape": "Crosshair",
   "force_show_in_ads": true,
