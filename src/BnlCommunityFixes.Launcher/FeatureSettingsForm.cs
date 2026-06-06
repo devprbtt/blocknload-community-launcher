@@ -104,6 +104,7 @@ public sealed class FeatureSettingsForm : Form
     private readonly CheckBox segmentedHealthbarEnabledCheckBox;
 
     private readonly CheckBox fontOverrideEnabledCheckBox;
+    private readonly CheckBox performanceOptEnabledCheckBox;
 
     private readonly CheckBox skipIntroCheckBox;
     private readonly CheckBox disableMainMenuFrameCapCheckBox;
@@ -666,10 +667,11 @@ public sealed class FeatureSettingsForm : Form
         // --- Misc ---
         var miscTab = new TabPage("Misc");
         AddDescription(miscTab,
-            "Miscellaneous gameplay tweaks. Skip intro bypasses the warning screen and video that play each time the game starts.");
+            "Miscellaneous gameplay tweaks. Skip intro bypasses the warning screen and video that play each time the game starts. Device healthbar optimization requires a rebuild and targets the heavy overhead caused by large numbers of placed devices.");
         skipIntroCheckBox = NewCheckBox("Skip intro screen on game start", 14, EnabledY);
         disableMainMenuFrameCapCheckBox = NewCheckBox("Disable frame cap on main menu (uncaps FPS while on the main menu screen)", 14, EnabledY + 30);
-        miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox]);
+        performanceOptEnabledCheckBox = NewCheckBox("Optimize device health bars", 14, EnabledY + 60);
+        miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox, performanceOptEnabledCheckBox]);
 
         tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, hideImpactVfxTab, unitGuiScaleTab, wsiScaleTab, mapRenderTab, segmentedHealthbarTab, fontOverrideTab, miscTab]);
 
@@ -956,6 +958,9 @@ public sealed class FeatureSettingsForm : Form
         var fontOverride = featureSettingsService.LoadFontOverrideSettings();
         fontOverrideEnabledCheckBox.Checked = fontOverride.Enabled;
 
+        var performanceOpt = featureSettingsService.LoadPerformanceOptSettings();
+        performanceOptEnabledCheckBox.Checked = performanceOpt.Enabled;
+
         skipIntroCheckBox.Checked = LoadDebugMenuBool("skip_intro");
         disableMainMenuFrameCapCheckBox.Checked = LoadDebugMenuBool("disable_main_menu_frame_cap");
     }
@@ -1230,6 +1235,11 @@ public sealed class FeatureSettingsForm : Form
         featureSettingsService.SaveFontOverrideSettings(new FontOverrideSettings
         {
             Enabled = fontOverrideEnabledCheckBox.Checked
+        });
+
+        featureSettingsService.SavePerformanceOptSettings(new PerformanceOptSettings
+        {
+            Enabled = performanceOptEnabledCheckBox.Checked
         });
 
         SaveDebugMenuBool("skip_intro", skipIntroCheckBox.Checked);

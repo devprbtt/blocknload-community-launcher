@@ -38,6 +38,8 @@ public static class ExperimentalFeaturePatcherCatalog
         new MatchReplayRecorderFeaturePatcher(),
         new AudioReplacerFeaturePatcher(),
         new MeshReplacerFeaturePatcher(),
-        new FovFeaturePatcher()
+        new FovFeaturePatcher(),
+        new PerformanceOptPatcher(),
+        new AbilityCastFeaturePatcher()
     ];
 }

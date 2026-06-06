@@ -108,6 +108,8 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private double _friendlyLowHealthIndicatorAlpha = 1.0;
     [ObservableProperty] private bool _segmentedHealthbarEnabled;
     [ObservableProperty] private bool _fontOverrideEnabled;
+    [ObservableProperty] private bool _performanceOptEnabled;
+    [ObservableProperty] private bool _abilityCastEnabled;
     [ObservableProperty] private bool _skipIntro;
     [ObservableProperty] private bool _disableMainMenuFrameCap;
 
@@ -200,6 +202,9 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
 
         SegmentedHealthbarEnabled = _svc.LoadSegmentedHealthbarSettings().Enabled;
         FontOverrideEnabled = _svc.LoadFontOverrideSettings().Enabled;
+        var performanceOpt = _svc.LoadPerformanceOptSettings();
+        PerformanceOptEnabled = performanceOpt.Enabled;
+        AbilityCastEnabled = _svc.LoadAbilityCastSettings().Enabled;
 
         SkipIntro = LoadDebugMenuBool("skip_intro");
         DisableMainMenuFrameCap = LoadDebugMenuBool("disable_main_menu_frame_cap");
@@ -269,6 +274,11 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             _svc.SaveSegmentedHealthbarSettings(new SegmentedHealthbarSettings { Enabled = SegmentedHealthbarEnabled });
             ApplySegmentedHealthbarTextures(SegmentedHealthbarEnabled);
             _svc.SaveFontOverrideSettings(new FontOverrideSettings { Enabled = FontOverrideEnabled });
+            _svc.SavePerformanceOptSettings(new PerformanceOptSettings
+            {
+                Enabled = PerformanceOptEnabled
+            });
+            _svc.SaveAbilityCastSettings(new AbilityCastSettings { Enabled = AbilityCastEnabled });
             SaveDebugMenuBool("skip_intro", SkipIntro);
             SaveDebugMenuBool("disable_main_menu_frame_cap", DisableMainMenuFrameCap);
 

@@ -260,6 +260,14 @@
                         <CheckBox Content="Hide lava/water plane"  IsChecked="{Binding HideLavaWaterPlane}" />
                         <CheckBox Content="Hide falling blocks"   IsChecked="{Binding HideFallingBlocks}" />
 
+                        <TextBlock Text="Optimize Device Health Bars" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Reduces CPU cost on device-heavy maps by skipping distant device health bars while keeping normal player, base, shield-generator, objective, and other always-relevant world health bars. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding PerformanceOptEnabled}" />
+
+                        <TextBlock Text="Ability Cast" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Eliminates the server round-trip wait in Self and Trigger hero abilities by accepting the cast locally. Visuals and sound fire immediately; the server still validates. Only affects Self/Trigger ability types. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding AbilityCastEnabled}" />
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

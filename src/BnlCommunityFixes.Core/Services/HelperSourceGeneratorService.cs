@@ -38,8 +38,29 @@ public sealed class HelperSourceGeneratorService
             }
         }
 
+        var performanceOpt = ReadJson(patchingDir, "experimental-performance-opt-config.json");
+        if (GetBool(performanceOpt, "enabled", false))
+        {
+            var deviceHealthbarCullDistance = GetFloat(performanceOpt, "device_healthbar_cull_distance", 35f);
+            sb.AppendLine("namespace BnlCommunityFixes { public static class PerformanceOptGeneratedConfig { public const float DeviceHealthbarCullDistance = " + deviceHealthbarCullDistance + "; } }");
+            AppendStaticFile(sb, patchingDir, "PerformanceOptRuntime.cs");
+        }
+
         var outputPath = Path.Combine(patchingDir, "BnlCommunityFixes.generated.cs");
         File.WriteAllText(outputPath, sb.ToString(), Encoding.UTF8);
+    }
+
+    private static void AppendStaticFile(StringBuilder sb, string patchingDir, string fileName)
+    {
+        var path = Path.Combine(patchingDir, fileName);
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        var content = File.ReadAllText(path);
+        content = Regex.Replace(content, @"^using\s+[^\r\n]+;\s*", "", RegexOptions.Multiline);
+        sb.AppendLine(content);
     }
 
     // Extracts all C# content from a PS1/C# mixed template file.

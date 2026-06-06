@@ -2548,6 +2548,22 @@ namespace BnlCommunityFixes
         }
     }
 }
+
+namespace BnlCommunityFixes
+{
+    public static class AbilityCastRuntime
+    {
+        // Immediately accepts the CastAbility RPC on the client, removing the network round-trip
+        // wait in Self and Trigger ability coroutines. UnitEventHelper.HandleAbilityCast (visuals/
+        // sound) already fires before this point so the player sees no delay. The server still
+        // validates — a server rejection simply means the server-side effect doesn't apply.
+        public static void TryInstantAcceptCastAbility(ServiceZone.Rpc_CastAbility rpc)
+        {
+            if (rpc != null && !rpc.Ready)
+                rpc._Success(true);
+        }
+    }
+}
 "@
 
 if ($LocalBuildPreviewConfig.enabled) {
