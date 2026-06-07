@@ -1,28 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.6.5",
+  "version": "2.7.0",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-06-02T02:31:32.6157843+00:00",
-  "notes": "## 2.6.5 hotfix\n\n- Fixed auto-crouch so the saved disable state no longer resets after opening Feature Settings\n- Fixed hide objective beam so runtime sync respects the saved launcher setting\n- Fixed replay browser multi-select delete in the Avalonia launcher\n- Fixed Import Folder in the Avalonia replacers to recurse folders, copy files into the correct Custom* directory, and preserve relative paths\n- Reduced texture replacer runtime overhead by switching from endless polling to short startup and scene-load scan bursts\n- Fixed local build preview crate confirmations so floating indestructible local-only blocks no longer persist after fast crate placement\r\n",
+  "published_at": "2026-06-07T10:00:00.0000000+00:00",
+  "notes": "## 2.7.0\n\n- Added no-Steam setup flow: users without Block N Load in their Steam library can now download and install the game directly from the launcher\n- Game download with live progress (file count tracking during extraction)\n- \"I already have the files\" path for users who downloaded manually\n- MEGA mirror links shown as fallback (ZIP, 7z, and audio dependencies)\n- Audio dependencies download option for users with no in-game sound\n- No-Steam installs bypass Steam process checks at launch\r\n",
   "assets": {
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.5/BnlCommunityFixes.exe",
-      "sha256": "EC91303A35F70D04877B0D4C86BC2B37286EC6623FF33BE65776C92F54A077F3",
-      "size": 115304763
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.0/BnlCommunityFixes.exe",
+      "sha256": "37A7447CC60383697235C6B6A4BBC8D43B7B1EC3401BE9386BA71C8A32559C68",
+      "size": 116361531
     },
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.5/BnlCommunityFixes",
-      "sha256": "A4A398718F149B4413EEA82136827AB8F83317F743A14C0792BE0349511160FA",
-      "size": 110406817
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.0/BnlCommunityFixes",
+      "sha256": "AC8F3091812825126E81F69D2F61509400AD258C18E87FCCB827FECD66714F6C",
+      "size": 111465121
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.6.5/BnlCommunityFixes.exe",
-      "sha256": "EC91303A35F70D04877B0D4C86BC2B37286EC6623FF33BE65776C92F54A077F3",
-      "size": 115304763
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.0/BnlCommunityFixes.exe",
+      "sha256": "37A7447CC60383697235C6B6A4BBC8D43B7B1EC3401BE9386BA71C8A32559C68",
+      "size": 116361531
     }
   }
 }

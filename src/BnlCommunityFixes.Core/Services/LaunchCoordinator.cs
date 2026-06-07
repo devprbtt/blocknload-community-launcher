@@ -24,22 +24,29 @@ public sealed class LaunchCoordinator
 
     public void LaunchSelectedServer(GameInstallInfo installInfo, LauncherConfig config)
     {
-        logger.Info("Checking Steam status...");
-        var steamError = steamService.GetReadinessError();
-        if (!string.IsNullOrWhiteSpace(steamError))
+        if (!installInfo.IsNoSteamInstall)
         {
-            if (steamError.Contains("not running", StringComparison.OrdinalIgnoreCase))
+            logger.Info("Checking Steam status...");
+            var steamError = steamService.GetReadinessError();
+            if (!string.IsNullOrWhiteSpace(steamError))
             {
-                steamService.OpenSteamMain();
+                if (steamError.Contains("not running", StringComparison.OrdinalIgnoreCase))
+                {
+                    steamService.OpenSteamMain();
+                }
+
+                throw new InvalidOperationException(steamError);
             }
 
-            throw new InvalidOperationException(steamError);
+            var steamWarning = steamService.GetReadinessWarning();
+            if (!string.IsNullOrWhiteSpace(steamWarning))
+            {
+                logger.Warning(steamWarning + " Continuing launch anyway.");
+            }
         }
-
-        var steamWarning = steamService.GetReadinessWarning();
-        if (!string.IsNullOrWhiteSpace(steamWarning))
+        else
         {
-            logger.Warning(steamWarning + " Continuing launch anyway.");
+            logger.Info("No-Steam install detected; skipping Steam readiness check.");
         }
 
         if (string.IsNullOrWhiteSpace(config.SelectedServer))
@@ -97,7 +104,11 @@ public sealed class LaunchCoordinator
             gameAssemblyService.SyncCommunityFixAssembly(installInfo, logger);
         }
 
-        steamService.EnsureSteamAppIdFile(installInfo);
+        if (!installInfo.IsNoSteamInstall)
+        {
+            steamService.EnsureSteamAppIdFile(installInfo);
+        }
+
         logger.Info("Starting BlockNLoad...");
         steamService.LaunchGame(installInfo);
     }

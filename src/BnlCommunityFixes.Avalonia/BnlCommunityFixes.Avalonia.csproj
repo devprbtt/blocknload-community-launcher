@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>2.6.5</Version>
+    <Version>2.7.0</Version>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Avalonia</RootNamespace>
     <ApplicationIcon>../BnlCommunityFixes.Launcher/launcher-icon.ico</ApplicationIcon>
@@ -85,6 +85,9 @@
     <EmbeddedResource Include="..\..\assets\patching\experimental-font-override-config.json" LogicalName="Patching.experimental-font-override-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\white_rect.png" LogicalName="Patching.white_rect.png" />
     <EmbeddedResource Include="..\..\assets\patching\white_rect_bg.png" LogicalName="Patching.white_rect_bg.png" />
+    <EmbeddedResource Include="..\..\assets\nosteam\steam_api64.dll" LogicalName="NoSteam.steam_api64.dll" />
+    <EmbeddedResource Include="..\..\assets\nosteam\rexa64.dll" LogicalName="NoSteam.rexa64.dll" />
+    <EmbeddedResource Include="..\..\assets\nosteam\cream_api.ini" LogicalName="NoSteam.cream_api.ini" />
   </ItemGroup>
 
 </Project>

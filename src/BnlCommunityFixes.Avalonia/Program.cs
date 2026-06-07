@@ -76,23 +76,42 @@ sealed class Program
             // The update check runs after the MainWindow opens so it has full UI available.
             var installService = new BlockNLoadInstallService();
             var installInfo = installService.Detect(settings);
-            var launcherConfigService = new LauncherConfigService();
-            var launcherConfig = launcherConfigService.LoadOrCreate(installInfo, logger);
             // HttpClient lifetime is managed by the app; not disposed here so it stays valid until exit
             var httpClient = new System.Net.Http.HttpClient();
 
-            var mainVm = new MainWindowViewModel(paths, logger, settings, installInfo, launcherConfig, httpClient);
             UpdateCoordinator? updateCoordinator = null;
             if (!runtimeOptions.PortableMode)
             {
                 updateCoordinator = new UpdateCoordinator(paths, logger, settings, runtimeOptions, httpClient);
             }
 
-            App.Startup = new App.StartupContext
+            if (!installInfo.IsDetected)
             {
-                MainVm = mainVm,
-                UpdateCoordinator = updateCoordinator
-            };
+                App.Startup = new App.StartupContext
+                {
+                    MainVm = new MainWindowViewModel(paths, logger, settings, installInfo, null, httpClient),
+                    GameSetup = new App.GameSetupArgs
+                    {
+                        Paths = paths,
+                        Logger = logger,
+                        Settings = settings,
+                        SettingsService = settingsService,
+                        HttpClient = httpClient,
+                        UpdateCoordinator = updateCoordinator
+                    }
+                };
+            }
+            else
+            {
+                var launcherConfigService = new LauncherConfigService();
+                var launcherConfig = launcherConfigService.LoadOrCreate(installInfo, logger);
+                var mainVm = new MainWindowViewModel(paths, logger, settings, installInfo, launcherConfig, httpClient);
+                App.Startup = new App.StartupContext
+                {
+                    MainVm = mainVm,
+                    UpdateCoordinator = updateCoordinator
+                };
+            }
 
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }

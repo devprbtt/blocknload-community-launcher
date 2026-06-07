@@ -113,6 +113,18 @@ internal static class Program
             var installService = new BlockNLoadInstallService();
             var installInfo = installService.Detect(settings);
 
+            if (!installInfo.IsDetected)
+            {
+                var setupForm = new GameDownloadForm(paths, logger, settings, settingsService, httpClient);
+                if (setupForm.ShowDialog() != System.Windows.Forms.DialogResult.OK || setupForm.ResultInstallInfo == null)
+                {
+                    logger.Info("Game setup cancelled by user.");
+                    return;
+                }
+                installInfo = setupForm.ResultInstallInfo;
+                settings = settingsService.Load();
+            }
+
             var launcherConfigService = new LauncherConfigService();
             var launcherConfig = launcherConfigService.LoadOrCreate(installInfo, logger);
 

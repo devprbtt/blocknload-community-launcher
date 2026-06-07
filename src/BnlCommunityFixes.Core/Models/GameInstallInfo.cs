@@ -23,4 +23,6 @@ public sealed class GameInstallInfo
     public string CustomTexturesDirectoryPath { get; init; } = "";
 
     public string FailureReason { get; init; } = "";
+
+    public bool IsNoSteamInstall { get; init; }
 }

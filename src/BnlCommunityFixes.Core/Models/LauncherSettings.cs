@@ -27,4 +27,7 @@ public sealed class LauncherSettings
 
     [JsonPropertyName("dismissedUpdateNoticeVersion")]
     public string DismissedUpdateNoticeVersion { get; set; } = "";
+
+    [JsonPropertyName("noSteamMode")]
+    public bool NoSteamMode { get; set; }
 }

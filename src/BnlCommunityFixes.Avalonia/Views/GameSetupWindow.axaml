@@ -1,0 +1,66 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="BnlCommunityFixes.Avalonia.Views.GameSetupWindow"
+        Title="Block N Load — Game Setup"
+        Width="580" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True">
+
+    <StackPanel Margin="16 14 16 16" Spacing="10">
+
+        <TextBlock Text="Block N Load was not found on this PC."
+                   FontWeight="Bold" FontSize="14" />
+
+        <TextBlock Text="Download the game below, or point the launcher to an existing installation."
+                   TextWrapping="Wrap" Foreground="Gray" />
+
+        <!-- Install folder -->
+        <TextBlock Text="Install folder:" FontWeight="SemiBold" />
+        <Grid ColumnDefinitions="*,Auto" >
+            <TextBox x:Name="InstallPathBox" Grid.Column="0" Watermark="e.g. C:\Games\BlockNLoad" Margin="0 0 6 0" />
+            <Button x:Name="BrowseButton" Grid.Column="1" Content="Browse…" Click="BrowseButton_Click" Width="90" />
+        </Grid>
+
+        <!-- Options -->
+        <CheckBox x:Name="DepsCheckBox"
+                  Content="Also download audio dependencies (required if you have no sound in-game)" />
+
+        <!-- Progress area (hidden until download starts) -->
+        <StackPanel x:Name="ProgressPanel" IsVisible="False" Spacing="4">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock x:Name="StatusLabel" Grid.Column="0" Text="" Foreground="Gray" FontSize="11" TextWrapping="Wrap" />
+                <TextBlock x:Name="PercentLabel" Grid.Column="1" Foreground="Gray" FontSize="11" Margin="8 0 0 0" />
+            </Grid>
+            <ProgressBar x:Name="ProgressBar" Minimum="0" Maximum="1000" Value="0" Height="18" />
+        </StackPanel>
+
+        <!-- Mirror links -->
+        <StackPanel Spacing="2">
+            <TextBlock Text="Manual download mirrors (use if download fails, then choose 'I already have the files'):"
+                       FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock x:Name="Mirror1Link" Text="MEGA mirror — ZIP"
+                           Foreground="#0078D4" Cursor="Hand" FontSize="11"
+                           PointerPressed="Mirror1_Click" />
+                <TextBlock x:Name="Mirror2Link" Text="MEGA mirror — 7z"
+                           Foreground="#0078D4" Cursor="Hand" FontSize="11"
+                           PointerPressed="Mirror2_Click" />
+                <TextBlock x:Name="Mirror3Link" Text="MEGA mirror — Audio dependencies"
+                           Foreground="#0078D4" Cursor="Hand" FontSize="11"
+                           PointerPressed="Mirror3_Click" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Action buttons -->
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0 4 0 0">
+            <Button x:Name="DownloadButton"    Grid.Column="0" Content="Download &amp; Install"
+                    Classes="accent" Width="160" Height="32" Click="DownloadButton_Click" />
+            <Button x:Name="AlreadyHaveButton" Grid.Column="1" Content="I already have the files"
+                    Width="175" Height="32" Margin="10 0 0 0" Click="AlreadyHaveButton_Click" />
+            <Button x:Name="CancelButton"      Grid.Column="3" Content="Cancel"
+                    MinWidth="90" Height="32" Click="CancelButton_Click" />
+        </Grid>
+
+    </StackPanel>
+</Window>

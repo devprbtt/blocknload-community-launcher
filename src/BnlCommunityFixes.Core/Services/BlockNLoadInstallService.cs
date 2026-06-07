@@ -13,7 +13,7 @@ public sealed class BlockNLoadInstallService
     {
         if (!string.IsNullOrWhiteSpace(settings.GamePath))
         {
-            return BuildFromCandidate(PlatformPathNormalizer.Normalize(settings.GamePath), "settings.gamePath");
+            return BuildFromCandidate(PlatformPathNormalizer.Normalize(settings.GamePath), "settings.gamePath", isNoSteam: settings.NoSteamMode);
         }
 
         var steamPath = TryGetSteamInstallPath();
@@ -56,7 +56,7 @@ public sealed class BlockNLoadInstallService
         };
     }
 
-    private static GameInstallInfo BuildFromCandidate(string candidateRoot, string source, string steamPath = "")
+    private static GameInstallInfo BuildFromCandidate(string candidateRoot, string source, string steamPath = "", bool isNoSteam = false)
     {
         var fullRoot = NormalizeGameRoot(candidateRoot);
         var win64DirectoryPath = Path.Combine(fullRoot, "Win64");
@@ -100,7 +100,8 @@ public sealed class BlockNLoadInstallService
             ReplaysDirectoryPath = Path.Combine(gameDataDirectoryPath, "bnl-match-replays"),
             CustomAudioDirectoryPath = Path.Combine(gameDataDirectoryPath, "CustomAudio"),
             CustomMeshesDirectoryPath = Path.Combine(gameDataDirectoryPath, "CustomMeshes"),
-            CustomTexturesDirectoryPath = Path.Combine(gameDataDirectoryPath, "CustomTextures")
+            CustomTexturesDirectoryPath = Path.Combine(gameDataDirectoryPath, "CustomTextures"),
+            IsNoSteamInstall = isNoSteam
         };
     }
 
