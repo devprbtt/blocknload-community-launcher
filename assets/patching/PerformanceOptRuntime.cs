@@ -6,6 +6,8 @@ namespace BnlCommunityFixes
     public static class PerformanceOptRuntime
     {
         private static readonly System.Collections.Generic.List<GuiHealthBarMaker> ActiveHealthbarMakers = new System.Collections.Generic.List<GuiHealthBarMaker>();
+        // Mirror set for O(1) Contains checks instead of O(n) list scans
+        private static readonly System.Collections.Generic.HashSet<GuiHealthBarMaker> ActiveHealthbarMakersSet = new System.Collections.Generic.HashSet<GuiHealthBarMaker>();
         private static int registerLogCount;
         private static int activeStateLogCount;
         private static int activeListReadLogCount;
@@ -121,26 +123,50 @@ namespace BnlCommunityFixes
 
         public class GuiHealthbarMakerController : MonoBehaviour
         {
+            // Frames between checks when culled (distant/inactive) — longer gap = less overhead for the majority of devices
+            private const int CulledCheckInterval = 30;
+            // Frames between checks when active (nearby) — short gap keeps healthbars responsive
+            private const int ActiveCheckInterval = 4;
+            // How often to re-resolve the player reference (player unit rarely changes)
+            private const int PlayerRefreshInterval = 120;
+
             private GuiHealthBarMaker maker;
             private Unit unit;
+            private Unit cachedPlayer;
             private bool isActive;
             private int frameOffset;
+            private int playerRefreshOffset;
 
             public void Initialize(GuiHealthBarMaker source)
             {
                 maker = source;
                 unit = source != null ? source.Unit : null;
-                frameOffset = Mathf.Abs(GetInstanceID()) % 12;
+                // Spread each controller's check across different frames using instance ID
+                int id = Mathf.Abs(GetInstanceID());
+                frameOffset = id % CulledCheckInterval;
+                playerRefreshOffset = id % PlayerRefreshInterval;
             }
 
             public void RefreshImmediate()
             {
+                RefreshPlayer();
                 UpdateActiveState();
             }
 
             private void Update()
             {
-                if ((Time.frameCount + frameOffset) % 12 != 0)
+                int frame = Time.frameCount;
+
+                // Refresh player reference on a slow cadence — it almost never changes
+                if ((frame + playerRefreshOffset) % PlayerRefreshInterval == 0)
+                {
+                    RefreshPlayer();
+                }
+
+                // Adaptive check interval: active devices check more often (stay responsive),
+                // culled devices check rarely (most of the map when the player is in one area)
+                int interval = isActive ? ActiveCheckInterval : CulledCheckInterval;
+                if ((frame + frameOffset) % interval != 0)
                 {
                     return;
                 }
@@ -158,6 +184,11 @@ namespace BnlCommunityFixes
                 SetActive(false);
             }
 
+            private void RefreshPlayer()
+            {
+                cachedPlayer = GetLocalPlayer();
+            }
+
             private void UpdateActiveState()
             {
                 if (maker == null)
@@ -171,9 +202,8 @@ namespace BnlCommunityFixes
                     unit = maker.Unit;
                 }
 
-                Unit player = GetLocalPlayer();
                 float maxDistance = PerformanceOptGeneratedConfig.DeviceHealthbarCullDistance;
-                bool shouldBeActive = ShouldKeepHealthbar(unit, player, maxDistance * maxDistance);
+                bool shouldBeActive = ShouldKeepHealthbar(unit, cachedPlayer, maxDistance * maxDistance);
                 SetActive(shouldBeActive);
             }
 
@@ -186,7 +216,7 @@ namespace BnlCommunityFixes
 
                 if (value)
                 {
-                    if (!isActive && !ActiveHealthbarMakers.Contains(maker))
+                    if (!isActive && ActiveHealthbarMakersSet.Add(maker))
                     {
                         ActiveHealthbarMakers.Add(maker);
                         if (activeStateLogCount < 60)
@@ -201,7 +231,7 @@ namespace BnlCommunityFixes
                     return;
                 }
 
-                if (ActiveHealthbarMakers.Contains(maker))
+                if (ActiveHealthbarMakersSet.Remove(maker))
                 {
                     ActiveHealthbarMakers.Remove(maker);
                     if (activeStateLogCount < 60)
