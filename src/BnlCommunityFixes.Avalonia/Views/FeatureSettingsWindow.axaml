@@ -261,7 +261,7 @@
                         <CheckBox Content="Hide falling blocks"   IsChecked="{Binding HideFallingBlocks}" />
 
                         <TextBlock Text="Optimize Device Health Bars" FontWeight="SemiBold" Margin="0 8 0 0" />
-                        <TextBlock Text="Reduces CPU cost on device-heavy maps by skipping distant device health bars while keeping normal player, base, shield-generator, objective, and other always-relevant world health bars. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <TextBlock Text="Reduces CPU cost on device-heavy maps. Skips distant device health bars entirely, skips full-HP devices each frame, and short-circuits the healthbar update loop when nothing has changed. Keeps player, base, shield-generator, objective, and other always-relevant health bars unaffected. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled" IsChecked="{Binding PerformanceOptEnabled}" />
 
                         <TextBlock Text="Ability Cast" FontWeight="SemiBold" Margin="0 8 0 0" />

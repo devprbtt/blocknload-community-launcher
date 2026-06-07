@@ -13,6 +13,43 @@ namespace BnlCommunityFixes
         private static int registerLogCount;
         private static int activeStateLogCount;
         private static int activeListReadLogCount;
+        private static bool activeListDirty = true;
+        private static int lastFilteredCount = -1;
+
+        // Called at the top of GuiHealthbarPopulation.Update — skip the entire update if nothing changed.
+        public static bool ShouldSkipUpdate()
+        {
+            if (activeListDirty)
+            {
+                return false;
+            }
+
+            // Re-evaluate health states to detect damage/heal transitions.
+            // This is a lightweight scan — no allocations, just counting.
+            int filteredCount = 0;
+            for (int i = 0; i < ActiveHealthbarMakers.Count; i++)
+            {
+                GuiHealthBarMaker maker = ActiveHealthbarMakers[i];
+                if (maker == null) continue;
+                Unit unit = maker.Unit;
+                if (unit == null) continue;
+                if (unit.PlayerId != null) { filteredCount++; continue; }
+                if (unit.IsHealth && unit.BombUnitData == null)
+                {
+                    float maxHp = unit.MaxHealth;
+                    if (maxHp > 0f && unit.Health >= maxHp) continue;
+                }
+                filteredCount++;
+            }
+
+            if (filteredCount != lastFilteredCount)
+            {
+                lastFilteredCount = filteredCount;
+                return false;
+            }
+
+            return true;
+        }
 
         public static System.Collections.Generic.List<GuiHealthBarMaker> GetActiveHealthbarMakers(System.Collections.Generic.List<GuiHealthBarMaker> makers)
         {
@@ -21,6 +58,8 @@ namespace BnlCommunityFixes
                 activeListReadLogCount++;
                 Debug.Log("[BNL PerfOpt] GetActiveHealthbarMakers source=" + (makers != null ? makers.Count : -1) + " active=" + ActiveHealthbarMakers.Count);
             }
+
+            activeListDirty = false;
 
             // Filter out full-HP devices here so UpdatePopulation never sees them,
             // but they stay in the active list so damage numbers have a valid anchor the moment HP drops.
@@ -46,8 +85,9 @@ namespace BnlCommunityFixes
                     continue;
                 }
 
-                // Skip devices at full HP — healthbar shows nothing useful
-                if (unit.IsHealth)
+                // Skip devices at full HP — healthbar shows nothing useful.
+                // Bombs are exempt: their healthbar shows a countdown timer regardless of HP.
+                if (unit.IsHealth && unit.BombUnitData == null)
                 {
                     float maxHp = unit.MaxHealth;
                     if (maxHp > 0f && unit.Health >= maxHp)
@@ -59,6 +99,7 @@ namespace BnlCommunityFixes
                 FilteredHealthbarMakers.Add(maker);
             }
 
+            lastFilteredCount = FilteredHealthbarMakers.Count;
             return FilteredHealthbarMakers;
         }
 
@@ -260,6 +301,7 @@ namespace BnlCommunityFixes
                     if (!isActive && ActiveHealthbarMakersSet.Add(maker))
                     {
                         ActiveHealthbarMakers.Add(maker);
+                        activeListDirty = true;
                         if (activeStateLogCount < 60)
                         {
                             activeStateLogCount++;
@@ -275,6 +317,7 @@ namespace BnlCommunityFixes
                 if (ActiveHealthbarMakersSet.Remove(maker))
                 {
                     ActiveHealthbarMakers.Remove(maker);
+                    activeListDirty = true;
                     if (activeStateLogCount < 60)
                     {
                         activeStateLogCount++;

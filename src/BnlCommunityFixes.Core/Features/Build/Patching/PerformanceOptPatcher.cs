@@ -36,11 +36,18 @@ public sealed class PerformanceOptPatcher : IExperimentalFeaturePatcher
             return;
         }
 
-        PatchGuiHealthbarPopulation(context, getActiveHealthbarMakers);
+        var shouldSkipUpdate = context.TargetModule.ImportReference(
+            runtimeType.Methods.FirstOrDefault(static m => m.Name == "ShouldSkipUpdate"));
+        if (shouldSkipUpdate is null)
+        {
+            return;
+        }
+
+        PatchGuiHealthbarPopulation(context, getActiveHealthbarMakers, shouldSkipUpdate);
         PatchGuiHealthBarMakerStart(context, registerHealthbarMaker);
     }
 
-    private static void PatchGuiHealthbarPopulation(ExperimentalPatchContext context, MethodReference getActiveHealthbarMakers)
+    private static void PatchGuiHealthbarPopulation(ExperimentalPatchContext context, MethodReference getActiveHealthbarMakers, MethodReference shouldSkipUpdate)
     {
         var type = context.TargetModule.Types.FirstOrDefault(static t => t.Name == "GuiHealthbarPopulation");
         if (type is null)
@@ -56,6 +63,15 @@ public sealed class PerformanceOptPatcher : IExperimentalFeaturePatcher
 
         var instructions = method.Body.Instructions;
         var il = method.Body.GetILProcessor();
+
+        // Inject early-exit guard at the top:
+        //   if (ShouldSkipUpdate()) return;
+        var firstInstruction = instructions.First();
+        var retInstruction = il.Create(OpCodes.Ret);
+        il.InsertBefore(firstInstruction, il.Create(OpCodes.Call, shouldSkipUpdate));
+        il.InsertBefore(firstInstruction, il.Create(OpCodes.Brfalse, firstInstruction));
+        il.InsertBefore(firstInstruction, retInstruction);
+
         var targets = instructions.Where(static i =>
             i.OpCode == OpCodes.Ldsfld &&
             i.Operand is FieldReference fr &&
