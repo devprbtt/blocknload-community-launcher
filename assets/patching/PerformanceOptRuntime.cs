@@ -8,6 +8,8 @@ namespace BnlCommunityFixes
         private static readonly System.Collections.Generic.List<GuiHealthBarMaker> ActiveHealthbarMakers = new System.Collections.Generic.List<GuiHealthBarMaker>();
         // Mirror set for O(1) Contains checks instead of O(n) list scans
         private static readonly System.Collections.Generic.HashSet<GuiHealthBarMaker> ActiveHealthbarMakersSet = new System.Collections.Generic.HashSet<GuiHealthBarMaker>();
+        // Reusable output list for GetActiveHealthbarMakers — avoids allocation every frame
+        private static readonly System.Collections.Generic.List<GuiHealthBarMaker> FilteredHealthbarMakers = new System.Collections.Generic.List<GuiHealthBarMaker>();
         private static int registerLogCount;
         private static int activeStateLogCount;
         private static int activeListReadLogCount;
@@ -20,7 +22,44 @@ namespace BnlCommunityFixes
                 Debug.Log("[BNL PerfOpt] GetActiveHealthbarMakers source=" + (makers != null ? makers.Count : -1) + " active=" + ActiveHealthbarMakers.Count);
             }
 
-            return ActiveHealthbarMakers;
+            // Filter out full-HP devices here so UpdatePopulation never sees them,
+            // but they stay in the active list so damage numbers have a valid anchor the moment HP drops.
+            FilteredHealthbarMakers.Clear();
+            for (int i = 0; i < ActiveHealthbarMakers.Count; i++)
+            {
+                GuiHealthBarMaker maker = ActiveHealthbarMakers[i];
+                if (maker == null)
+                {
+                    continue;
+                }
+
+                Unit unit = maker.Unit;
+                if (unit == null)
+                {
+                    continue;
+                }
+
+                // Always pass through player-owned units
+                if (unit.PlayerId != null)
+                {
+                    FilteredHealthbarMakers.Add(maker);
+                    continue;
+                }
+
+                // Skip devices at full HP — healthbar shows nothing useful
+                if (unit.IsHealth)
+                {
+                    float maxHp = unit.MaxHealth;
+                    if (maxHp > 0f && unit.Health >= maxHp)
+                    {
+                        continue;
+                    }
+                }
+
+                FilteredHealthbarMakers.Add(maker);
+            }
+
+            return FilteredHealthbarMakers;
         }
 
         public static void RegisterHealthbarMaker(GuiHealthBarMaker maker)
@@ -72,6 +111,7 @@ namespace BnlCommunityFixes
                 return true;
             }
 
+            // Always show player unit healthbars
             if (unit == player || unit.PlayerId != null)
             {
                 return true;
@@ -83,6 +123,7 @@ namespace BnlCommunityFixes
                 return true;
             }
 
+            // Always show objective/base/supply healthbars regardless of distance or HP
             if (IsAlwaysRelevant(card))
             {
                 return true;

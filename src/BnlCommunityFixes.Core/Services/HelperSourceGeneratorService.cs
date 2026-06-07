@@ -453,6 +453,13 @@ public sealed class HelperSourceGeneratorService
         return def;
     }
 
+    private static int GetInt(JsonElement el, string key, int def)
+    {
+        if (el.ValueKind == JsonValueKind.Object && el.TryGetProperty(key, out var p) && p.ValueKind == JsonValueKind.Number)
+            return p.TryGetInt32(out var v) ? v : def;
+        return def;
+    }
+
     private static string GetFloat(JsonElement el, string key, float def)
     {
         if (el.ValueKind == JsonValueKind.Object && el.TryGetProperty(key, out var p) && p.ValueKind == JsonValueKind.Number)
