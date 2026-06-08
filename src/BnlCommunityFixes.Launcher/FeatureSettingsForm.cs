@@ -105,6 +105,7 @@ public sealed class FeatureSettingsForm : Form
 
     private readonly CheckBox fontOverrideEnabledCheckBox;
     private readonly CheckBox performanceOptEnabledCheckBox;
+    private readonly ComboBox performanceOptDiagnosticComboBox;
 
     private readonly CheckBox skipIntroCheckBox;
     private readonly CheckBox disableMainMenuFrameCapCheckBox;
@@ -672,6 +673,26 @@ public sealed class FeatureSettingsForm : Form
         disableMainMenuFrameCapCheckBox = NewCheckBox("Disable frame cap on main menu (uncaps FPS while on the main menu screen)", 14, EnabledY + 30);
         performanceOptEnabledCheckBox = NewCheckBox("Optimize device health bars", 14, EnabledY + 60);
         miscTab.Controls.AddRange([skipIntroCheckBox, disableMainMenuFrameCapCheckBox, performanceOptEnabledCheckBox]);
+        miscTab.Controls.Add(NewLabel("Diagnostic", 34, EnabledY + 90));
+        performanceOptDiagnosticComboBox = NewComboBox(34, EnabledY + 108, 320,
+            "None",
+            "__CPU_DISABLE_MINIMAP_OBJECT_POP__",
+            "__CPU_DISABLE_ZONE_NOTIFICATIONS__",
+            "__CPU_DISABLE_SUPPLY_TIMER__",
+            "__CPU_DISABLE_ZONE_MUSIC__",
+            "__CPU_DISABLE_FACTORY_COLORS__",
+            "__CPU_DISABLE_GRAVITY_TRAP_EFFECTS__",
+            "__CPU_DISABLE_FORCEFIELD_SHIELD_EFFECTS__",
+            "__CPU_DISABLE_FAN_ANIMATORS__",
+            "__CPU_DISABLE_DEVICE_EFFECTS_COMBINED__",
+            "__CPU_DISABLE_TESLA_LOGIC__",
+            "__CPU_DISABLE_MINIMAP_ROOT__",
+            "__CPU_DISABLE_PORTAL_UPDATE__",
+            "__CPU_DISABLE_TURRET_MODEL_ANIMATIONS__",
+            "__CPU_DISABLE_MORTAR_MODEL_ANIMATIONS__",
+            "__CPU_DISABLE_WSI_FACTORY__");
+        performanceOptDiagnosticComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        miscTab.Controls.Add(performanceOptDiagnosticComboBox);
 
         tabs.TabPages.AddRange([crosshairTab, fovTab, teamColorsTab, damageTab, healAlertTab, beamTab, shieldTab, localBuildPreviewTab, aimHealthbarTab, deathCamTab, autoCasualQueueTab, friendlyLowHealthTab, teammateHpTab, autoCrouchTab, hideImpactVfxTab, unitGuiScaleTab, wsiScaleTab, mapRenderTab, segmentedHealthbarTab, fontOverrideTab, miscTab]);
 
@@ -960,6 +981,8 @@ public sealed class FeatureSettingsForm : Form
 
         var performanceOpt = featureSettingsService.LoadPerformanceOptSettings();
         performanceOptEnabledCheckBox.Checked = performanceOpt.Enabled;
+        var performanceOptDiagnosticIdx = performanceOptDiagnosticComboBox.Items.IndexOf(performanceOpt.DiagnosticMode);
+        performanceOptDiagnosticComboBox.SelectedIndex = performanceOptDiagnosticIdx >= 0 ? performanceOptDiagnosticIdx : 0;
 
         skipIntroCheckBox.Checked = LoadDebugMenuBool("skip_intro");
         disableMainMenuFrameCapCheckBox.Checked = LoadDebugMenuBool("disable_main_menu_frame_cap");
@@ -1239,7 +1262,8 @@ public sealed class FeatureSettingsForm : Form
 
         featureSettingsService.SavePerformanceOptSettings(new PerformanceOptSettings
         {
-            Enabled = performanceOptEnabledCheckBox.Checked
+            Enabled = performanceOptEnabledCheckBox.Checked,
+            DiagnosticMode = performanceOptDiagnosticComboBox.SelectedItem as string ?? "None"
         });
 
         SaveDebugMenuBool("skip_intro", skipIntroCheckBox.Checked);

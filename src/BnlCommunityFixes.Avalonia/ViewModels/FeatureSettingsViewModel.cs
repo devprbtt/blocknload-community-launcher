@@ -109,6 +109,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _segmentedHealthbarEnabled;
     [ObservableProperty] private bool _fontOverrideEnabled;
     [ObservableProperty] private bool _performanceOptEnabled;
+    [ObservableProperty] private string _performanceOptDiagnosticMode = "None";
     [ObservableProperty] private bool _abilityCastEnabled;
     [ObservableProperty] private bool _skipIntro;
     [ObservableProperty] private bool _disableMainMenuFrameCap;
@@ -121,6 +122,26 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
 
     public IReadOnlyList<string> ShieldDisplayModes { get; } =
         ["circle", "numeric", "text"];
+
+    public IReadOnlyList<string> PerformanceOptDiagnosticModes { get; } =
+        [
+            "None",
+            "__CPU_DISABLE_MINIMAP_OBJECT_POP__",
+            "__CPU_DISABLE_ZONE_NOTIFICATIONS__",
+            "__CPU_DISABLE_SUPPLY_TIMER__",
+            "__CPU_DISABLE_ZONE_MUSIC__",
+            "__CPU_DISABLE_FACTORY_COLORS__",
+            "__CPU_DISABLE_GRAVITY_TRAP_EFFECTS__",
+            "__CPU_DISABLE_FORCEFIELD_SHIELD_EFFECTS__",
+            "__CPU_DISABLE_FAN_ANIMATORS__",
+            "__CPU_DISABLE_DEVICE_EFFECTS_COMBINED__",
+            "__CPU_DISABLE_TESLA_LOGIC__",
+            "__CPU_DISABLE_MINIMAP_ROOT__",
+            "__CPU_DISABLE_PORTAL_UPDATE__",
+            "__CPU_DISABLE_TURRET_MODEL_ANIMATIONS__",
+            "__CPU_DISABLE_MORTAR_MODEL_ANIMATIONS__",
+            "__CPU_DISABLE_WSI_FACTORY__"
+        ];
 
     public FeatureSettingsViewModel(AppPaths paths, GameInstallInfo? installInfo = null)
     {
@@ -204,6 +225,9 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         FontOverrideEnabled = _svc.LoadFontOverrideSettings().Enabled;
         var performanceOpt = _svc.LoadPerformanceOptSettings();
         PerformanceOptEnabled = performanceOpt.Enabled;
+        PerformanceOptDiagnosticMode = PerformanceOptDiagnosticModes.Contains(performanceOpt.DiagnosticMode)
+            ? performanceOpt.DiagnosticMode
+            : "None";
         AbilityCastEnabled = _svc.LoadAbilityCastSettings().Enabled;
 
         SkipIntro = LoadDebugMenuBool("skip_intro");
@@ -276,7 +300,8 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             _svc.SaveFontOverrideSettings(new FontOverrideSettings { Enabled = FontOverrideEnabled });
             _svc.SavePerformanceOptSettings(new PerformanceOptSettings
             {
-                Enabled = PerformanceOptEnabled
+                Enabled = PerformanceOptEnabled,
+                DiagnosticMode = PerformanceOptDiagnosticMode
             });
             _svc.SaveAbilityCastSettings(new AbilityCastSettings { Enabled = AbilityCastEnabled });
             SaveDebugMenuBool("skip_intro", SkipIntro);

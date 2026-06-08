@@ -42,7 +42,10 @@ public sealed class HelperSourceGeneratorService
         if (GetBool(performanceOpt, "enabled", false))
         {
             var deviceHealthbarCullDistance = GetFloat(performanceOpt, "device_healthbar_cull_distance", 35f);
-            sb.AppendLine("namespace BnlCommunityFixes { public static class PerformanceOptGeneratedConfig { public const float DeviceHealthbarCullDistance = " + deviceHealthbarCullDistance + "; } }");
+            var diagnosticMode = GetString(performanceOpt, "diagnostic_mode", "None")
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"");
+            sb.AppendLine("namespace BnlCommunityFixes { public static class PerformanceOptGeneratedConfig { public const float DeviceHealthbarCullDistance = " + deviceHealthbarCullDistance + "; public const string DiagnosticMode = \"" + diagnosticMode + "\"; } }");
             AppendStaticFile(sb, patchingDir, "PerformanceOptRuntime.cs");
         }
 
