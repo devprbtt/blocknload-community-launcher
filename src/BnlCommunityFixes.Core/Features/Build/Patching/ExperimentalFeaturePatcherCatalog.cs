@@ -39,7 +39,6 @@ public static class ExperimentalFeaturePatcherCatalog
         new AudioReplacerFeaturePatcher(),
         new MeshReplacerFeaturePatcher(),
         new FovFeaturePatcher(),
-        new PerformanceOptPatcher(),
-        new AbilityCastFeaturePatcher()
+        new PerformanceOptPatcher()
     ];
 }

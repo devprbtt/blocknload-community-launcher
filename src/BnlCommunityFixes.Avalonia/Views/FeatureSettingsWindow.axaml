@@ -261,16 +261,8 @@
                         <CheckBox Content="Hide falling blocks"   IsChecked="{Binding HideFallingBlocks}" />
 
                         <TextBlock Text="Optimize Device Health Bars" FontWeight="SemiBold" Margin="0 8 0 0" />
-                        <TextBlock Text="Reduces CPU cost on device-heavy maps. Skips distant device health bars entirely, skips full-HP devices each frame, and short-circuits the healthbar update loop when nothing has changed. Keeps player, base, shield-generator, objective, and other always-relevant health bars unaffected. Includes optional loop-kill diagnostics for testing other CPU hotspots. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <TextBlock Text="Reduces CPU cost on device-heavy maps. Skips distant device health bars entirely, skips full-HP devices each frame, and short-circuits the healthbar update loop when nothing has changed. Throttles minimap, WSI overlay, gravity trap, and fan animator updates. Keeps player, base, shield-generator, objective, and other always-relevant health bars unaffected. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled" IsChecked="{Binding PerformanceOptEnabled}" />
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="Diagnostic" VerticalAlignment="Center" />
-                            <ComboBox ItemsSource="{Binding PerformanceOptDiagnosticModes}" SelectedItem="{Binding PerformanceOptDiagnosticMode}" Width="360" />
-                        </StackPanel>
-
-                        <TextBlock Text="Ability Cast" FontWeight="SemiBold" Margin="0 8 0 0" />
-                        <TextBlock Text="Eliminates the server round-trip wait in Self and Trigger hero abilities by accepting the cast locally. Visuals and sound fire immediately; the server still validates. Only affects Self/Trigger ability types. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
-                        <CheckBox Content="Enabled" IsChecked="{Binding AbilityCastEnabled}" />
 
                     </StackPanel>
                 </ScrollViewer>

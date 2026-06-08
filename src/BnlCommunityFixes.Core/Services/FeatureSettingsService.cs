@@ -318,9 +318,6 @@ public sealed class FeatureSettingsService
     public PerformanceOptSettings LoadPerformanceOptSettings() => Load("experimental-performance-opt-config.json", new PerformanceOptSettings());
     public void SavePerformanceOptSettings(PerformanceOptSettings settings) => Save("experimental-performance-opt-config.json", settings);
 
-    public AbilityCastSettings LoadAbilityCastSettings() => Load("experimental-ability-cast-config.json", new AbilityCastSettings());
-    public void SaveAbilityCastSettings(AbilityCastSettings settings) => Save("experimental-ability-cast-config.json", settings);
-
     public void PushLauncherSettingsToRuntime()
     {
         if (runtimeConfigPath == null)
