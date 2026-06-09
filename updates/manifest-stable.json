@@ -15,8 +15,8 @@
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.2/BnlCommunityFixes",
-      "sha256": "AC8F3091812825126E81F69D2F61509400AD258C18E87FCCB827FECD66714F6C",
-      "size": 111465121
+      "sha256": "2b9e8ff35a429f0e125152fd0f24a771790284d51f0f4910df34b90963c819da",
+      "size": 111469217
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
