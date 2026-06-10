@@ -1,5 +1,3 @@
 {
-  "enabled": true,
-  "show_hp_text": false,
-  "hide_name_background": true
+  "enabled": false
 }

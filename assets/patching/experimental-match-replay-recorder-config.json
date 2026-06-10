@@ -2,7 +2,7 @@
   "enabled": true,
   "capture_payload": true,
   "max_payload_bytes": 262144,
-  "record_custom_games": false,
+  "record_custom_games": true,
   "record_casual_games": true,
   "record_ranked_games": true
 }
