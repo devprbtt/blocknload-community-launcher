@@ -9,19 +9,19 @@
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.3/BnlCommunityFixes.exe",
-      "sha256": "7eb9774678b34b7dccb8e62900b5c415a6584c97f2ef39748e11a6b471b9b418",
+      "sha256": "33ef7f7cfe7c3d48a67e5035dfc1a9ab658609ed007c35d6e9fd8b0e66139677",
       "size": 116365627
     },
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.3/BnlCommunityFixes",
-      "sha256": "29c68b738b7c41b811287516fe1f23cb4277f54c3796c6d417d62f96a37f8227",
+      "sha256": "0844d23b8ab931e40f1599d392519abfe48c7aeded139b93d7bb537caef65d14",
       "size": 111470241
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.3/BnlCommunityFixes.exe",
-      "sha256": "7eb9774678b34b7dccb8e62900b5c415a6584c97f2ef39748e11a6b471b9b418",
+      "sha256": "33ef7f7cfe7c3d48a67e5035dfc1a9ab658609ed007c35d6e9fd8b0e66139677",
       "size": 116365627
     }
   }
