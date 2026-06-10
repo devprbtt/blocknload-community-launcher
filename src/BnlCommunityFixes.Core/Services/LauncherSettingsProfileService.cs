@@ -55,20 +55,19 @@ public sealed class LauncherSettingsProfileService
     public void ApplySelectedProfile(LauncherSettings settings, string profile, Logger logger)
     {
         Normalize(settings);
-        SaveActiveToSelectedProfile(settings, logger);
 
         if (IsPersonalProfile(profile))
         {
-            if (!HasPersonalSnapshot())
-            {
-                SaveSnapshot(GetPersonalSettingsDirectory(), logger, "personal");
-            }
-
+            // Always save active state into personal snapshot — either updating it if already on
+            // personal, or creating the initial snapshot when switching from recommended.
+            SaveSnapshot(GetPersonalSettingsDirectory(), logger, "personal");
             ApplySnapshot(GetPersonalSettingsDirectory(), logger, "personal");
             settings.SettingsProfile = LauncherSettings.PersonalSettingsProfile;
             return;
         }
 
+        // Switching to recommended — never overwrite the recommended snapshot with active files.
+        // The recommended snapshot is managed exclusively by ResetRecommendedSnapshotFromResources.
         EnsureRecommendedSnapshotInitialized(logger);
         ApplyRecommendedSnapshot(logger);
         settings.SettingsProfile = LauncherSettings.RecommendedSettingsProfile;
@@ -198,11 +197,9 @@ public sealed class LauncherSettingsProfileService
         if (IsPersonalProfile(settings.SettingsProfile))
         {
             SaveSnapshot(GetPersonalSettingsDirectory(), logger, "personal");
-            return;
         }
-
-        EnsureRecommendedSnapshotInitialized(logger);
-        SaveSnapshot(GetRecommendedSettingsDirectory(), logger, "recommended");
+        // Never save active files into the recommended snapshot — it is managed exclusively
+        // by ResetRecommendedSnapshotFromResources (called on version upgrade).
     }
 
     private void SaveSnapshot(string snapshotDirectory, Logger logger, string profileName)

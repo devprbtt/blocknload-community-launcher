@@ -216,14 +216,6 @@
                         <CheckBox Content="Font override (Edo SZ)" IsChecked="{Binding FontOverrideEnabled}" />
                         <TextBlock Text="Restores the stylized Edo SZ font to kill feed messages and center-screen notices (e.g. &quot;You've killed...&quot;, &quot;Our cube is under attack!&quot;). Requires a feature bundle rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
 
-                        <!-- Skip intro -->
-                        <CheckBox Content="Skip intro screen on game start" IsChecked="{Binding SkipIntro}" />
-                        <TextBlock Text="Bypasses the warning screen and video that play each time the game starts." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
-
-                        <!-- Frame cap -->
-                        <CheckBox Content="Disable main menu frame cap" IsChecked="{Binding DisableMainMenuFrameCap}" />
-                        <TextBlock Text="Removes the frame rate cap that applies in the main menu, allowing higher FPS while not in a match." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
-
                         <TextBlock Text="Objective Beam" FontWeight="SemiBold" Margin="0 8 0 0" />
                         <TextBlock Text="Adds a tall vertical beam above the capture objective so it is visible from anywhere on the map. No additional options — this is a simple enable/disable toggle." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled"   IsChecked="{Binding ObjectiveBeamEnabled}" />

@@ -10,10 +10,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>2.7.5</Version>
+    <Version>2.7.6</Version>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Avalonia</RootNamespace>
-    <ApplicationIcon>../BnlCommunityFixes.Launcher/launcher-icon.ico</ApplicationIcon>
+    <ApplicationIcon>launcher-icon.ico</ApplicationIcon>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
@@ -37,7 +37,7 @@
     <ProjectReference Include="..\BnlCommunityFixes.ReplayAnalyzer\BnlCommunityFixes.ReplayAnalyzer.csproj" />
   </ItemGroup>
 
-  <!-- Embedded patching assets (same as WinForms launcher) -->
+  <!-- Embedded patching assets bundled directly into the Avalonia launcher -->
   <ItemGroup>
     <EmbeddedResource Include="..\..\assets\patching\Build-ExperimentalCrosshairAssembly.ps1" LogicalName="Patching.Build-ExperimentalCrosshairAssembly.ps1" />
     <EmbeddedResource Include="..\..\assets\patching\CrosshairBundleRuntime.cs" LogicalName="Patching.CrosshairBundleRuntime.cs" />
@@ -52,6 +52,7 @@
     <EmbeddedResource Include="..\..\assets\patching\PerformanceOptRuntime.cs" LogicalName="Patching.PerformanceOptRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-debug-menu-config.json" LogicalName="Patching.experimental-debug-menu-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-match-replay-recorder-config.json" LogicalName="Patching.experimental-match-replay-recorder-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-emote-test-config.json" LogicalName="Patching.experimental-emote-test-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-auto-casual-queue-config.json" LogicalName="Patching.experimental-auto-casual-queue-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\crosshair-config.json" LogicalName="Patching.crosshair-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\fov-config.json" LogicalName="Patching.fov-config.json" />

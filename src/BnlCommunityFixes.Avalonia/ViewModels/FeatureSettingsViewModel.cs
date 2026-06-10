@@ -12,7 +12,6 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     private readonly FeatureSettingsService _svc;
     private readonly FeaturePresetsService _presets;
     private readonly GameInstallInfo? _installInfo;
-    private readonly DebugMenuConfigService _debugMenuConfigService = new();
 
     public event Action<string, string>? ErrorOccurred;
     public event Action? Saved;
@@ -109,8 +108,6 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _segmentedHealthbarEnabled;
     [ObservableProperty] private bool _fontOverrideEnabled;
     [ObservableProperty] private bool _performanceOptEnabled;
-    [ObservableProperty] private bool _skipIntro;
-    [ObservableProperty] private bool _disableMainMenuFrameCap;
 
     public IReadOnlyList<string> CrosshairShapes { get; } =
         ["__DEFAULT__", "Dot", "Crosshair", "BrokenCircle", "Hashed", "HashedCrosshair", "Melee"];
@@ -203,8 +200,6 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         FontOverrideEnabled = _svc.LoadFontOverrideSettings().Enabled;
         PerformanceOptEnabled = _svc.LoadPerformanceOptSettings().Enabled;
 
-        SkipIntro = LoadDebugMenuBool("skip_intro");
-        DisableMainMenuFrameCap = LoadDebugMenuBool("disable_main_menu_frame_cap");
     }
 
     [RelayCommand]
@@ -272,9 +267,6 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             ApplySegmentedHealthbarTextures(SegmentedHealthbarEnabled);
             _svc.SaveFontOverrideSettings(new FontOverrideSettings { Enabled = FontOverrideEnabled });
             _svc.SavePerformanceOptSettings(new PerformanceOptSettings { Enabled = PerformanceOptEnabled });
-            SaveDebugMenuBool("skip_intro", SkipIntro);
-            SaveDebugMenuBool("disable_main_menu_frame_cap", DisableMainMenuFrameCap);
-
             Saved?.Invoke();
         }
         catch (Exception ex) { ErrorOccurred?.Invoke("Save failed", ex.Message); }
@@ -343,20 +335,4 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         File.WriteAllLines(mappingPath, lines, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
-    // ── Debug menu JSON helpers ───────────────────────────────────────────────
-    private string DebugMenuConfigPath => Path.Combine(_paths.PatchingDir, "experimental-debug-menu-config.json");
-
-    private bool LoadDebugMenuBool(string key)
-    {
-        return _debugMenuConfigService.LoadBool(DebugMenuConfigPath, key);
-    }
-
-    private void SaveDebugMenuBool(string key, bool value)
-    {
-        _debugMenuConfigService.SaveBooleanOption(
-            DebugMenuConfigPath,
-            key,
-            value,
-            LauncherDebugProfileService.IsDebugLauncherPath(Environment.ProcessPath));
-    }
 }

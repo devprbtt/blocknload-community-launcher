@@ -81,7 +81,7 @@ The base launcher (server selection and launch) works without .NET 3.5.
 | Project | Description |
 |---|---|
 | `BnlCommunityFixes.Core` | Shared models and services for manifests, hashing, downloads, paths, logging, feature settings, and presets. |
-| `BnlCommunityFixes.Launcher` | The main launcher binary — a WinForms application. Handles bootstrap, Steam detection, update checks, downloads, SHA256 verification, updater handoff, and the Feature Settings / Custom Server configuration UI. |
+| `BnlCommunityFixes.Avalonia` | The main launcher binary. Handles bootstrap, Steam detection, update checks, downloads, SHA256 verification, updater handoff, and the Feature Settings / Custom Server configuration UI. |
 | `BnlCommunityFixes.Updater` | The file-swap helper that replaces the launcher EXE, restores the previous version on failure, and restarts the app. |
 
 ### Repository Layout

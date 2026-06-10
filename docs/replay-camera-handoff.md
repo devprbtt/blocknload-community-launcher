@@ -248,7 +248,7 @@ Always use the Bash tool (PowerShell tool fails silently on dotnet):
 
 ```bash
 cd "k:\BNL EXPORTED\v2"
-dotnet publish src/BnlCommunityFixes.Launcher/BnlCommunityFixes.Launcher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=2.4.1 -o release/2.4.1/launcher
+dotnet publish src/BnlCommunityFixes.Avalonia/BnlCommunityFixes.Avalonia.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=2.4.1 -o release/2.4.1/launcher
 dotnet publish src/BnlCommunityFixes.Updater/BnlCommunityFixes.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=2.4.1 -o release/2.4.1/updater
 `BnlCommunityFixes.exe --analyze-replay <capture-or-directory> [output-directory]`
 ```

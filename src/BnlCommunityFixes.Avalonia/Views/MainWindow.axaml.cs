@@ -93,14 +93,14 @@ public partial class MainWindow : Window
     {
         var vm = new FeatureSettingsViewModel(Vm._paths, Vm._installInfo);
         await new FeatureSettingsWindow(vm).ShowDialog(this);
-        Vm.Reload();
+        Vm.SyncFeatureSettingsChanges();
     }
 
     private async void ImportExportButton_Click(object? sender, RoutedEventArgs e)
     {
         var vm = new ConfigTransferViewModel(Vm._paths);
         await new ConfigTransferWindow(vm).ShowDialog(this);
-        Vm.Reload();
+        Vm.SyncFeatureSettingsChanges();
     }
 
     private async void MoreOptionsButton_Click(object? sender, RoutedEventArgs e)

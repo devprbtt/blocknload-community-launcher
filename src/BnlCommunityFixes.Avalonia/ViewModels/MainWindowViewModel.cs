@@ -140,6 +140,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         RefreshStatus();
     }
 
+    public void SyncFeatureSettingsChanges()
+    {
+        _settingsProfileService.SyncSelectedSnapshotFromActive(_settings, _logger);
+        _settingsProfileService.SyncActiveSettingsToRuntime(_installInfo);
+        _settingsService.Save(_settings);
+        Reload();
+    }
+
     private void PopulateServers()
     {
         Servers.Clear();
