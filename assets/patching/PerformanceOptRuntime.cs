@@ -14,7 +14,8 @@ namespace BnlCommunityFixes
         private static int activeStateLogCount;
         private static int activeListReadLogCount;
         private static bool activeListDirty = true;
-        private static int lastFilteredCount = -1;
+        private static bool healthChangedThisFrame = false;
+        private static bool healthEventSubscribed = false;
 
         private const int MinimapUpdateInterval = 6;
         private const int GravityTrapUpdateInterval = 6;
@@ -53,39 +54,37 @@ namespace BnlCommunityFixes
             return (UnityEngine.Time.frameCount % FrontPlayersUpdateInterval) != 0;
         }
 
-        // Called at the top of GuiHealthbarPopulation.Update — skip the entire update if nothing changed.
+        private static void EnsureHealthEventSubscribed()
+        {
+            if (healthEventSubscribed) return;
+            try
+            {
+                ZoneMessenger messenger = Singleton<ZoneMessenger>.Instance;
+                if (messenger == null) return;
+                var field = typeof(ZoneMessenger).GetField("OnGlobalUnitHealthChange", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+                if (object.ReferenceEquals(field, null)) return;
+                var eventSource = field.GetValue(messenger);
+                if (object.ReferenceEquals(eventSource, null)) return;
+                var subscribeMethod = eventSource.GetType().GetMethod("Subscribe");
+                if (object.ReferenceEquals(subscribeMethod, null)) return;
+                var handler = System.Delegate.CreateDelegate(
+                    typeof(System.Action<>).MakeGenericType(typeof(GlobalUnitHealthChangeArgs)),
+                    typeof(PerformanceOptRuntime).GetMethod("OnHealthChanged", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public));
+                if (object.ReferenceEquals(handler, null)) return;
+                subscribeMethod.Invoke(eventSource, new object[] { handler, null });
+                healthEventSubscribed = true;
+            }
+            catch { }
+        }
+
+        public static void OnHealthChanged(GlobalUnitHealthChangeArgs args)
+        {
+            healthChangedThisFrame = true;
+        }
+
         public static bool ShouldSkipUpdate()
         {
-            if (activeListDirty)
-            {
-                return false;
-            }
-
-            // Re-evaluate health states to detect damage/heal transitions.
-            // This is a lightweight scan — no allocations, just counting.
-            int filteredCount = 0;
-            for (int i = 0; i < ActiveHealthbarMakers.Count; i++)
-            {
-                GuiHealthBarMaker maker = ActiveHealthbarMakers[i];
-                if (maker == null) continue;
-                Unit unit = maker.Unit;
-                if (unit == null) continue;
-                if (unit.PlayerId != null) { filteredCount++; continue; }
-                if (unit.IsHealth && unit.BombUnitData == null)
-                {
-                    float maxHp = unit.MaxHealth;
-                    if (maxHp > 0f && unit.Health >= maxHp) continue;
-                }
-                filteredCount++;
-            }
-
-            if (filteredCount != lastFilteredCount)
-            {
-                lastFilteredCount = filteredCount;
-                return false;
-            }
-
-            return true;
+            return !activeListDirty && !healthChangedThisFrame;
         }
 
         public static System.Collections.Generic.List<GuiHealthBarMaker> GetActiveHealthbarMakers(System.Collections.Generic.List<GuiHealthBarMaker> makers)
@@ -97,6 +96,7 @@ namespace BnlCommunityFixes
             }
 
             activeListDirty = false;
+            healthChangedThisFrame = false;
 
             // Filter out full-HP devices here so UpdatePopulation never sees them,
             // but they stay in the active list so damage numbers have a valid anchor the moment HP drops.
@@ -136,12 +136,12 @@ namespace BnlCommunityFixes
                 FilteredHealthbarMakers.Add(maker);
             }
 
-            lastFilteredCount = FilteredHealthbarMakers.Count;
             return FilteredHealthbarMakers;
         }
 
         public static void RegisterHealthbarMaker(GuiHealthBarMaker maker)
         {
+            EnsureHealthEventSubscribed();
             if (maker == null)
             {
                 return;
