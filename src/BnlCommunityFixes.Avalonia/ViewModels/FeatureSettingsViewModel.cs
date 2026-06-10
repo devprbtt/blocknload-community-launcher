@@ -121,7 +121,6 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     public IReadOnlyList<string> ShieldDisplayModes { get; } =
         ["circle", "numeric", "text"];
 
-
     public FeatureSettingsViewModel(AppPaths paths, GameInstallInfo? installInfo = null)
     {
         _paths = paths;

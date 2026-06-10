@@ -1,5 +1,4 @@
 {
   "enabled": false,
-  "device_healthbar_cull_distance": 20.0,
-  "diagnostic_mode": "None"
+  "device_healthbar_cull_distance": 20.0
 }

@@ -18,8 +18,11 @@ namespace BnlCommunityFixes
 
         private const int MinimapUpdateInterval = 6;
         private const int GravityTrapUpdateInterval = 6;
-        private const int FanAnimatorUpdateInterval = 4;
-        private const int WsiTeamOverlayUpdateInterval = 6;
+        // Team overlay WSI reconciliation is expensive because it rescans units and
+        // runs O(n^2)-style list reconciliation inside GuiWorldSpaceIndicatorFactory.
+        // Existing WSIs continue tracking targets on their own, so we can sync the
+        // population much less often without making the overlay disappear.
+        private const int WsiTeamOverlayUpdateInterval = 30;
 
         public static bool ShouldThrottleMinimapUpdate()
         {
@@ -31,6 +34,8 @@ namespace BnlCommunityFixes
             return (UnityEngine.Time.frameCount % GravityTrapUpdateInterval) != 0;
         }
 
+        private const int FanAnimatorUpdateInterval = 4;
+
         public static bool ShouldThrottleFanAnimator()
         {
             return (UnityEngine.Time.frameCount % FanAnimatorUpdateInterval) != 0;
@@ -39,6 +44,13 @@ namespace BnlCommunityFixes
         public static bool ShouldThrottleWsiTeamOverlay()
         {
             return (UnityEngine.Time.frameCount % WsiTeamOverlayUpdateInterval) != 0;
+        }
+
+        private const int FrontPlayersUpdateInterval = 6;
+
+        public static bool ShouldSkipFrontPlayersUpdate()
+        {
+            return (UnityEngine.Time.frameCount % FrontPlayersUpdateInterval) != 0;
         }
 
         // Called at the top of GuiHealthbarPopulation.Update — skip the entire update if nothing changed.

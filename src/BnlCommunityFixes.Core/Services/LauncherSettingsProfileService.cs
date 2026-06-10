@@ -84,12 +84,23 @@ public sealed class LauncherSettingsProfileService
         var runtimeSync = new RuntimeMenuSyncService();
         var featureSettingsService = new FeatureSettingsService(paths);
         var runtimeConfigPath = runtimeSync.GetRuntimeConfigPath(installInfo.ManagedDirectoryPath);
-        if (File.Exists(runtimeConfigPath))
-        {
-            File.Delete(runtimeConfigPath);
-        }
-
         featureSettingsService.SetRuntimeConfigPath(runtimeConfigPath);
+
+        // Pull in-game runtime edits back into the launcher JSON first if they are newer.
+        // This prevents startup sync from stomping runtime-menu changes like crosshair tweaks.
+        featureSettingsService.LoadCrosshairSettings();
+        featureSettingsService.LoadFovSettings();
+        featureSettingsService.LoadTeamColorSettings();
+        featureSettingsService.LoadDamageHealingSettings();
+        featureSettingsService.LoadLocalBuildPreviewSettings();
+        featureSettingsService.LoadBaseObjectiveBeamSettings();
+        featureSettingsService.LoadTeammateHpSettings();
+        featureSettingsService.LoadAutoCrouchSettings();
+        featureSettingsService.LoadHideImpactVfxSettings();
+        featureSettingsService.LoadUnitGuiScaleSettings();
+        featureSettingsService.LoadWsiSettings();
+        featureSettingsService.LoadMapRenderOverrideSettings();
+
         featureSettingsService.PushLauncherSettingsToRuntime();
     }
 

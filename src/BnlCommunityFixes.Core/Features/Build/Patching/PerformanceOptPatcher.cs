@@ -51,6 +51,8 @@ public sealed class PerformanceOptPatcher : IExperimentalFeaturePatcher
             runtimeType.Methods.FirstOrDefault(static m => m.Name == "ShouldThrottleFanAnimator"));
         var shouldThrottleWsiTeamOverlay = context.TargetModule.ImportReference(
             runtimeType.Methods.FirstOrDefault(static m => m.Name == "ShouldThrottleWsiTeamOverlay"));
+        var shouldSkipFrontPlayersUpdate = context.TargetModule.ImportReference(
+            runtimeType.Methods.FirstOrDefault(static m => m.Name == "ShouldSkipFrontPlayersUpdate"));
 
         PatchGuiHealthbarPopulation(context, getActiveHealthbarMakers, shouldSkipUpdate);
         PatchGuiHealthBarMakerStart(context, registerHealthbarMaker);
@@ -58,6 +60,7 @@ public sealed class PerformanceOptPatcher : IExperimentalFeaturePatcher
         PatchVoidMethodEarlyReturn(context, "GravityTrapEffects", "Update", shouldThrottleGravityTrapEffects);
         PatchVoidMethodEarlyReturn(context, "FanAnimator", "Update", shouldThrottleFanAnimator);
         PatchVoidMethodEarlyReturn(context, "GuiWsiTeamOverlay", "Update", shouldThrottleWsiTeamOverlay);
+        PatchVoidMethodEarlyReturn(context, "GuiFrontPlayers", "Update", shouldSkipFrontPlayersUpdate);
     }
 
     private static void PatchGuiHealthbarPopulation(ExperimentalPatchContext context, MethodReference getActiveHealthbarMakers, MethodReference shouldSkipUpdate)
