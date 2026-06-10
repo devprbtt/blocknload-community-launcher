@@ -2,6 +2,6 @@
   "show_cubes": true,
   "show_devices": true,
   "show_objectives": true,
-  "scale_enabled": false,
+  "scale_enabled": true,
   "scale_multiplier": 0.5
 }
