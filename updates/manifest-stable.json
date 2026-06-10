@@ -1,27 +1,27 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.7.3",
+  "version": "2.7.4",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-06-09T14:00:00.0000000+00:00",
-  "notes": "## 2.7.3\n\n- Performance optimization: event-driven healthbar update skip — healthbar population only updates when HP actually changes, eliminating per-frame scanning\n- Add GuiFrontPlayers throttle (teammate world-space indicators, every 6 frames)\n- Recommended settings now enable performance optimization by default\n- Fix damage numbers floating on first hit to a device\n\n## 2.7.2\n\n- Performance optimization: minimap, gravity trap, fan animator, and WSI team overlay updates throttled to reduce CPU usage on device-heavy maps\n- Removed diagnostic/experimental mode UI from performance settings\n- Removed Ability Cast experimental feature\n\n## 2.7.1\n\n- Fixed damage numbers floating/sticking to screen when devices take damage\n- Device healthbar performance optimization: 33% FPS improvement (416 → 554 avg) with health-state culling\n\n## 2.7.0\n\n- Added no-Steam setup flow: users without Block N Load in their Steam library can now download and install the game directly from the launcher\n- Game download with live progress (file count tracking during extraction)\n- \"I already have the files\" path for users who downloaded manually\n- MEGA mirror links shown as fallback (ZIP, 7z, and audio dependencies)\n- Audio dependencies download option for users with no in-game sound\n- No-Steam installs bypass Steam process checks at launch\r\n",
+  "published_at": "2026-06-09T18:00:00.0000000+00:00",
+  "notes": "## 2.7.4\n\n- Fix recommended settings not applying for users updating from v2.7.3 in-place\n- Sync all recommended settings presets to match current optimal configuration\n\n## 2.7.3\n\n- Performance optimization: event-driven healthbar update skip — healthbar population only updates when HP actually changes, eliminating per-frame scanning\n- Add GuiFrontPlayers throttle (teammate world-space indicators, every 6 frames)\n- Recommended settings now enable performance optimization by default\n- Fix damage numbers floating on first hit to a device\n\n## 2.7.2\n\n- Performance optimization: minimap, gravity trap, fan animator, and WSI team overlay updates throttled to reduce CPU usage on device-heavy maps\n- Removed diagnostic/experimental mode UI from performance settings\n- Removed Ability Cast experimental feature\n\n## 2.7.1\n\n- Fixed damage numbers floating/sticking to screen when devices take damage\n- Device healthbar performance optimization: 33% FPS improvement (416 → 554 avg) with health-state culling\n\n## 2.7.0\n\n- Added no-Steam setup flow: users without Block N Load in their Steam library can now download and install the game directly from the launcher\n- Game download with live progress (file count tracking during extraction)\n- \"I already have the files\" path for users who downloaded manually\n- MEGA mirror links shown as fallback (ZIP, 7z, and audio dependencies)\n- Audio dependencies download option for users with no in-game sound\n- No-Steam installs bypass Steam process checks at launch\r\n",
   "assets": {
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.3/BnlCommunityFixes.exe",
-      "sha256": "33ef7f7cfe7c3d48a67e5035dfc1a9ab658609ed007c35d6e9fd8b0e66139677",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.4/BnlCommunityFixes.exe",
+      "sha256": "77129ec5cb2dff2b0133b76c3521a52789f0d04ac5eda10ae2b015f22b318745",
       "size": 116365627
     },
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.3/BnlCommunityFixes",
-      "sha256": "0844d23b8ab931e40f1599d392519abfe48c7aeded139b93d7bb537caef65d14",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.4/BnlCommunityFixes",
+      "sha256": "cb314ffe35dd27c8bc4c05523d3305ff501e87376456722835114b47d7cbbc96",
       "size": 111470241
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.3/BnlCommunityFixes.exe",
-      "sha256": "33ef7f7cfe7c3d48a67e5035dfc1a9ab658609ed007c35d6e9fd8b0e66139677",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.4/BnlCommunityFixes.exe",
+      "sha256": "77129ec5cb2dff2b0133b76c3521a52789f0d04ac5eda10ae2b015f22b318745",
       "size": 116365627
     }
   }
