@@ -46,6 +46,12 @@ public sealed class HelperSourceGeneratorService
             AppendStaticFile(sb, patchingDir, "PerformanceOptRuntime.cs");
         }
 
+        var timeAssault = ReadJson(patchingDir, "experimental-time-assault-config.json");
+        if (GetBool(timeAssault, "enabled", false))
+        {
+            AppendStaticFile(sb, patchingDir, "TimeAssaultRuntime.cs");
+        }
+
         var outputPath = Path.Combine(patchingDir, "BnlCommunityFixes.generated.cs");
         File.WriteAllText(outputPath, sb.ToString(), Encoding.UTF8);
     }

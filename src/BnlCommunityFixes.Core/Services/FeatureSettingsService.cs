@@ -318,6 +318,9 @@ public sealed class FeatureSettingsService
     public PerformanceOptSettings LoadPerformanceOptSettings() => Load("experimental-performance-opt-config.json", new PerformanceOptSettings());
     public void SavePerformanceOptSettings(PerformanceOptSettings settings) => Save("experimental-performance-opt-config.json", settings);
 
+    public TimeAssaultSettings LoadTimeAssaultSettings() => Load("experimental-time-assault-config.json", new TimeAssaultSettings());
+    public void SaveTimeAssaultSettings(TimeAssaultSettings settings) => Save("experimental-time-assault-config.json", settings);
+
     public void PushLauncherSettingsToRuntime()
     {
         if (runtimeConfigPath == null)

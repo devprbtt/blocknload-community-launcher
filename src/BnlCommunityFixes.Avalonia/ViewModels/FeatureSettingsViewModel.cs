@@ -108,6 +108,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _segmentedHealthbarEnabled;
     [ObservableProperty] private bool _fontOverrideEnabled;
     [ObservableProperty] private bool _performanceOptEnabled;
+    [ObservableProperty] private bool _timeAssaultEnabled;
 
     public IReadOnlyList<string> CrosshairShapes { get; } =
         ["__DEFAULT__", "Dot", "Crosshair", "BrokenCircle", "Hashed", "HashedCrosshair", "Melee"];
@@ -199,6 +200,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         SegmentedHealthbarEnabled = _svc.LoadSegmentedHealthbarSettings().Enabled;
         FontOverrideEnabled = _svc.LoadFontOverrideSettings().Enabled;
         PerformanceOptEnabled = _svc.LoadPerformanceOptSettings().Enabled;
+        TimeAssaultEnabled = _svc.LoadTimeAssaultSettings().Enabled;
 
     }
 
@@ -267,6 +269,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             ApplySegmentedHealthbarTextures(SegmentedHealthbarEnabled);
             _svc.SaveFontOverrideSettings(new FontOverrideSettings { Enabled = FontOverrideEnabled });
             _svc.SavePerformanceOptSettings(new PerformanceOptSettings { Enabled = PerformanceOptEnabled });
+            _svc.SaveTimeAssaultSettings(new TimeAssaultSettings { Enabled = TimeAssaultEnabled });
             Saved?.Invoke();
         }
         catch (Exception ex) { ErrorOccurred?.Invoke("Save failed", ex.Message); }

@@ -147,10 +147,18 @@ public sealed class LauncherSettingsProfileService
         foreach (var fileName in FeatureConfigCatalog.ManagedProfileFiles)
         {
             var resourceName = ResourcePrefix + fileName;
-            using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
-            if (resourceStream is null)
+            var resourceAssembly = GetResourceAssemblies().FirstOrDefault(assembly =>
+                assembly.GetManifestResourceInfo(resourceName) is not null);
+            if (resourceAssembly is null)
             {
                 logger.Warning($"Recommended settings resource '{resourceName}' is missing.");
+                continue;
+            }
+
+            using var resourceStream = resourceAssembly.GetManifestResourceStream(resourceName);
+            if (resourceStream is null)
+            {
+                logger.Warning($"Recommended settings resource '{resourceName}' could not be opened from '{resourceAssembly.GetName().Name}'.");
                 continue;
             }
 
@@ -158,7 +166,7 @@ public sealed class LauncherSettingsProfileService
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
             using var output = File.Create(destinationPath);
             resourceStream.CopyTo(output);
-            logger.Info($"Reset recommended settings snapshot '{fileName}'.");
+            logger.Info($"Reset recommended settings snapshot '{fileName}' from '{resourceAssembly.GetName().Name}'.");
         }
     }
 
@@ -255,6 +263,31 @@ public sealed class LauncherSettingsProfileService
         {
             File.Delete(path);
         }
+    }
+
+    private static IReadOnlyList<Assembly> GetResourceAssemblies()
+    {
+        var assemblies = new List<Assembly>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        void AddAssembly(Assembly? assembly)
+        {
+            if (assembly is null)
+            {
+                return;
+            }
+
+            var fullName = assembly.FullName ?? assembly.GetName().Name ?? Guid.NewGuid().ToString("N");
+            if (seen.Add(fullName))
+            {
+                assemblies.Add(assembly);
+            }
+        }
+
+        AddAssembly(Assembly.GetEntryAssembly());
+        AddAssembly(Assembly.GetExecutingAssembly());
+
+        return assemblies;
     }
 
     private string GetRecommendedSettingsDirectory() =>

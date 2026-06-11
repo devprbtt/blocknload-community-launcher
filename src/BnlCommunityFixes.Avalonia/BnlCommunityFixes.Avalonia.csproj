@@ -50,6 +50,7 @@
     <EmbeddedResource Include="..\..\assets\patching\ReplayPlayerRuntime.cs" LogicalName="Patching.ReplayPlayerRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\AutoCrouchRuntime.cs" LogicalName="Patching.AutoCrouchRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\PerformanceOptRuntime.cs" LogicalName="Patching.PerformanceOptRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\TimeAssaultRuntime.cs" LogicalName="Patching.TimeAssaultRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-debug-menu-config.json" LogicalName="Patching.experimental-debug-menu-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-match-replay-recorder-config.json" LogicalName="Patching.experimental-match-replay-recorder-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-emote-test-config.json" LogicalName="Patching.experimental-emote-test-config.json" />
@@ -69,6 +70,7 @@
     <EmbeddedResource Include="..\..\assets\patching\experimental-auto-crouch-config.json" LogicalName="Patching.experimental-auto-crouch-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-hide-impact-vfx-config.json" LogicalName="Patching.experimental-hide-impact-vfx-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-performance-opt-config.json" LogicalName="Patching.experimental-performance-opt-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-time-assault-config.json" LogicalName="Patching.experimental-time-assault-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-ability-cast-config.json" LogicalName="Patching.experimental-ability-cast-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\unit-gui-scale-config.json" LogicalName="Patching.unit-gui-scale-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\wsi-config.json" LogicalName="Patching.wsi-config.json" />

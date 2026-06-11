@@ -12,6 +12,7 @@ public static partial class FeatureConfigCatalog
         new("hide-impact-vfx", "Hide Impact VFX", "experimental-hide-impact-vfx-config.json", IncludeInConfigTransfer: true),
         new("map-render", "Map Render", "experimental-map-render-config.json", IncludeInConfigTransfer: true),
         new("performance-opt", "Device Healthbar Opt", "experimental-performance-opt-config.json", IncludeInConfigTransfer: true),
+        new("time-assault", "Enable Time Assault", "experimental-time-assault-config.json", IncludeInConfigTransfer: true),
         new("ability-cast", "Ability Cast", "experimental-ability-cast-config.json"),
     ];
 }
