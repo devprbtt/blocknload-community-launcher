@@ -1,28 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.7.5",
+  "version": "2.7.7",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-06-09T19:00:00.0000000+00:00",
-  "notes": "## 2.7.5\n\n- Fix recommended settings preset not matching optimal configuration (crosshair, FOV, team colors, teammate HP, WSI scale, unit GUI scale, base objective beam, match replay, auto-queue)\n\n## 2.7.4\n\n- Fix recommended settings not applying for users updating from v2.7.3 in-place\n\n## 2.7.3\n\n- Performance optimization: event-driven healthbar update skip — healthbar population only updates when HP actually changes, eliminating per-frame scanning\n- Add GuiFrontPlayers throttle (teammate world-space indicators, every 6 frames)\n- Recommended settings now enable performance optimization by default\n- Fix damage numbers floating on first hit to a device\n\n## 2.7.2\n\n- Performance optimization: minimap, gravity trap, fan animator, and WSI team overlay updates throttled to reduce CPU usage on device-heavy maps\n- Removed diagnostic/experimental mode UI from performance settings\n- Removed Ability Cast experimental feature\n\n## 2.7.1\n\n- Fixed damage numbers floating/sticking to screen when devices take damage\n- Device healthbar performance optimization: 33% FPS improvement (416 → 554 avg) with health-state culling\n\n## 2.7.0\n\n- Added no-Steam setup flow: users without Block N Load in their Steam library can now download and install the game directly from the launcher\n- Game download with live progress (file count tracking during extraction)\n- \"I already have the files\" path for users who downloaded manually\n- MEGA mirror links shown as fallback (ZIP, 7z, and audio dependencies)\n- Audio dependencies download option for users with no in-game sound\n- No-Steam installs bypass Steam process checks at launch\r\n",
+  "published_at": "2026-06-11T02:07:23.0521513+00:00",
+  "notes": "## What's new\n\n- Re-enabled the Time Assault menu entry in the Avalonia launcher and game patch flow so the mode can be launched again when enabled.\n- Added Time Assault launcher settings support to config transfer and recommended-settings resource loading.\n\n## Fixes\n\n- Fixed Time Assault scene restart handling by bypassing the broken fast-restart path that could hang the reload at 100%.\n- Time Assault helper runtime is now embedded and generated correctly during patch builds.\n\n## Notes\n\n- Release artifacts include both `win-x64` and `linux-x64` launchers.\n",
   "assets": {
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.5/BnlCommunityFixes.exe",
-      "sha256": "9ca2f01324364e0ae6f81e1a7785a8c13f4f7dd00cef8e2a2670a2e47565a5d9",
-      "size": 116365627
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.7/BnlCommunityFixes.exe",
+      "sha256": "BBDCF3658CC7D66F622CD13050BBC9997EDF07A44AABF3B0F1258D25964ED527",
+      "size": 116377915
     },
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.5/BnlCommunityFixes",
-      "sha256": "63351a28e48e63059f6366624df55598adb8c30879c31a769ce972fb47ac93fd",
-      "size": 111470241
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.7/BnlCommunityFixes",
+      "sha256": "D4A1B40D79AD8436FD84D7CC432D8AC466BE9D673D95B72CFF65D416856AD583",
+      "size": 111482529
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.5/BnlCommunityFixes.exe",
-      "sha256": "9ca2f01324364e0ae6f81e1a7785a8c13f4f7dd00cef8e2a2670a2e47565a5d9",
-      "size": 116365627
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.7/BnlCommunityFixes.exe",
+      "sha256": "BBDCF3658CC7D66F622CD13050BBC9997EDF07A44AABF3B0F1258D25964ED527",
+      "size": 116377915
     }
   }
 }
