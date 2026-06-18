@@ -33,15 +33,16 @@
                   SelectedItem="{Binding SelectedReplay}"
                   SelectionMode="Extended"
                   AutoGenerateColumns="False"
-                  IsReadOnly="True">
+                  IsReadOnly="True"
+                  CanUserResizeColumns="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Date"     Binding="{Binding Date}"     Width="140" />
-                <DataGridTextColumn Header="Map"      Binding="{Binding Map}"      Width="*" />
-                <DataGridTextColumn Header="Duration" Binding="{Binding Duration}" Width="70" />
-                <DataGridTextColumn Header="Winner"   Binding="{Binding Winner}"   Width="70" />
-                <DataGridTextColumn Header="Size"     Binding="{Binding Size}"     Width="80" />
-                <DataGridTextColumn Header="Status"   Binding="{Binding Status}"   Width="90" />
-                <DataGridTextColumn Header="File"     Binding="{Binding File}"     Width="160" />
+                <DataGridTextColumn Header="Date"     Binding="{Binding Date}"     Width="170" MinWidth="150" />
+                <DataGridTextColumn Header="Map"      Binding="{Binding Map}"      Width="2*" MinWidth="180" />
+                <DataGridTextColumn Header="Duration" Binding="{Binding Duration}" Width="90" MinWidth="80" />
+                <DataGridTextColumn Header="Winner"   Binding="{Binding Winner}"   Width="100" MinWidth="80" />
+                <DataGridTextColumn Header="Size"     Binding="{Binding Size}"     Width="90" MinWidth="80" />
+                <DataGridTextColumn Header="Status"   Binding="{Binding Status}"   Width="110" MinWidth="90" />
+                <DataGridTextColumn Header="File"     Binding="{Binding File}"     Width="3*" MinWidth="220" />
             </DataGrid.Columns>
         </DataGrid>
 

@@ -64,7 +64,7 @@ public sealed partial class ReplayBrowserViewModel : ViewModelBase
     {
         var selectedCount = _selectedReplays.Count;
         var s = selectedCount == 1 ? _selectedReplays[0] : SelectedReplay;
-        AnalyzeEnabled = selectedCount == 1 && s is not null;
+        AnalyzeEnabled = selectedCount > 0 || s is not null;
         OpenValidationEnabled = selectedCount == 1 && s?.Capture.HasValidationReport == true;
         OpenLocationEnabled = selectedCount == 1 && s is not null;
         DeleteEnabled = selectedCount > 0;
@@ -86,13 +86,32 @@ public sealed partial class ReplayBrowserViewModel : ViewModelBase
     [RelayCommand]
     private async Task Analyze()
     {
-        if (SelectedReplay is not { } row) return;
+        var rows = _selectedReplays.Count > 0
+            ? _selectedReplays.ToArray()
+            : SelectedReplay is not null
+                ? [SelectedReplay]
+                : [];
+
+        if (rows.Length == 0) return;
+
         Busy = true;
-        Status = $"Analyzing {row.Capture.File.Name}…";
+        Status = rows.Length == 1
+            ? $"Analyzing {rows[0].Capture.File.Name}…"
+            : $"Analyzing {rows.Length} replays…";
         try
         {
-            await _replayService.AnalyzeCaptureAsync(row.Capture.File, CancellationToken.None).ConfigureAwait(true);
-            Status = $"Analyzed {row.Capture.File.Name}.";
+            for (var index = 0; index < rows.Length; index++)
+            {
+                var row = rows[index];
+                Status = rows.Length == 1
+                    ? $"Analyzing {row.Capture.File.Name}…"
+                    : $"Analyzing {row.Capture.File.Name} ({index + 1}/{rows.Length})…";
+                await _replayService.AnalyzeCaptureAsync(row.Capture.File, CancellationToken.None).ConfigureAwait(true);
+            }
+
+            Status = rows.Length == 1
+                ? $"Analyzed {rows[0].Capture.File.Name}."
+                : $"Analyzed {rows.Length} replays.";
             Reload();
         }
         catch (Exception ex) { ErrorOccurred?.Invoke("Analysis failed", ex.Message); Status = "Replay analysis failed."; }
