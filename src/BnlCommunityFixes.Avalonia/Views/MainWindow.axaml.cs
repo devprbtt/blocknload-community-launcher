@@ -34,6 +34,10 @@ public partial class MainWindow : Window
                 "Use the Settings profile dropdown on the main screen if you want to restore your Personal Settings.");
         }
 
+        // Refresh the community server list from GitHub in the background so the
+        // window opens instantly on the cached list and updates when it arrives.
+        Dispatcher.UIThread.Post(() => _ = Vm.RefreshServerListAsync(), DispatcherPriority.Background);
+
         if (_updateCoordinator is not null)
         {
             // Run the update check asynchronously after the window is fully shown

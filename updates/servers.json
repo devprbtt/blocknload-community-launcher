@@ -1,0 +1,23 @@
+{
+"version": 1,
+"servers": {
+  "danny-master": {
+    "name": "Block N Load Community Server - EU",
+    "host": "178.105.241.136",
+    "port": 28100,
+    "patch": "default"
+  },
+  "nascar-master": {
+    "name": "Nascarman's Master Server",
+    "host": "5.161.46.214",
+    "port": 28100,
+    "patch": "default"
+  },
+  "bnlps-v310-minimal-eu": {
+    "name": "Paul's server - UK",
+    "host": "v310.blocknload.pauldh.nl",
+    "port": 28100,
+    "patch": "default"
+  }
+}
+}

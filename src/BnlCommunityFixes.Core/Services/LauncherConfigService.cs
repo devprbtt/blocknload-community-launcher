@@ -247,7 +247,7 @@ public sealed class LauncherConfigService
         {
             Version = LauncherConfigVersion,
             AutoUpdateServerList = false,
-            SelectedServer = "bnlps-v310-minimal-eu",
+            SelectedServer = "",
             UpdateSources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 ["main"] = "file://launcher/cache/main.json",

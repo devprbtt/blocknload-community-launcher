@@ -19,11 +19,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     internal readonly ReplayLauncherService _replayLauncherService;
     internal readonly SettingsService _settingsService;
     internal readonly LauncherSettingsProfileService _settingsProfileService;
+    private readonly ServerListService? _serverListService;
     private readonly string _launcherVersion;
 
     private LauncherConfig? _launcherConfig;
     private bool _syncingReplayRecorder;
     private bool _syncingProfileCombo;
+    private string _serverListStatus = "cached/bundled list";
 
     // ── Observable properties ────────────────────────────────────────────────
 
@@ -59,7 +61,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var installInfo = installService.Detect(settings);
         var launcherConfigService = new LauncherConfigService();
         var launcherConfig = launcherConfigService.LoadOrCreate(installInfo, logger);
-        using var httpClient = new System.Net.Http.HttpClient();
+        // Not disposed: kept alive for the app lifetime so background work
+        // (server-list refresh, replays) can use it. Matches Program.cs.
+        var httpClient = new System.Net.Http.HttpClient();
         return new MainWindowViewModel(paths, logger, settings, installInfo, launcherConfig, httpClient);
     }
 
@@ -82,6 +86,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _replayLauncherService = new ReplayLauncherService(paths, logger, settings, httpClient);
         _settingsService = new SettingsService(paths);
         _settingsProfileService = new LauncherSettingsProfileService(paths);
+        _serverListService = new ServerListService(httpClient, logger);
 
         Title = $"Block N Load Community Fixes V2 - {_launcherVersion}";
 
@@ -140,6 +145,50 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         RefreshStatus();
     }
 
+    /// <summary>
+    /// Fetches the community server list from GitHub in the background and, on
+    /// success, refreshes the displayed list. Falls back to the cached copy and
+    /// notes the source in the status line when the fetch fails. Safe to await
+    /// from the UI thread — the network work runs without blocking it.
+    /// </summary>
+    public async Task RefreshServerListAsync()
+    {
+        if (!_installInfo.IsDetected || _serverListService is null)
+        {
+            return;
+        }
+
+        var mainCachePath = _launcherConfigService.GetContext(_installInfo).MainCachePath;
+        var outcome = await _serverListService.RefreshMainCacheAsync(mainCachePath);
+
+        if (outcome != ServerListRefreshOutcome.Updated)
+        {
+            // Nothing changed on disk — just note the source; don't rebuild the
+            // list or disturb whatever the user may have already selected.
+            _serverListStatus = "cached copy (GitHub unreachable)";
+            RefreshStatus();
+            return;
+        }
+
+        _serverListStatus = "live (GitHub)";
+
+        // Re-merge from the refreshed cache, preserving the user's current pick if
+        // it survived the update (Reload restores selection from persisted config).
+        var previousSelection = SelectedServer?.Key;
+        Reload();
+
+        if (!string.IsNullOrWhiteSpace(previousSelection))
+        {
+            var restored = Servers.FirstOrDefault(s =>
+                string.Equals(s.Key, previousSelection, StringComparison.OrdinalIgnoreCase));
+            if (restored is not null && !ReferenceEquals(restored, SelectedServer))
+            {
+                SelectedServer = restored;
+                RefreshStatus();
+            }
+        }
+    }
+
     public void SyncFeatureSettingsChanges()
     {
         _settingsProfileService.SyncSelectedSnapshotFromActive(_settings, _logger);
@@ -188,6 +237,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             $"Launcher version: {_launcherVersion}",
             $"Manifest: {_settings.ManifestUrl}",
+            $"Server list: {_serverListStatus}",
             $"Settings profile: {(LauncherSettingsProfileService.IsPersonalProfile(_settings.SettingsProfile) ? "Personal Settings" : "Recommended Settings")}",
             $"Settings file: {Path.Combine(_paths.DataDir, "launcher-settings.json")}",
             $"Patching dir: {_paths.PatchingDir}"
