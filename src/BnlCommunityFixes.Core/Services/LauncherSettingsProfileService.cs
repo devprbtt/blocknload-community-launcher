@@ -43,6 +43,11 @@ public sealed class LauncherSettingsProfileService
         if (IsPersonalProfile(settings.SettingsProfile))
         {
             SaveActiveToSelectedProfile(settings, logger);
+            ResetRecommendedSnapshotFromResources(logger);
+            ApplySnapshot(GetPersonalSettingsDirectory(), logger, "personal");
+            settings.SettingsProfile = LauncherSettings.PersonalSettingsProfile;
+            settings.LastLauncherVersion = currentVersion;
+            return true;
         }
 
         ResetRecommendedSnapshotFromResources(logger);
@@ -58,9 +63,12 @@ public sealed class LauncherSettingsProfileService
 
         if (IsPersonalProfile(profile))
         {
-            // Always save active state into personal snapshot — either updating it if already on
-            // personal, or creating the initial snapshot when switching from recommended.
-            SaveSnapshot(GetPersonalSettingsDirectory(), logger, "personal");
+            // Switching from recommended must not overwrite an existing personal snapshot
+            // with the currently active recommended values.
+            if (IsPersonalProfile(settings.SettingsProfile) || !HasPersonalSnapshot())
+            {
+                SaveSnapshot(GetPersonalSettingsDirectory(), logger, "personal");
+            }
             ApplySnapshot(GetPersonalSettingsDirectory(), logger, "personal");
             settings.SettingsProfile = LauncherSettings.PersonalSettingsProfile;
             return;
