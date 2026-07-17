@@ -216,6 +216,9 @@
                         <CheckBox Content="Font override (Edo SZ)" IsChecked="{Binding FontOverrideEnabled}" />
                         <TextBlock Text="Restores the stylized Edo SZ font to kill feed messages and center-screen notices (e.g. &quot;You've killed...&quot;, &quot;Our cube is under attack!&quot;). Requires a feature bundle rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
 
+                        <CheckBox Content="Classic scoreboard" IsChecked="{Binding ClassicScoreboardEnabled}" />
+                        <TextBlock Text="Restyles the in-match scoreboard to match the old game's visual style using extracted legacy art and a runtime relayout. Because the current live match data only exposes K / D / A, the old warfare / construction / tactics / healing stat buckets cannot be restored exactly. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+
                         <TextBlock Text="Objective Beam" FontWeight="SemiBold" Margin="0 8 0 0" />
                         <TextBlock Text="Adds a tall vertical beam above the capture objective so it is visible from anywhere on the map. No additional options — this is a simple enable/disable toggle." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled"   IsChecked="{Binding ObjectiveBeamEnabled}" />
@@ -259,6 +262,43 @@
                         <TextBlock Text="Enable Time Assault" FontWeight="SemiBold" Margin="0 8 0 0" />
                         <TextBlock Text="Forces the Time Assault menu entry to stay visible and enabled even when the live server disables it. Uses the game's existing Time Trial UI and `StartTimeTrial()` network path so the mode can be tested if the backend still accepts it. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled" IsChecked="{Binding TimeAssaultEnabled}" />
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Bot / Offline Practice Mode -->
+            <TabItem Header="Bot Mode">
+                <ScrollViewer>
+                    <StackPanel Margin="8" Spacing="8">
+
+                        <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="11">
+                            Offline practice mode — fight AI bots without a server connection. When enabled, the game
+                            skips the login flow, loads a map from the local catalogue, and spawns bot opponents
+                            controlled by the launcher's AI driver. Bots use A* pathfinding to navigate the map,
+                            shoot with their primary weapon, and retreat when low on health.
+                            Requires a feature bundle rebuild to apply the IL patches.
+                        </TextBlock>
+
+                        <CheckBox Content="Enabled" IsChecked="{Binding BotModeEnabled}" />
+
+                        <TextBlock Text="Warning: enabling this bypasses Steam login entirely. The game will not connect to any server while Bot Mode is active." TextWrapping="Wrap" Foreground="#FFAA44" FontSize="11" />
+
+                        <TextBlock Text="Bot count" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="How many AI opponents to spawn on the enemy team (1–9)." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <NumericUpDown Value="{Binding BotModeCount}" Minimum="1" Maximum="9" Increment="1" FormatString="0" Width="120" HorizontalAlignment="Left" />
+
+                        <TextBlock Text="Difficulty" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="11">
+                            Easy — slow reactions (1.5 s delay), wide aim spread (3 units).
+                            Medium — moderate reactions (0.6 s), small spread (1.2 units).
+                            Hard — near-instant reactions (0.1 s), precise aim (0.2 units).
+                        </TextBlock>
+                        <ComboBox ItemsSource="{Binding BotDifficulties}" SelectedItem="{Binding BotModeDifficulty}" Width="160" HorizontalAlignment="Left" />
+
+                        <TextBlock Text="Map key" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Leave as 'default' to let the runtime pick the first available Friendly map (falling back to Tutorial). Enter a specific catalogue map key to force a particular map." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <TextBox Text="{Binding BotModeMap}" Width="260" HorizontalAlignment="Left" />
 
                     </StackPanel>
                 </ScrollViewer>

@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>2.7.7</Version>
+    <Version>2.7.8</Version>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Avalonia</RootNamespace>
     <ApplicationIcon>launcher-icon.ico</ApplicationIcon>
@@ -51,6 +51,7 @@
     <EmbeddedResource Include="..\..\assets\patching\AutoCrouchRuntime.cs" LogicalName="Patching.AutoCrouchRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\PerformanceOptRuntime.cs" LogicalName="Patching.PerformanceOptRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\TimeAssaultRuntime.cs" LogicalName="Patching.TimeAssaultRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\ClassicScoreboardRuntime.cs" LogicalName="Patching.ClassicScoreboardRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-debug-menu-config.json" LogicalName="Patching.experimental-debug-menu-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-match-replay-recorder-config.json" LogicalName="Patching.experimental-match-replay-recorder-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-emote-test-config.json" LogicalName="Patching.experimental-emote-test-config.json" />
@@ -71,6 +72,11 @@
     <EmbeddedResource Include="..\..\assets\patching\experimental-hide-impact-vfx-config.json" LogicalName="Patching.experimental-hide-impact-vfx-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-performance-opt-config.json" LogicalName="Patching.experimental-performance-opt-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-time-assault-config.json" LogicalName="Patching.experimental-time-assault-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-classic-scoreboard-config.json" LogicalName="Patching.experimental-classic-scoreboard-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\BotModeRuntime.cs" LogicalName="Patching.BotModeRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-bot-mode-config.json" LogicalName="Patching.experimental-bot-mode-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\bot_map_blocks.bin" LogicalName="Patching.bot_map_blocks.bin" />
+    <EmbeddedResource Include="..\..\assets\patching\bot_map_colors.bin" LogicalName="Patching.bot_map_colors.bin" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-ability-cast-config.json" LogicalName="Patching.experimental-ability-cast-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\unit-gui-scale-config.json" LogicalName="Patching.unit-gui-scale-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\wsi-config.json" LogicalName="Patching.wsi-config.json" />
@@ -86,6 +92,11 @@
     <EmbeddedResource Include="$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net35\1.0.3\build\.NETFramework\v3.5\System.Core.dll" LogicalName="Patching.ref-System.Core.dll" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-segmented-healthbar-config.json" LogicalName="Patching.experimental-segmented-healthbar-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-font-override-config.json" LogicalName="Patching.experimental-font-override-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\classic_scoreboard_panel_bg.png" LogicalName="Patching.classic_scoreboard_panel_bg.png" />
+    <EmbeddedResource Include="..\..\assets\patching\classic_scoreboard_row_bg.png" LogicalName="Patching.classic_scoreboard_row_bg.png" />
+    <EmbeddedResource Include="..\..\assets\patching\classic_scoreboard_team_ring.png" LogicalName="Patching.classic_scoreboard_team_ring.png" />
+    <EmbeddedResource Include="..\..\assets\patching\classic_scoreboard_bar_bg.png" LogicalName="Patching.classic_scoreboard_bar_bg.png" />
+    <EmbeddedResource Include="..\..\assets\patching\classic_scoreboard_bar_fill.png" LogicalName="Patching.classic_scoreboard_bar_fill.png" />
     <EmbeddedResource Include="..\..\assets\patching\white_rect.png" LogicalName="Patching.white_rect.png" />
     <EmbeddedResource Include="..\..\assets\patching\white_rect_bg.png" LogicalName="Patching.white_rect_bg.png" />
     <EmbeddedResource Include="..\..\assets\nosteam\steam_api64.dll" LogicalName="NoSteam.steam_api64.dll" />

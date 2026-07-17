@@ -14,5 +14,7 @@ public static partial class FeatureConfigCatalog
         new("performance-opt", "Device Healthbar Opt", "experimental-performance-opt-config.json", IncludeInConfigTransfer: true),
         new("time-assault", "Enable Time Assault", "experimental-time-assault-config.json", IncludeInConfigTransfer: true),
         new("ability-cast", "Ability Cast", "experimental-ability-cast-config.json"),
+        // Bot mode launches the embedded bnlReloaded server; no client bot patch is involved.
+        new("bot-mode", "Bot / Offline Practice Mode", "experimental-bot-mode-config.json", TriggersExperimentalBuild: false, IncludeInConfigTransfer: true),
     ];
 }

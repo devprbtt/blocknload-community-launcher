@@ -315,11 +315,17 @@ public sealed class FeatureSettingsService
     public FontOverrideSettings LoadFontOverrideSettings() => Load("experimental-font-override-config.json", new FontOverrideSettings());
     public void SaveFontOverrideSettings(FontOverrideSettings settings) => Save("experimental-font-override-config.json", settings);
 
+    public ClassicScoreboardSettings LoadClassicScoreboardSettings() => Load("experimental-classic-scoreboard-config.json", new ClassicScoreboardSettings());
+    public void SaveClassicScoreboardSettings(ClassicScoreboardSettings settings) => Save("experimental-classic-scoreboard-config.json", settings);
+
     public PerformanceOptSettings LoadPerformanceOptSettings() => Load("experimental-performance-opt-config.json", new PerformanceOptSettings());
     public void SavePerformanceOptSettings(PerformanceOptSettings settings) => Save("experimental-performance-opt-config.json", settings);
 
     public TimeAssaultSettings LoadTimeAssaultSettings() => Load("experimental-time-assault-config.json", new TimeAssaultSettings());
     public void SaveTimeAssaultSettings(TimeAssaultSettings settings) => Save("experimental-time-assault-config.json", settings);
+
+    public BotModeSettings LoadBotModeSettings() => Load("experimental-bot-mode-config.json", new BotModeSettings());
+    public void SaveBotModeSettings(BotModeSettings settings) => Save("experimental-bot-mode-config.json", settings);
 
     public void PushLauncherSettingsToRuntime()
     {

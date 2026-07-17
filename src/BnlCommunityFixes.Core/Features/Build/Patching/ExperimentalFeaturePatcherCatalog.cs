@@ -30,6 +30,7 @@ public static class ExperimentalFeaturePatcherCatalog
         new FriendlyLowHealthFeaturePatcher(),
         new HealAlertsFeaturePatcher(),
         new FontOverrideFeaturePatcher(),
+        new ClassicScoreboardFeaturePatcher(),
         new DamageHealingFeaturePatcher(),
         new DeathCamHealthbarFeaturePatcher(),
         new HideImpactVfxFeaturePatcher(),
@@ -41,5 +42,6 @@ public static class ExperimentalFeaturePatcherCatalog
         new FovFeaturePatcher(),
         new PerformanceOptPatcher(),
         new TimeAssaultFeaturePatcher()
+        // Bot mode is implemented by the embedded bnlReloaded server.
     ];
 }

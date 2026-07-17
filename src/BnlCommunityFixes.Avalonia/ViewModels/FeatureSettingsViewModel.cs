@@ -107,8 +107,17 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private double _friendlyLowHealthIndicatorAlpha = 1.0;
     [ObservableProperty] private bool _segmentedHealthbarEnabled;
     [ObservableProperty] private bool _fontOverrideEnabled;
+    [ObservableProperty] private bool _classicScoreboardEnabled;
     [ObservableProperty] private bool _performanceOptEnabled;
     [ObservableProperty] private bool _timeAssaultEnabled;
+
+    // ── Bot / Offline Practice Mode ───────────────────────────────────────────
+    [ObservableProperty] private bool _botModeEnabled;
+    [ObservableProperty] private int _botModeCount = 3;
+    [ObservableProperty] private string _botModeDifficulty = "medium";
+    [ObservableProperty] private string _botModeMap = "default";
+
+    public IReadOnlyList<string> BotDifficulties { get; } = ["easy", "medium", "hard"];
 
     public IReadOnlyList<string> CrosshairShapes { get; } =
         ["__DEFAULT__", "Dot", "Crosshair", "BrokenCircle", "Hashed", "HashedCrosshair", "Melee"];
@@ -199,9 +208,13 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
 
         SegmentedHealthbarEnabled = _svc.LoadSegmentedHealthbarSettings().Enabled;
         FontOverrideEnabled = _svc.LoadFontOverrideSettings().Enabled;
+        ClassicScoreboardEnabled = _svc.LoadClassicScoreboardSettings().Enabled;
         PerformanceOptEnabled = _svc.LoadPerformanceOptSettings().Enabled;
         TimeAssaultEnabled = _svc.LoadTimeAssaultSettings().Enabled;
 
+        var bm = _svc.LoadBotModeSettings();
+        BotModeEnabled = bm.Enabled; BotModeCount = bm.BotCount;
+        BotModeDifficulty = bm.Difficulty; BotModeMap = bm.Map;
     }
 
     [RelayCommand]
@@ -268,8 +281,15 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             _svc.SaveSegmentedHealthbarSettings(new SegmentedHealthbarSettings { Enabled = SegmentedHealthbarEnabled });
             ApplySegmentedHealthbarTextures(SegmentedHealthbarEnabled);
             _svc.SaveFontOverrideSettings(new FontOverrideSettings { Enabled = FontOverrideEnabled });
+            _svc.SaveClassicScoreboardSettings(new ClassicScoreboardSettings { Enabled = ClassicScoreboardEnabled });
+            ApplyClassicScoreboardAssets(ClassicScoreboardEnabled);
             _svc.SavePerformanceOptSettings(new PerformanceOptSettings { Enabled = PerformanceOptEnabled });
             _svc.SaveTimeAssaultSettings(new TimeAssaultSettings { Enabled = TimeAssaultEnabled });
+            _svc.SaveBotModeSettings(new BotModeSettings
+            {
+                Enabled = BotModeEnabled, BotCount = BotModeCount,
+                Difficulty = BotModeDifficulty, Map = BotModeMap
+            });
             Saved?.Invoke();
         }
         catch (Exception ex) { ErrorOccurred?.Invoke("Save failed", ex.Message); }
@@ -336,6 +356,44 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
 
         Directory.CreateDirectory(_paths.PatchingDir);
         File.WriteAllLines(mappingPath, lines, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+    }
+
+    private void ApplyClassicScoreboardAssets(bool enabled)
+    {
+        if (!enabled)
+        {
+            return;
+        }
+
+        var customTexturesDir = _installInfo?.IsDetected == true
+            ? _installInfo.CustomTexturesDirectoryPath
+            : null;
+
+        if (string.IsNullOrWhiteSpace(customTexturesDir))
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(customTexturesDir);
+        var asm = typeof(FeatureSettingsViewModel).Assembly;
+        foreach (var entry in new[]
+        {
+            new { Resource = "Patching.classic_scoreboard_panel_bg.png", FileName = "classic_scoreboard_panel_bg.png" },
+            new { Resource = "Patching.classic_scoreboard_row_bg.png", FileName = "classic_scoreboard_row_bg.png" },
+            new { Resource = "Patching.classic_scoreboard_team_ring.png", FileName = "classic_scoreboard_team_ring.png" },
+            new { Resource = "Patching.classic_scoreboard_bar_bg.png", FileName = "classic_scoreboard_bar_bg.png" },
+            new { Resource = "Patching.classic_scoreboard_bar_fill.png", FileName = "classic_scoreboard_bar_fill.png" }
+        })
+        {
+            using var stream = asm.GetManifestResourceStream(entry.Resource);
+            if (stream == null)
+            {
+                continue;
+            }
+
+            using var dest = File.Create(Path.Combine(customTexturesDir, entry.FileName));
+            stream.CopyTo(dest);
+        }
     }
 
 }

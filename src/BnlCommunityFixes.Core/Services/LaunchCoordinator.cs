@@ -11,6 +11,8 @@ public sealed class LaunchCoordinator
     private readonly LauncherConfigService launcherConfigService;
     private readonly PatchService patchService;
     private readonly SteamService steamService;
+    private readonly FeatureSettingsService featureSettingsService;
+    private readonly OfflineBotServerService offlineBotServerService;
 
     public LaunchCoordinator(AppPaths paths, Logger logger)
     {
@@ -20,6 +22,8 @@ public sealed class LaunchCoordinator
         launcherConfigService = new LauncherConfigService();
         patchService = new PatchService();
         steamService = new SteamService();
+        featureSettingsService = new FeatureSettingsService(paths);
+        offlineBotServerService = new OfflineBotServerService(paths);
     }
 
     public void LaunchSelectedServer(GameInstallInfo installInfo, LauncherConfig config)
@@ -49,19 +53,51 @@ public sealed class LaunchCoordinator
             logger.Info("No-Steam install detected; skipping Steam readiness check.");
         }
 
-        if (string.IsNullOrWhiteSpace(config.SelectedServer))
+        // Bot / Offline Practice Mode: start the embedded bnlReloaded server and route
+        // the game to it, regardless of which community server is selected.
+        var botModeSettings = featureSettingsService.LoadBotModeSettings();
+        var botModeEnabled = botModeSettings.Enabled;
+        LauncherServer server;
+        if (botModeEnabled)
         {
-            throw new InvalidOperationException("No server selected.");
+            var patchKey = "default";
+            if (!string.IsNullOrWhiteSpace(config.SelectedServer)
+                && config.Servers.TryGetValue(config.SelectedServer, out var selectedServer)
+                && !string.IsNullOrWhiteSpace(selectedServer.Patch))
+            {
+                patchKey = selectedServer.Patch;
+            }
+
+            logger.Info("Bot Mode enabled — starting the embedded offline server...");
+            offlineBotServerService.EnsureStarted(installInfo, logger, botModeSettings);
+
+            server = new LauncherServer
+            {
+                Name = "Offline Bot Mode",
+                Host = OfflineBotServerService.LocalHost,
+                Port = OfflineBotServerService.MasterPort,
+                Patch = patchKey,
+            };
+
+            logger.Info("Preparing to launch offline bot mode (embedded local server)...");
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(config.SelectedServer))
+            {
+                throw new InvalidOperationException("No server selected.");
+            }
+
+            if (!config.Servers.TryGetValue(config.SelectedServer, out var selected))
+            {
+                throw new InvalidOperationException("Selected server data is missing from launcher config.");
+            }
+
+            server = selected;
+            logger.Info($"Preparing to launch {config.SelectedServer}...");
+            launcherConfigService.SaveSelection(installInfo, config, config.SelectedServer);
         }
 
-        if (!config.Servers.TryGetValue(config.SelectedServer, out var server))
-        {
-            throw new InvalidOperationException("Selected server data is missing from launcher config.");
-        }
-
-        logger.Info($"Preparing to launch {config.SelectedServer}...");
-
-        launcherConfigService.SaveSelection(installInfo, config, config.SelectedServer);
         launcherConfigService.WriteServersFile(installInfo, server);
         logger.Info($"Updated servers.txt to {server.Host}:{server.Port}");
 

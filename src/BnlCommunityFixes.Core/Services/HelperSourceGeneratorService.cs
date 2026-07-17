@@ -52,6 +52,14 @@ public sealed class HelperSourceGeneratorService
             AppendStaticFile(sb, patchingDir, "TimeAssaultRuntime.cs");
         }
 
+        var classicScoreboard = ReadJson(patchingDir, "experimental-classic-scoreboard-config.json");
+        if (GetBool(classicScoreboard, "enabled", false))
+        {
+            AppendStaticFile(sb, patchingDir, "ClassicScoreboardRuntime.cs");
+        }
+
+        // Bot mode runs in the embedded bnlReloaded server, not in the client helper.
+
         var outputPath = Path.Combine(patchingDir, "BnlCommunityFixes.generated.cs");
         File.WriteAllText(outputPath, sb.ToString(), Encoding.UTF8);
     }

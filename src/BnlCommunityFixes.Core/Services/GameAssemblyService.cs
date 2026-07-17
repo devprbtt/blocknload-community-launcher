@@ -32,6 +32,14 @@ public sealed class GameAssemblyService
 
         File.Copy(localDll, targetDll, true);
         logger.Info("Synced BnlCommunityFixes.dll to managed folder.");
+
+        // Sync any bundled data files that the helper assembly reads from its own directory.
+        foreach (var dataFile in new[] { "bot_map_blocks.bin", "bot_map_colors.bin" })
+        {
+            var src = Path.Combine(paths.PatchingDir, dataFile);
+            if (File.Exists(src))
+                File.Copy(src, Path.Combine(installInfo.ManagedDirectoryPath, dataFile), true);
+        }
     }
 
     public bool HasExperimentalAssembly()
