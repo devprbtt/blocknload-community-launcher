@@ -1,28 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.7.7",
+  "version": "2.7.8",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-06-11T02:07:23.0521513+00:00",
-  "notes": "## What's new\n\n- Re-enabled the Time Assault menu entry in the Avalonia launcher and game patch flow so the mode can be launched again when enabled.\n- Added Time Assault launcher settings support to config transfer and recommended-settings resource loading.\n\n## Fixes\n\n- Fixed Time Assault scene restart handling by bypassing the broken fast-restart path that could hang the reload at 100%.\n- Time Assault helper runtime is now embedded and generated correctly during patch builds.\n\n## Notes\n\n- Release artifacts include both `win-x64` and `linux-x64` launchers.\n",
+  "published_at": "2026-07-17T22:00:02.3415134+00:00",
+  "notes": "## What's new\n\n- **Bot / Offline Practice Mode**: enabling Bot Mode in Feature Settings now launches an embedded bnlReloaded private server locally and routes the game to it — play offline custom games against server-driven bots (configurable count and difficulty) with real match logic: objectives, building, damage, loot and respawns. Requires the offline server bundle (attached below as `offline-server-win-x64.zip`, extract into `%LOCALAPPDATA%\\BNL-CommunityFixes\\app\\offline-server\\bin`).\n- **Server list auto-update**: the launcher now refreshes its community server list from GitHub on startup (with proxy fallbacks for players in China), so new servers appear without a launcher update. Adds the new EU community server and the China community server.\n- **Classic Scoreboard** (experimental UI feature): recreates the pre-rework scoreboard look, plus team-colored kill feed entries.\n\n## Fixes\n\n- Recommended settings snapshot is refreshed from bundled resources on version change without touching the personal settings profile.\n\n## Notes\n\n- Release artifacts include both `win-x64` and `linux-x64` launchers.\n- Bot Mode is Windows-first for now: the offline server bundle attached to this release is win-x64.\n",
   "assets": {
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.7/BnlCommunityFixes.exe",
-      "sha256": "BBDCF3658CC7D66F622CD13050BBC9997EDF07A44AABF3B0F1258D25964ED527",
-      "size": 116377915
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.8/BnlCommunityFixes.exe",
+      "sha256": "E1E8A3F16B571DF2CCF135A80FDF32E59FA733F577871C99624B87F3A7E46861",
+      "size": 116758843
     },
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.7/BnlCommunityFixes",
-      "sha256": "D4A1B40D79AD8436FD84D7CC432D8AC466BE9D673D95B72CFF65D416856AD583",
-      "size": 111482529
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.8/BnlCommunityFixes",
+      "sha256": "0A77AF33081CD4BF386B822817A0119861498C56D6CA01E2F93CDB22E15CB753",
+      "size": 111863457
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.7/BnlCommunityFixes.exe",
-      "sha256": "BBDCF3658CC7D66F622CD13050BBC9997EDF07A44AABF3B0F1258D25964ED527",
-      "size": 116377915
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.8/BnlCommunityFixes.exe",
+      "sha256": "E1E8A3F16B571DF2CCF135A80FDF32E59FA733F577871C99624B87F3A7E46861",
+      "size": 116758843
     }
   }
 }
