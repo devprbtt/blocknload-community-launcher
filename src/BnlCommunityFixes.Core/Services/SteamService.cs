@@ -88,15 +88,15 @@ public sealed class SteamService
         }
     }
 
-    public void LaunchGame(GameInstallInfo installInfo)
+    public Process? LaunchGame(GameInstallInfo installInfo)
     {
         if (!OperatingSystem.IsWindows())
         {
             StartUri($"steam://rungameid/{SteamAppId}");
-            return;
+            return null;
         }
 
-        Process.Start(new ProcessStartInfo
+        return Process.Start(new ProcessStartInfo
         {
             FileName = installInfo.GameExecutablePath,
             WorkingDirectory = installInfo.GameRoot,

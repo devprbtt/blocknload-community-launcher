@@ -28,7 +28,9 @@ public sealed class OfflineBotServerService
         serverRunDir = Path.Combine(root, "run");
     }
 
-    public string ServerExecutablePath => Path.Combine(serverBinDir, "BNLReloadedServer.exe");
+    public string ServerExecutablePath => Path.Combine(
+        serverBinDir,
+        OperatingSystem.IsWindows() ? "BNLReloadedServer.exe" : "BNLReloadedServer");
 
     /// <summary>Starts the embedded server if it is not already reachable on the master port.</summary>
     public void EnsureStarted(GameInstallInfo installInfo, Logger logger, BotModeSettings? botSettings = null)
@@ -122,6 +124,31 @@ public sealed class OfflineBotServerService
             }
 
             serverProcess = null;
+        }
+    }
+
+    /// <summary>
+    /// Keeps the embedded server tied to the exact game process started by the launcher.
+    /// </summary>
+    public void StopWhenGameExits(Process gameProcess, Logger logger)
+    {
+        ArgumentNullException.ThrowIfNull(gameProcess);
+
+        void OnGameExited(object? sender, EventArgs args)
+        {
+            logger.Info("Block N Load exited — stopping the embedded offline server.");
+            Stop(logger);
+            try { gameProcess.Dispose(); } catch { }
+        }
+
+        gameProcess.EnableRaisingEvents = true;
+        gameProcess.Exited += OnGameExited;
+
+        // Cover the race where the process exits between Process.Start and attaching
+        // the handler. Exited may also run; Stop is locked and safely idempotent.
+        if (gameProcess.HasExited)
+        {
+            OnGameExited(gameProcess, EventArgs.Empty);
         }
     }
 

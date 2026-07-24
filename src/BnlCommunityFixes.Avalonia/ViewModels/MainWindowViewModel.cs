@@ -289,6 +289,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    public void StopManagedServices() => _launchCoordinator.StopManagedServices();
+
     [RelayCommand]
     private void OpenReplayFolder()
     {

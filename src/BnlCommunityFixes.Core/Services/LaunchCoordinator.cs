@@ -146,8 +146,30 @@ public sealed class LaunchCoordinator
         }
 
         logger.Info("Starting BlockNLoad...");
-        steamService.LaunchGame(installInfo);
+        try
+        {
+            var gameProcess = steamService.LaunchGame(installInfo);
+            if (botModeEnabled)
+            {
+                if (gameProcess is null)
+                {
+                    offlineBotServerService.Stop(logger);
+                    throw new InvalidOperationException(
+                        "The launcher could not monitor the game process required by offline bot mode.");
+                }
+
+                offlineBotServerService.StopWhenGameExits(gameProcess, logger);
+            }
+        }
+        catch
+        {
+            if (botModeEnabled)
+                offlineBotServerService.Stop(logger);
+            throw;
+        }
     }
+
+    public void StopManagedServices() => offlineBotServerService.Stop(logger);
 
     public void VerifyGameFiles()
     {

@@ -1,28 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.7.8",
+  "version": "2.7.9",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-07-17T22:00:02.3415134+00:00",
-  "notes": "## What's new\n\n- **Bot / Offline Practice Mode**: enabling Bot Mode in Feature Settings now launches an embedded bnlReloaded private server locally and routes the game to it — play offline custom games against server-driven bots (configurable count and difficulty) with real match logic: objectives, building, damage, loot and respawns. Requires the offline server bundle (attached below as `offline-server-win-x64.zip`, extract into `%LOCALAPPDATA%\\BNL-CommunityFixes\\app\\offline-server\\bin`).\n- **Server list auto-update**: the launcher now refreshes its community server list from GitHub on startup (with proxy fallbacks for players in China), so new servers appear without a launcher update. Adds the new EU community server and the China community server.\n- **Classic Scoreboard** (experimental UI feature): recreates the pre-rework scoreboard look, plus team-colored kill feed entries.\n\n## Fixes\n\n- Recommended settings snapshot is refreshed from bundled resources on version change without touching the personal settings profile.\n\n## Notes\n\n- Release artifacts include both `win-x64` and `linux-x64` launchers.\n- Bot Mode is Windows-first for now: the offline server bundle attached to this release is win-x64.\n",
+  "published_at": "2026-07-24T02:06:15.0064064+00:00",
+  "notes": "## What's new\n\n- Bot / Offline Practice Mode now fills a complete 5v5 lobby with at most nine bots.\n- Full teams target a 2 Brains, 2 Brawn and 1 Skill class composition.\n- Bots can sprint-jump over one- and two-block obstacles and traverse stairs and directional slope blocks.\n- Bot navigation now checks the hero footprint, avoids entering solid blocks and recalculates blocked paths.\n\n## Fixes\n\n- The embedded offline server stops when Block N Load exits or when the launcher closes.\n- Fixed the embedded server package requiring a separately installed .NET 10 runtime.\n- Fixed stair climbs being cancelled when the bot touched the vertical face before clearing the ledge.\n- The Linux launcher now resolves the native Linux offline-server executable.\n\n## Notes\n\n- Includes self-contained Windows and Linux x64 launchers.\n- Includes self-contained Windows and Linux x64 offline-server bundles.\n",
   "assets": {
-    "launcher_win_x64": {
-      "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.8/BnlCommunityFixes.exe",
-      "sha256": "E1E8A3F16B571DF2CCF135A80FDF32E59FA733F577871C99624B87F3A7E46861",
-      "size": 116758843
-    },
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.8/BnlCommunityFixes",
-      "sha256": "0A77AF33081CD4BF386B822817A0119861498C56D6CA01E2F93CDB22E15CB753",
-      "size": 111863457
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.9/BnlCommunityFixes",
+      "sha256": "FF88DB5579B1D6C6ABDE4DE71C3AC7F66076F1328305BB4008994BB5453CA14D",
+      "size": 111864993
+    },
+    "launcher_win_x64": {
+      "file_name": "BnlCommunityFixes.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.9/BnlCommunityFixes.exe",
+      "sha256": "2C15D9144B65BC8E6367B9C65B20BD5ADB4F067255CD420E2A8168B6DB2EA18A",
+      "size": 116762939
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.8/BnlCommunityFixes.exe",
-      "sha256": "E1E8A3F16B571DF2CCF135A80FDF32E59FA733F577871C99624B87F3A7E46861",
-      "size": 116758843
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.9/BnlCommunityFixes.exe",
+      "sha256": "2C15D9144B65BC8E6367B9C65B20BD5ADB4F067255CD420E2A8168B6DB2EA18A",
+      "size": 116762939
     }
   }
 }

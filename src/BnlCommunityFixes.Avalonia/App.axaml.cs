@@ -64,6 +64,7 @@ public partial class App : Application
                         installInfo, launcherConfig, setup.HttpClient);
 
                     var mainWindow = new MainWindow(setup.UpdateCoordinator) { DataContext = mainVm };
+                    mainWindow.Closed += (_, _) => mainVm.StopManagedServices();
                     desktop.MainWindow = mainWindow;
                     mainWindow.Show();
                 };
@@ -76,7 +77,9 @@ public partial class App : Application
                     ? MainWindowViewModel.Create(args)
                     : new MainWindowViewModel());
 
-                desktop.MainWindow = new MainWindow(ctx?.UpdateCoordinator) { DataContext = vm };
+                var mainWindow = new MainWindow(ctx?.UpdateCoordinator) { DataContext = vm };
+                mainWindow.Closed += (_, _) => vm.StopManagedServices();
+                desktop.MainWindow = mainWindow;
             }
         }
 
