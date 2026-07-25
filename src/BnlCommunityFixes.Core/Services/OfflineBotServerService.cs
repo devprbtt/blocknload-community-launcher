@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Formats.Tar;
+using System.IO.Compression;
 using System.Net.Sockets;
 using BnlCommunityFixes.Core.Models;
 
@@ -17,15 +19,20 @@ public sealed class OfflineBotServerService
 
     private static Process? serverProcess;
     private static readonly object StartLock = new();
+    private static readonly HttpClient DownloadClient = new()
+    {
+        Timeout = TimeSpan.FromMinutes(5)
+    };
 
+    private readonly string serverRoot;
     private readonly string serverBinDir;
     private readonly string serverRunDir;
 
     public OfflineBotServerService(AppPaths paths)
     {
-        var root = Path.Combine(paths.AppDir, "offline-server");
-        serverBinDir = Path.Combine(root, "bin");
-        serverRunDir = Path.Combine(root, "run");
+        serverRoot = Path.Combine(paths.AppDir, "offline-server");
+        serverBinDir = Path.Combine(serverRoot, "bin");
+        serverRunDir = Path.Combine(serverRoot, "run");
     }
 
     public string ServerExecutablePath => Path.Combine(
@@ -62,9 +69,7 @@ public sealed class OfflineBotServerService
 
             if (!File.Exists(ServerExecutablePath))
             {
-                throw new InvalidOperationException(
-                    "Offline bot mode needs the embedded server binaries at " + ServerExecutablePath +
-                    " but they were not found. Reinstall the launcher or restore the offline-server folder.");
+                DownloadOfflineServer(logger);
             }
 
             PrepareRunDirectory(installInfo, logger);
@@ -103,6 +108,68 @@ public sealed class OfflineBotServerService
             }
 
             logger.Info("Embedded offline server is up on 127.0.0.1:28100.");
+        }
+    }
+
+    private void DownloadOfflineServer(Logger logger)
+    {
+        var isWindows = OperatingSystem.IsWindows();
+        if (!isWindows && !OperatingSystem.IsLinux())
+            throw new PlatformNotSupportedException("Offline Bot Mode currently supports Windows and Linux x64.");
+
+        var rid = isWindows ? "win-x64" : "linux-x64";
+        var extension = isWindows ? ".zip" : ".tar.gz";
+        var assetName = $"offline-server-{rid}{extension}";
+        var version = LauncherVersion.GetDisplayVersion();
+        var url = $"https://github.com/devprbtt/blocknload-community-launcher/releases/download/v{version}/{assetName}";
+
+        Directory.CreateDirectory(serverRoot);
+        Directory.CreateDirectory(serverBinDir);
+        var archivePath = Path.Combine(serverRoot, $".{assetName}.{Guid.NewGuid():N}.download");
+
+        logger.Info($"Offline server is missing; downloading {assetName} for launcher v{version}...");
+        try
+        {
+            using (var response = DownloadClient
+                       .GetAsync(url, HttpCompletionOption.ResponseHeadersRead)
+                       .GetAwaiter()
+                       .GetResult())
+            {
+                response.EnsureSuccessStatusCode();
+                using var source = response.Content.ReadAsStream();
+                using var destination = new FileStream(archivePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                source.CopyTo(destination);
+            }
+
+            if (isWindows)
+            {
+                ZipFile.ExtractToDirectory(archivePath, serverBinDir, overwriteFiles: true);
+            }
+            else
+            {
+                using var archive = File.OpenRead(archivePath);
+                using var gzip = new GZipStream(archive, CompressionMode.Decompress);
+                TarFile.ExtractToDirectory(gzip, serverBinDir, overwriteFiles: true);
+                File.SetUnixFileMode(
+                    ServerExecutablePath,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                    UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                    UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            }
+
+            if (!File.Exists(ServerExecutablePath))
+                throw new InvalidDataException($"{assetName} did not contain {Path.GetFileName(ServerExecutablePath)}.");
+
+            logger.Info($"Offline server installed to {serverBinDir}.");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Could not download the offline server from {url}. Check your connection and try again.", ex);
+        }
+        finally
+        {
+            try { File.Delete(archivePath); } catch { }
         }
     }
 
