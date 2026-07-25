@@ -40,6 +40,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            ChineseLocalization.Start(desktop);
             var ctx = Startup;
 
             if (ctx?.GameSetup is { } setup)

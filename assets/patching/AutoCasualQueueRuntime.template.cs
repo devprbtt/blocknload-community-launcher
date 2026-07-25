@@ -4,6 +4,7 @@ namespace BnlCommunityFixes
     {
         private static AutoCasualQueueRuntime instance;
         private bool wasInQueueableActivity;
+        private bool autoQueueSuppressed;
         private bool leaveRequestedForMatch;
         private MatchmakerStateType lastLoggedState = MatchmakerStateType.None;
         private int lastLoggedPlayersInQueue = -1;
@@ -53,7 +54,7 @@ namespace BnlCommunityFixes
 
         private void Update()
         {
-            if (!RuntimeFeatureState.AutoCasualQueueEnabled) { wasInQueueableActivity = false; leaveRequestedForMatch = false; lastLoggedState = MatchmakerStateType.None; lastLoggedPlayersInQueue = -1; lastLoggedQueueMode = null; lastLoggedInQueueableActivity = false; nextQueueAttemptTime = 0f; return; }
+            if (!RuntimeFeatureState.AutoCasualQueueEnabled) { wasInQueueableActivity = false; autoQueueSuppressed = false; leaveRequestedForMatch = false; lastLoggedState = MatchmakerStateType.None; lastLoggedPlayersInQueue = -1; lastLoggedQueueMode = null; lastLoggedInQueueableActivity = false; nextQueueAttemptTime = 0f; timeAssaultLaunchRecoveryUntil = 0f; return; }
             try
             {
                 CustomGameData customGameData = Singleton<CustomGameData>.Instance;
@@ -65,6 +66,7 @@ namespace BnlCommunityFixes
                 bool isInTimeAssault = IsInTimeAssault();
                 bool isInQueueableActivity = isInCustomGame || isInTimeAssault;
                 MatchmakerStateType currentState = matchmakerData.State != null ? matchmakerData.State.State : MatchmakerStateType.None;
+                MatchmakerStateType previousState = lastLoggedState;
                 string queueMode = GetQueueMode(matchmakerData);
                 int playersInQueue = matchmakerData.PlayersInQueue;
 
@@ -90,12 +92,31 @@ namespace BnlCommunityFixes
 
                 if (isInQueueableActivity && !wasInQueueableActivity)
                 {
+                    autoQueueSuppressed = false;
                     nextQueueAttemptTime = 0f;
+                }
+                else if (!isInQueueableActivity)
+                {
+                    autoQueueSuppressed = false;
+                }
+
+                // The player clicked the normal Leave Queue button while remaining in the
+                // custom game/time-assault activity. Do not treat that InQueue -> None
+                // transition as a dropped request and immediately enqueue them again.
+                // Entering a new side activity (or toggling this feature) clears the latch.
+                if (isInQueueableActivity &&
+                    previousState == MatchmakerStateType.InQueue &&
+                    currentState == MatchmakerStateType.None)
+                {
+                    UnityEngine.Debug.Log("BNL auto casual queue: manual queue leave detected; automatic requeue suppressed until activity exit");
+                    autoQueueSuppressed = true;
+                    nextQueueAttemptTime = 0f;
+                    timeAssaultLaunchRecoveryUntil = 0f;
                 }
 
                 wasInQueueableActivity = isInQueueableActivity;
 
-                if (isInQueueableActivity && currentState == MatchmakerStateType.None && UnityEngine.Time.time >= nextQueueAttemptTime)
+                if (isInQueueableActivity && !autoQueueSuppressed && currentState == MatchmakerStateType.None && UnityEngine.Time.time >= nextQueueAttemptTime)
                 {
                     UnityEngine.Debug.Log(
                         "BNL auto casual queue: attempting EnterQueue(" + CatalogueHelper.ModeFriendly.Key +
@@ -107,7 +128,7 @@ namespace BnlCommunityFixes
                     nextQueueAttemptTime = UnityEngine.Time.time + QueueRetrySeconds;
                 }
 
-                if (timeAssaultLaunchRecoveryUntil > UnityEngine.Time.time && currentState == MatchmakerStateType.None && UnityEngine.Time.time >= nextQueueAttemptTime)
+                if (!autoQueueSuppressed && timeAssaultLaunchRecoveryUntil > UnityEngine.Time.time && currentState == MatchmakerStateType.None && UnityEngine.Time.time >= nextQueueAttemptTime)
                 {
                     UnityEngine.Debug.Log(
                         "BNL auto casual queue: launch recovery EnterQueue(" + CatalogueHelper.ModeFriendly.Key +
