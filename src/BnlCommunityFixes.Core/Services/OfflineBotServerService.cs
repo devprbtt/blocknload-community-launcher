@@ -265,6 +265,7 @@ public sealed class OfflineBotServerService
         Directory.CreateDirectory(serverRunDir);
         Directory.CreateDirectory(Path.Combine(serverRunDir, "Cache"));
         Directory.CreateDirectory(Path.Combine(serverRunDir, "PlayerData"));
+        SyncDirectory(Path.Combine(serverBinDir, "Maps"), Path.Combine(serverRunDir, "Maps"));
 
         // Catalogue (cdb) source priority:
         //  1. cdb-override next to the server (user-pinned catalogue — drop a file at
@@ -298,6 +299,27 @@ public sealed class OfflineBotServerService
         {
             throw new InvalidOperationException(
                 "No catalogue (cdb) available for the offline server — expected one at " + bundledCdb + " or " + gameCdb + ".");
+        }
+    }
+
+    private static void SyncDirectory(string sourceDirectory, string destinationDirectory)
+    {
+        if (!Directory.Exists(sourceDirectory))
+            return;
+
+        foreach (var sourcePath in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            var relativePath = Path.GetRelativePath(sourceDirectory, sourcePath);
+            var destinationPath = Path.Combine(destinationDirectory, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+
+            var source = new FileInfo(sourcePath);
+            var destination = new FileInfo(destinationPath);
+            if (!destination.Exists || destination.Length != source.Length ||
+                destination.LastWriteTimeUtc < source.LastWriteTimeUtc)
+            {
+                File.Copy(sourcePath, destinationPath, overwrite: true);
+            }
         }
     }
 

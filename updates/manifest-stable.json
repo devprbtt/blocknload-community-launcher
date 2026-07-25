@@ -3,25 +3,25 @@
   "channel": "stable",
   "version": "2.7.9",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-07-25T00:59:53.0055754+00:00",
-  "notes": "## What's new\n\n- Bot / Offline Practice Mode now fills a complete 5v5 lobby with at most nine bots.\n- Full teams target a 2 Brains, 2 Brawn and 1 Skill class composition.\n- Bots can sprint-jump over one- and two-block obstacles and traverse stairs and directional slope blocks.\n- Bot navigation now checks the hero footprint, avoids entering solid blocks and recalculates blocked paths.\n\n## Fixes\n\n- The embedded offline server stops when Block N Load exits or when the launcher closes.\n- Fixed the embedded server package requiring a separately installed .NET 10 runtime.\n- Bot Mode now downloads and installs the matching offline-server bundle automatically when it is missing.\n- Fixed stair climbs being cancelled when the bot touched the vertical face before clearing the ledge.\n- The Linux launcher now resolves the native Linux offline-server executable.\n\n## Notes\n\n- Includes self-contained Windows and Linux x64 launchers.\n- Includes self-contained Windows and Linux x64 offline-server bundles.\n",
+  "published_at": "2026-07-25T01:06:08.2199491+00:00",
+  "notes": "## What's new\n\n- Bot / Offline Practice Mode now fills a complete 5v5 lobby with at most nine bots.\n- Full teams target a 2 Brains, 2 Brawn and 1 Skill class composition.\n- Bots can sprint-jump over one- and two-block obstacles and traverse stairs and directional slope blocks.\n- Bot navigation now checks the hero footprint, avoids entering solid blocks and recalculates blocked paths.\n\n## Fixes\n\n- The embedded offline server stops when Block N Load exits or when the launcher closes.\n- Fixed the embedded server package requiring a separately installed .NET 10 runtime.\n- Bot Mode now downloads and installs the matching offline-server bundle automatically when it is missing.\n- Offline-server bundles now include and load the canonical bnlReloaded map set.\n- Fixed stair climbs being cancelled when the bot touched the vertical face before clearing the ledge.\n- The Linux launcher now resolves the native Linux offline-server executable.\n\n## Notes\n\n- Includes self-contained Windows and Linux x64 launchers.\n- Includes self-contained Windows and Linux x64 offline-server bundles.\n",
   "assets": {
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.9/BnlCommunityFixes.exe",
-      "sha256": "A064B37CCA960D2C5EECADD06D4F49AB8E9CBA017E88E4801FD664C0E7784972",
+      "sha256": "0C70CDC7C0ED75FC2BB2DB3525FE4045DF31EE92EB1A7446A3ACAC82CA9B896C",
       "size": 116762939
     },
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.9/BnlCommunityFixes",
-      "sha256": "9FA79F81D11FDE1CABB68BCEEEEBB36DE252914DE3DE1FB83C84B9A230367A56",
+      "sha256": "13F7B645290BA6A96FABE4356FA0145BFE2E45171C0E47CA6F39006B81CDE3B1",
       "size": 111867041
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
       "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.7.9/BnlCommunityFixes.exe",
-      "sha256": "A064B37CCA960D2C5EECADD06D4F49AB8E9CBA017E88E4801FD664C0E7784972",
+      "sha256": "0C70CDC7C0ED75FC2BB2DB3525FE4045DF31EE92EB1A7446A3ACAC82CA9B896C",
       "size": 116762939
     }
   }
