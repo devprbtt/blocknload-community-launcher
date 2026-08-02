@@ -35,3 +35,6 @@ Desktop.ini
 artifacts/
 TestResults/
 out/
+
+# Unity source projects used to build asset bundles (not shipped; outputs live in assets/patching)
+prototype-unity-motionblur/

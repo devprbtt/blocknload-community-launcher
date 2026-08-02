@@ -194,6 +194,24 @@ public sealed class FeatureSettingsService
             runtimeSync.WriteAutoCrouchSettings(runtimeConfigPath, settings);
     }
 
+    public MotionBlurSettings LoadMotionBlurSettings() =>
+        Load("experimental-motion-blur-config.json", new MotionBlurSettings());
+
+    public void SaveMotionBlurSettings(MotionBlurSettings settings) =>
+        Save("experimental-motion-blur-config.json", settings);
+
+    public VisualEnhancementsSettings LoadVisualEnhancementsSettings() =>
+        Load("experimental-visual-enhancements-config.json", new VisualEnhancementsSettings());
+
+    public void SaveVisualEnhancementsSettings(VisualEnhancementsSettings settings) =>
+        Save("experimental-visual-enhancements-config.json", settings);
+
+    public NigelSniperVisualSettings LoadNigelSniperVisualSettings() =>
+        Load("experimental-nigel-sniper-visual-config.json", new NigelSniperVisualSettings());
+
+    public void SaveNigelSniperVisualSettings(NigelSniperVisualSettings settings) =>
+        Save("experimental-nigel-sniper-visual-config.json", settings);
+
     public HideImpactVfxSettings LoadHideImpactVfxSettings()
     {
         var launcherConfigPath = Path.Combine(paths.PatchingDir, "experimental-hide-impact-vfx-config.json");
@@ -314,9 +332,6 @@ public sealed class FeatureSettingsService
 
     public FontOverrideSettings LoadFontOverrideSettings() => Load("experimental-font-override-config.json", new FontOverrideSettings());
     public void SaveFontOverrideSettings(FontOverrideSettings settings) => Save("experimental-font-override-config.json", settings);
-
-    public ClassicScoreboardSettings LoadClassicScoreboardSettings() => Load("experimental-classic-scoreboard-config.json", new ClassicScoreboardSettings());
-    public void SaveClassicScoreboardSettings(ClassicScoreboardSettings settings) => Save("experimental-classic-scoreboard-config.json", settings);
 
     public PerformanceOptSettings LoadPerformanceOptSettings() => Load("experimental-performance-opt-config.json", new PerformanceOptSettings());
     public void SavePerformanceOptSettings(PerformanceOptSettings settings) => Save("experimental-performance-opt-config.json", settings);

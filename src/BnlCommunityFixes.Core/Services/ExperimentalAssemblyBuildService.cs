@@ -73,7 +73,65 @@ public sealed class ExperimentalAssemblyBuildService
 
         ApplyCSharpFeaturePatchers(installInfo, csharpFeatureKeys, logger);
 
+        if (enabledFeatureKeys.Contains("motion-blur", StringComparer.Ordinal))
+        {
+            DeployMotionBlurBundle(installInfo, logger);
+        }
+        if (enabledFeatureKeys.Contains("visual-enhancements", StringComparer.Ordinal))
+        {
+            DeployVisualEnhancementsBundle(installInfo, logger);
+        }
+        if (enabledFeatureKeys.Contains("nigel-sniper-visual", StringComparer.Ordinal))
+        {
+            DeployNigelWeaponBundle(installInfo, logger);
+        }
         return true;
+    }
+
+    private void DeployMotionBlurBundle(GameInstallInfo installInfo, Logger logger)
+    {
+        var sourcePath = Path.Combine(paths.PatchingDir, "motion-blur-windows.bundle");
+        if (!File.Exists(sourcePath))
+        {
+            throw new InvalidOperationException($"Motion blur shader bundle was not found: {sourcePath}");
+        }
+
+        var destinationDirectory = Path.Combine(installInfo.GameDataDirectoryPath, "CommunityFixes");
+        Directory.CreateDirectory(destinationDirectory);
+        var destinationPath = Path.Combine(destinationDirectory, "motion-blur-windows.bundle");
+        File.Copy(sourcePath, destinationPath, overwrite: true);
+        logger.Info($"Deployed motion blur shader bundle to '{destinationPath}'.");
+    }
+
+    private void DeployVisualEnhancementsBundle(GameInstallInfo installInfo, Logger logger)
+    {
+        var sourcePath = Path.Combine(paths.PatchingDir, "visual-enhancements-windows.bundle");
+        if (!File.Exists(sourcePath))
+            throw new InvalidOperationException($"Visual enhancement shader bundle was not found: {sourcePath}");
+        var destinationDirectory = Path.Combine(installInfo.GameDataDirectoryPath, "CommunityFixes");
+        Directory.CreateDirectory(destinationDirectory);
+        var destinationPath = Path.Combine(destinationDirectory, "visual-enhancements-windows.bundle");
+        File.Copy(sourcePath, destinationPath, overwrite: true);
+        logger.Info($"Deployed visual enhancement shader bundle to '{destinationPath}'.");
+    }
+
+    private void DeployNigelWeaponBundle(GameInstallInfo installInfo, Logger logger)
+    {
+        var destinationDirectory = Path.Combine(installInfo.GameDataDirectoryPath, "CommunityFixes");
+        Directory.CreateDirectory(destinationDirectory);
+        foreach (var fileName in new[]
+                 {
+                     "nigel-weapon-windows.bundle",
+                     "nigel-replacement-model-windows.bundle"
+                 })
+        {
+            var sourcePath = Path.Combine(paths.PatchingDir, fileName);
+            if (!File.Exists(sourcePath))
+                throw new InvalidOperationException($"Nigel weapon bundle was not found: {sourcePath}");
+            var destinationPath = Path.Combine(destinationDirectory, fileName);
+            File.Copy(sourcePath, destinationPath, overwrite: true);
+            logger.Info($"Deployed Nigel weapon bundle to '{destinationPath}'.");
+        }
     }
 
     private void CompileHelperAssembly(GameInstallInfo installInfo, Logger logger)
@@ -86,10 +144,11 @@ public sealed class ExperimentalAssemblyBuildService
 
         var helperOutputPath = Path.Combine(paths.PatchingDir, HelperAssemblyFileName);
         var backupAssemblyPath = Path.Combine(installInfo.ManagedDirectoryPath, "Assembly-CSharp-backup.dll");
+        var firstPassAssemblyPath = Path.Combine(installInfo.ManagedDirectoryPath, "Assembly-CSharp-firstpass.dll");
         var unityEnginePath = Path.Combine(installInfo.ManagedDirectoryPath, "UnityEngine.dll");
         var unityEngineUiPath = Path.Combine(installInfo.ManagedDirectoryPath, "UnityEngine.UI.dll");
 
-        foreach (var requiredPath in new[] { backupAssemblyPath, unityEnginePath, unityEngineUiPath })
+        foreach (var requiredPath in new[] { backupAssemblyPath, firstPassAssemblyPath, unityEnginePath, unityEngineUiPath })
         {
             if (!File.Exists(requiredPath))
             {
@@ -111,6 +170,7 @@ public sealed class ExperimentalAssemblyBuildService
 
         metadataReferences.Add(MetadataReference.CreateFromFile(unityEnginePath));
         metadataReferences.Add(MetadataReference.CreateFromFile(unityEngineUiPath));
+        metadataReferences.Add(MetadataReference.CreateFromFile(firstPassAssemblyPath));
         metadataReferences.Add(MetadataReference.CreateFromFile(backupAssemblyPath));
 
         var sourceText = File.ReadAllText(helperSourcePath);

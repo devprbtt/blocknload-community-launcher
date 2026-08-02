@@ -22,8 +22,6 @@ public sealed class HelperSourceGeneratorService
 
         foreach (var staticFile in new[]
         {
-            "AudioReplacerRuntime.cs",
-            "MeshReplacerRuntime.cs",
             "MatchReplayRecorderRuntime.cs",
             "ReplayPlayerRuntime.cs",
             "RuntimeMenu.cs"
@@ -52,10 +50,36 @@ public sealed class HelperSourceGeneratorService
             AppendStaticFile(sb, patchingDir, "TimeAssaultRuntime.cs");
         }
 
-        var classicScoreboard = ReadJson(patchingDir, "experimental-classic-scoreboard-config.json");
-        if (GetBool(classicScoreboard, "enabled", false))
+        var motionBlur = ReadJson(patchingDir, "experimental-motion-blur-config.json");
+        if (GetBool(motionBlur, "enabled", false))
         {
-            AppendStaticFile(sb, patchingDir, "ClassicScoreboardRuntime.cs");
+            var quality = GetString(motionBlur, "quality", "medium").ToLowerInvariant();
+            var qualityPass = quality == "low" ? 0 : quality == "high" ? 2 : 1;
+            sb.AppendLine("namespace BnlCommunityFixes { public static class MotionBlurGeneratedConfig {");
+            sb.AppendLine("public const float Strength = " + GetFloat(motionBlur, "strength", 1f) + ";");
+            sb.AppendLine("public const int QualityPass = " + qualityPass + ";");
+            sb.AppendLine("public const float CenterFocus = " + GetFloat(motionBlur, "center_focus", 0.35f) + ";");
+            sb.AppendLine("} }");
+            AppendStaticFile(sb, patchingDir, "MotionBlurRuntime.cs");
+        }
+
+        var visualEnhancements = ReadJson(patchingDir, "experimental-visual-enhancements-config.json");
+        if (GetBool(visualEnhancements, "enabled", false))
+        {
+            sb.AppendLine("namespace BnlCommunityFixes { public static class VisualEnhancementsGeneratedConfig {");
+            sb.AppendLine("public const float Sharpening = " + GetFloat(visualEnhancements, "sharpening", 0.3f) + ";");
+            sb.AppendLine("public const float Saturation = " + GetFloat(visualEnhancements, "saturation", 1f) + ";");
+            sb.AppendLine("public const float Contrast = " + GetFloat(visualEnhancements, "contrast", 1f) + ";");
+            sb.AppendLine("public const float Brightness = " + GetFloat(visualEnhancements, "brightness", 1f) + ";");
+            sb.AppendLine("public const float Temperature = " + GetFloat(visualEnhancements, "temperature", 0f) + ";");
+            sb.AppendLine("} }");
+            AppendStaticFile(sb, patchingDir, "VisualEnhancementsRuntime.cs");
+        }
+
+        var nigelSniperVisual = ReadJson(patchingDir, "experimental-nigel-sniper-visual-config.json");
+        if (GetBool(nigelSniperVisual, "enabled", false))
+        {
+            AppendStaticFile(sb, patchingDir, "NigelSniperVisualRuntime.cs");
         }
 
         // Bot mode runs in the embedded bnlReloaded server, not in the client helper.

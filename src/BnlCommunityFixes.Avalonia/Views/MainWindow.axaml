@@ -81,9 +81,6 @@
             <Button x:Name="FeatureSettingsButton" Content="Feature Settings"  Click="FeatureSettingsButton_Click"  Margin="0 0 4 4" />
             <Button x:Name="ImportExportButton"    Content="Import / Export..." Click="ImportExportButton_Click"    Margin="0 0 4 4" />
             <Button x:Name="MoreOptionsButton"     Content="More options..."    Click="MoreOptionsButton_Click"     Margin="0 0 4 4" />
-            <Button x:Name="AudioReplacerButton"   Content="Audio Replacer"    Click="AudioReplacerButton_Click"   Margin="0 0 4 4" />
-            <Button x:Name="MeshReplacerButton"    Content="Mesh Replacer"     Click="MeshReplacerButton_Click"    Margin="0 0 4 4" />
-            <Button x:Name="TextureReplacerButton" Content="Texture Replacer"  Click="TextureReplacerButton_Click" Margin="0 0 4 4" />
         </WrapPanel>
 
         <!-- Replays section -->

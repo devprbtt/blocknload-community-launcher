@@ -208,6 +208,28 @@
                         <CheckBox Content="Disable auto-crouch" IsChecked="{Binding AutoCrouchEnabled}" />
                         <TextBlock Text="Disables the forced-crouch behaviour that triggers when the ceiling is too low to stand. Can also be toggled in-game via the runtime menu." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
 
+                        <!-- Motion blur prototype -->
+                        <CheckBox Content="Motion blur (prototype)" IsChecked="{Binding MotionBlurEnabled}" />
+                        <TextBlock Text="Directional camera motion blur compiled for Unity 5.1. Strength controls the maximum streak length; center focus preserves clarity around the crosshair. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+                        <Grid ColumnDefinitions="*,8,*,8,*" Margin="20 0 0 4">
+                            <StackPanel Grid.Column="0"><TextBlock Text="Strength" FontSize="11"/><NumericUpDown Value="{Binding MotionBlurStrength}" Minimum="0.1" Maximum="2" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Quality" FontSize="11"/><ComboBox ItemsSource="{Binding MotionBlurQualities}" SelectedItem="{Binding MotionBlurQuality}" /></StackPanel>
+                            <StackPanel Grid.Column="4"><TextBlock Text="Center focus" FontSize="11"/><NumericUpDown Value="{Binding MotionBlurCenterFocus}" Minimum="0" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="Color Grading / Sharpening" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding VisualEnhancementsEnabled}" />
+                        <TextBlock Text="Applies full-resolution sharpening and lightweight color grading to the world camera. Neutral values preserve the original colors. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+                        <Grid ColumnDefinitions="*,8,*,8,*" Margin="20 0 0 4">
+                            <StackPanel Grid.Column="0"><TextBlock Text="Sharpening" FontSize="11"/><NumericUpDown Value="{Binding VisualSharpening}" Minimum="0" Maximum="1.5" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Saturation" FontSize="11"/><NumericUpDown Value="{Binding VisualSaturation}" Minimum="0" Maximum="2" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="4"><TextBlock Text="Contrast" FontSize="11"/><NumericUpDown Value="{Binding VisualContrast}" Minimum="0.5" Maximum="1.5" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,8,*" Margin="20 0 0 4">
+                            <StackPanel Grid.Column="0"><TextBlock Text="Brightness" FontSize="11"/><NumericUpDown Value="{Binding VisualBrightness}" Minimum="0.5" Maximum="1.5" Increment="0.05" FormatString="0.00" /></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Temperature" FontSize="11"/><NumericUpDown Value="{Binding VisualTemperature}" Minimum="-1" Maximum="1" Increment="0.05" FormatString="0.00" /></StackPanel>
+                        </Grid>
+
                         <!-- Segmented healthbar -->
                         <CheckBox Content="Segmented healthbar" IsChecked="{Binding SegmentedHealthbarEnabled}" />
                         <TextBlock Text="Replaces the overhead health bars with the segmented style from the beta version of the game. Requires the game to be installed — textures are copied into the game's CustomTextures folder on save." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
@@ -215,9 +237,6 @@
                         <!-- Font override -->
                         <CheckBox Content="Font override (Edo SZ)" IsChecked="{Binding FontOverrideEnabled}" />
                         <TextBlock Text="Restores the stylized Edo SZ font to kill feed messages and center-screen notices (e.g. &quot;You've killed...&quot;, &quot;Our cube is under attack!&quot;). Requires a feature bundle rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
-
-                        <CheckBox Content="Classic scoreboard" IsChecked="{Binding ClassicScoreboardEnabled}" />
-                        <TextBlock Text="Restyles the in-match scoreboard to match the old game's visual style using extracted legacy art and a runtime relayout. Because the current live match data only exposes K / D / A, the old warfare / construction / tactics / healing stat buckets cannot be restored exactly. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
 
                         <TextBlock Text="Objective Beam" FontWeight="SemiBold" Margin="0 8 0 0" />
                         <TextBlock Text="Adds a tall vertical beam above the capture objective so it is visible from anywhere on the map. No additional options — this is a simple enable/disable toggle." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
@@ -262,6 +281,19 @@
                         <TextBlock Text="Enable Time Assault" FontWeight="SemiBold" Margin="0 8 0 0" />
                         <TextBlock Text="Forces the Time Assault menu entry to stay visible and enabled even when the live server disables it. Uses the game's existing Time Trial UI and `StartTimeTrial()` network path so the mode can be tested if the backend still accepts it. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled" IsChecked="{Binding TimeAssaultEnabled}" />
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Skins -->
+            <TabItem Header="Skins">
+                <ScrollViewer>
+                    <StackPanel Margin="8" Spacing="6">
+
+                        <TextBlock Text="Nigel Imported Rifle (Prototype)" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding NigelSniperVisualEnabled}" />
+                        <TextBlock Text="Replaces Nigel's base rifle mesh with the imported no-hammers model. Hands, player skeleton, and default animations remain unchanged. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
 
                     </StackPanel>
                 </ScrollViewer>

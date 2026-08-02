@@ -75,7 +75,7 @@
 
 This document describes the design and implementation of bot (AI) opponents for Block N Load, delivered as a community launcher patch. Since the official servers are offline, bots allow players to practice locally without any network connection.
 
-The feature is integrated into the existing launcher patching pipeline exactly like other experimental features (Time Assault, Classic Scoreboard, etc.).
+The feature is integrated into the existing launcher patching pipeline like the other experimental features.
 
 ---
 

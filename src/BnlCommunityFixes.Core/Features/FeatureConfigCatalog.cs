@@ -8,7 +8,6 @@ public static partial class FeatureConfigCatalog
         features.AddRange(GetUiFeatures());
         features.AddRange(GetGameplayFeatures());
         features.AddRange(GetUtilityFeatures());
-        features.AddRange(GetReplacementFeatures());
         return features;
     }
 

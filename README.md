@@ -6,6 +6,10 @@ Built around a compiled .NET launcher/updater pair with a GitHub-hosted manifest
 
 **Repository:** `devprbtt/blocknload-community-launcher`
 
+Developer reference: [Unity 5.1 asset-bundle experiments](docs/unity-5-asset-bundle-experiments.md)
+documents the shader pipeline, compatibility rules, motion-blur architecture, and
+recommended next graphics experiments.
+
 ---
 
 ## Quick Start

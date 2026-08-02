@@ -2908,14 +2908,6 @@ namespace BnlCommunityFixes
             UnityEngine.Application.dataPath,
             "CustomTextures");
 
-        private static readonly string TextureReplacerConfigFile = System.IO.Path.Combine(
-            System.IO.Path.Combine(
-                System.IO.Path.Combine(
-                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
-                    "BNL-CommunityFixes"),
-                "app"),
-            System.IO.Path.Combine("patching", "experimental-texture-replacer-config.json"));
-
         private static readonly string SegmentedHealthbarConfigFile = System.IO.Path.Combine(
             System.IO.Path.Combine(
                 System.IO.Path.Combine(
@@ -2936,35 +2928,8 @@ namespace BnlCommunityFixes
         private const int MaxScanPassesPerBurst = 8;
         private const int MaxNoProgressPasses = 3;
 
-        private static System.Collections.Generic.Dictionary<string, UnityEngine.Sprite> spriteCache =
-            new System.Collections.Generic.Dictionary<string, UnityEngine.Sprite>();
         private static System.Collections.Generic.Dictionary<string, UnityEngine.Sprite> uiSpriteCache =
             new System.Collections.Generic.Dictionary<string, UnityEngine.Sprite>(System.StringComparer.OrdinalIgnoreCase);
-
-        public static UnityEngine.Sprite GetShopImageOverride(string iconName)
-        {
-            if (string.IsNullOrEmpty(iconName)) return null;
-            EnsureInstance();
-            if (instance == null || instance.replacements == null) return null;
-
-            UnityEngine.Sprite cached;
-            if (spriteCache.TryGetValue(iconName, out cached)) return cached;
-
-            UnityEngine.Texture2D texture;
-            if (instance.replacements.TryGetValue(iconName, out texture) && texture != null)
-            {
-                var sprite = UnityEngine.Sprite.Create(
-                    texture,
-                    new UnityEngine.Rect(0f, 0f, texture.width, texture.height),
-                    new UnityEngine.Vector2(0.5f, 0.5f),
-                    100f);
-                sprite.name = iconName;
-                spriteCache[iconName] = sprite;
-                return sprite;
-            }
-            spriteCache[iconName] = null;
-            return null;
-        }
 
         public static void EnsureInstance()
         {
@@ -3014,12 +2979,10 @@ namespace BnlCommunityFixes
         {
             replacements.Clear();
             replacementFiles.Clear();
-            spriteCache.Clear();
             uiSpriteCache.Clear();
             pendingTargets.Clear();
             appliedTargets.Clear();
             patchedImageInstanceIds.Clear();
-            bool textureReplacerEnabled = ReadConfigEnabled(TextureReplacerConfigFile);
             bool segmentedHealthbarEnabled = ReadConfigEnabled(SegmentedHealthbarConfigFile);
             if (!System.IO.File.Exists(TextureMappingsFile))
             {
@@ -3045,7 +3008,7 @@ namespace BnlCommunityFixes
                 if (targetName.Length == 0 || fileName.Length == 0) continue;
                 bool segmentedTexture = string.Equals(targetName, "white_rect", System.StringComparison.OrdinalIgnoreCase) ||
                                        string.Equals(targetName, "white_rect_bg", System.StringComparison.OrdinalIgnoreCase);
-                if ((!textureReplacerEnabled && !segmentedTexture) || (segmentedTexture && !segmentedHealthbarEnabled && !textureReplacerEnabled))
+                if (!segmentedTexture || !segmentedHealthbarEnabled)
                 {
                     continue;
                 }
@@ -3104,40 +3067,6 @@ namespace BnlCommunityFixes
             int replaced = 0;
             // Track which pending keys we matched this pass (to drain them after)
             var matchedThisPass = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
-            bool segmentedOnly = pendingTargets.Count > 0;
-            if (segmentedOnly)
-            {
-                foreach (var key in pendingTargets)
-                {
-                    if (!string.Equals(key, "white_rect", System.StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(key, "white_rect_bg", System.StringComparison.OrdinalIgnoreCase))
-                    {
-                        segmentedOnly = false;
-                        break;
-                    }
-                }
-            }
-
-            if (!segmentedOnly)
-            {
-                foreach (var renderer in UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.Renderer>())
-                {
-                    if (renderer == null) continue;
-                    foreach (var mat in renderer.materials)
-                    {
-                        if (mat == null || mat.mainTexture == null) continue;
-                        string texName = mat.mainTexture.name;
-                        if (!pendingTargets.Contains(texName)) continue;
-                        UnityEngine.Texture2D replacement;
-                        if (replacements.TryGetValue(texName, out replacement))
-                        {
-                            mat.mainTexture = replacement;
-                            matchedThisPass.Add(texName);
-                            replaced++;
-                        }
-                    }
-                }
-            }
 
             foreach (var image in UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.UI.Image>())
             {

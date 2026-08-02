@@ -89,6 +89,17 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _teammateHpEnabled;
     [ObservableProperty] private bool _teammateHideNameBackground;
     [ObservableProperty] private bool _autoCrouchEnabled;
+    [ObservableProperty] private bool _motionBlurEnabled;
+    [ObservableProperty] private double _motionBlurStrength = 1.0;
+    [ObservableProperty] private string _motionBlurQuality = "medium";
+    [ObservableProperty] private double _motionBlurCenterFocus = 0.35;
+    [ObservableProperty] private bool _visualEnhancementsEnabled;
+    [ObservableProperty] private double _visualSharpening = 0.3;
+    [ObservableProperty] private double _visualSaturation = 1.0;
+    [ObservableProperty] private double _visualContrast = 1.0;
+    [ObservableProperty] private double _visualBrightness = 1.0;
+    [ObservableProperty] private double _visualTemperature;
+    [ObservableProperty] private bool _nigelSniperVisualEnabled;
     [ObservableProperty] private bool _hideImpactVfxEnabled;
     [ObservableProperty] private bool _hideImpactVfx;
     [ObservableProperty] private bool _hideLavaWaterPlane;
@@ -107,7 +118,6 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private double _friendlyLowHealthIndicatorAlpha = 1.0;
     [ObservableProperty] private bool _segmentedHealthbarEnabled;
     [ObservableProperty] private bool _fontOverrideEnabled;
-    [ObservableProperty] private bool _classicScoreboardEnabled;
     [ObservableProperty] private bool _performanceOptEnabled;
     [ObservableProperty] private bool _timeAssaultEnabled;
 
@@ -124,6 +134,9 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
 
     public IReadOnlyList<string> MapRenderPresets { get; } =
         ["Default", "DaytimeWarm", "DaytimeCold", "Sunset", "Night"];
+
+    public IReadOnlyList<string> MotionBlurQualities { get; } =
+        ["low", "medium", "high"];
 
     public IReadOnlyList<string> ShieldDisplayModes { get; } =
         ["circle", "numeric", "text"];
@@ -187,7 +200,20 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         TeammateHpEnabled = teammateHp.ShowHpText;
         TeammateHideNameBackground = teammateHp.HideNameBackground;
         AutoCrouchEnabled = _svc.LoadAutoCrouchSettings().Enabled;
-
+        var motionBlur = _svc.LoadMotionBlurSettings();
+        MotionBlurEnabled = motionBlur.Enabled;
+        MotionBlurStrength = motionBlur.Strength;
+        MotionBlurQuality = motionBlur.Quality;
+        MotionBlurCenterFocus = motionBlur.CenterFocus;
+        var visual = _svc.LoadVisualEnhancementsSettings();
+        VisualEnhancementsEnabled = visual.Enabled;
+        VisualSharpening = visual.Sharpening;
+        VisualSaturation = visual.Saturation;
+        VisualContrast = visual.Contrast;
+        VisualBrightness = visual.Brightness;
+        VisualTemperature = visual.Temperature;
+        NigelSniperVisualEnabled =
+            _svc.LoadNigelSniperVisualSettings().Enabled;
         var vfx = _svc.LoadHideImpactVfxSettings();
         HideImpactVfxEnabled = vfx.Enabled; HideImpactVfx = vfx.HideImpactVfx;
         HideLavaWaterPlane = vfx.HideLavaWaterPlane; HideFallingBlocks = vfx.HideFallingBlocks;
@@ -208,7 +234,6 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
 
         SegmentedHealthbarEnabled = _svc.LoadSegmentedHealthbarSettings().Enabled;
         FontOverrideEnabled = _svc.LoadFontOverrideSettings().Enabled;
-        ClassicScoreboardEnabled = _svc.LoadClassicScoreboardSettings().Enabled;
         PerformanceOptEnabled = _svc.LoadPerformanceOptSettings().Enabled;
         TimeAssaultEnabled = _svc.LoadTimeAssaultSettings().Enabled;
 
@@ -264,6 +289,27 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
                 HideNameBackground = TeammateHideNameBackground
             });
             _svc.SaveAutoCrouchSettings(new AutoCrouchSettings { Enabled = AutoCrouchEnabled });
+            _svc.SaveMotionBlurSettings(new MotionBlurSettings
+            {
+                Enabled = MotionBlurEnabled,
+                Strength = MotionBlurStrength,
+                Quality = MotionBlurQuality,
+                CenterFocus = MotionBlurCenterFocus
+            });
+            _svc.SaveVisualEnhancementsSettings(new VisualEnhancementsSettings
+            {
+                Enabled = VisualEnhancementsEnabled,
+                Sharpening = VisualSharpening,
+                Saturation = VisualSaturation,
+                Contrast = VisualContrast,
+                Brightness = VisualBrightness,
+                Temperature = VisualTemperature
+            });
+            _svc.SaveNigelSniperVisualSettings(
+                new NigelSniperVisualSettings
+                {
+                    Enabled = NigelSniperVisualEnabled
+                });
             _svc.SaveHideImpactVfxSettings(new HideImpactVfxSettings
             {
                 Enabled = HideImpactVfxEnabled, HideImpactVfx = HideImpactVfx,
@@ -281,8 +327,6 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             _svc.SaveSegmentedHealthbarSettings(new SegmentedHealthbarSettings { Enabled = SegmentedHealthbarEnabled });
             ApplySegmentedHealthbarTextures(SegmentedHealthbarEnabled);
             _svc.SaveFontOverrideSettings(new FontOverrideSettings { Enabled = FontOverrideEnabled });
-            _svc.SaveClassicScoreboardSettings(new ClassicScoreboardSettings { Enabled = ClassicScoreboardEnabled });
-            ApplyClassicScoreboardAssets(ClassicScoreboardEnabled);
             _svc.SavePerformanceOptSettings(new PerformanceOptSettings { Enabled = PerformanceOptEnabled });
             _svc.SaveTimeAssaultSettings(new TimeAssaultSettings { Enabled = TimeAssaultEnabled });
             _svc.SaveBotModeSettings(new BotModeSettings
@@ -356,44 +400,6 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
 
         Directory.CreateDirectory(_paths.PatchingDir);
         File.WriteAllLines(mappingPath, lines, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-    }
-
-    private void ApplyClassicScoreboardAssets(bool enabled)
-    {
-        if (!enabled)
-        {
-            return;
-        }
-
-        var customTexturesDir = _installInfo?.IsDetected == true
-            ? _installInfo.CustomTexturesDirectoryPath
-            : null;
-
-        if (string.IsNullOrWhiteSpace(customTexturesDir))
-        {
-            return;
-        }
-
-        Directory.CreateDirectory(customTexturesDir);
-        var asm = typeof(FeatureSettingsViewModel).Assembly;
-        foreach (var entry in new[]
-        {
-            new { Resource = "Patching.classic_scoreboard_panel_bg.png", FileName = "classic_scoreboard_panel_bg.png" },
-            new { Resource = "Patching.classic_scoreboard_row_bg.png", FileName = "classic_scoreboard_row_bg.png" },
-            new { Resource = "Patching.classic_scoreboard_team_ring.png", FileName = "classic_scoreboard_team_ring.png" },
-            new { Resource = "Patching.classic_scoreboard_bar_bg.png", FileName = "classic_scoreboard_bar_bg.png" },
-            new { Resource = "Patching.classic_scoreboard_bar_fill.png", FileName = "classic_scoreboard_bar_fill.png" }
-        })
-        {
-            using var stream = asm.GetManifestResourceStream(entry.Resource);
-            if (stream == null)
-            {
-                continue;
-            }
-
-            using var dest = File.Create(Path.Combine(customTexturesDir, entry.FileName));
-            stream.CopyTo(dest);
-        }
     }
 
 }

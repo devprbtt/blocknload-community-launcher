@@ -115,25 +115,6 @@ public partial class MainWindow : Window
         await new AdvancedOptionsWindow(vm).ShowDialog(this);
     }
 
-    private async void AudioReplacerButton_Click(object? sender, RoutedEventArgs e)
-    {
-        var vm = new AudioReplacerViewModel(Vm._paths, Vm._installInfo);
-        await new ReplacerWindow(vm).ShowDialog(this);
-    }
-
-    private async void MeshReplacerButton_Click(object? sender, RoutedEventArgs e)
-    {
-        var vm = new MeshReplacerViewModel(Vm._paths, Vm._installInfo);
-        await new ReplacerWindow(vm).ShowDialog(this);
-    }
-
-    private async void TextureReplacerButton_Click(object? sender, RoutedEventArgs e)
-    {
-        var vm = new TextureReplacerViewModel(Vm._paths, Vm._installInfo);
-        await new ReplacerWindow(vm).ShowDialog(this);
-        Vm.Reload();
-    }
-
     private async void ReplayBrowserButton_Click(object? sender, RoutedEventArgs e)
     {
         var vm = new ReplayBrowserViewModel(Vm._installInfo, Vm._replayLauncherService, LaunchForReplay);

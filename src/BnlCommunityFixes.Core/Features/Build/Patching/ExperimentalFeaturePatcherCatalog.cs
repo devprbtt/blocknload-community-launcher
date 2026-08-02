@@ -6,7 +6,6 @@ public static class ExperimentalFeaturePatcherCatalog
     public static IReadOnlyList<IExperimentalFeaturePatcher> AlwaysRun { get; } =
     [
         new NullGuardsPatcher(),
-        new ShopImagePatcher(),
         new FontUiFeaturePatcher(),
         new SkipIntroFeaturePatcher(),
         new DisableFrameCapFeaturePatcher()
@@ -19,6 +18,9 @@ public static class ExperimentalFeaturePatcherCatalog
         new CrosshairFeaturePatcher(),
         new AutoQueueFeaturePatcher(),
         new AutoCrouchFeaturePatcher(),
+        new MotionBlurFeaturePatcher(),
+        new VisualEnhancementsFeaturePatcher(),
+        new NigelSniperVisualFeaturePatcher(),
         new ShieldTimerFeaturePatcher(),
         new UnitGuiScaleFeaturePatcher(),
         new WsiScaleFeaturePatcher(),
@@ -30,15 +32,12 @@ public static class ExperimentalFeaturePatcherCatalog
         new FriendlyLowHealthFeaturePatcher(),
         new HealAlertsFeaturePatcher(),
         new FontOverrideFeaturePatcher(),
-        new ClassicScoreboardFeaturePatcher(),
         new DamageHealingFeaturePatcher(),
         new DeathCamHealthbarFeaturePatcher(),
         new HideImpactVfxFeaturePatcher(),
         new BuildPreviewFeaturePatcher(),
         new DebugMenuFeaturePatcher(),
         new MatchReplayRecorderFeaturePatcher(),
-        new AudioReplacerFeaturePatcher(),
-        new MeshReplacerFeaturePatcher(),
         new FovFeaturePatcher(),
         new PerformanceOptPatcher(),
         new TimeAssaultFeaturePatcher()
