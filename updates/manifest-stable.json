@@ -1,28 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-07-25T01:23:20.9125426+00:00",
-  "notes": "## What's new\n\n- Added complete Simplified Chinese localization across the launcher UI.\n- Chinese localization covers the main window, feature settings and descriptions, setup, replay browser, replacers, custom servers, update screens, dialogs, errors and live status text.\n- The launcher automatically uses Chinese when the operating-system UI language starts with `zh`.\n- The language can also be forced with the `BNL_LANGUAGE=zh-CN` environment variable.\n\n## Offline Bot Mode\n\n- Includes automatic offline-server installation for Windows and Linux x64.\n- Includes the canonical bnlReloaded map set.\n- Retains the improved bot team composition, stair, slope and obstacle navigation.\n- Stops the embedded server when the game or launcher closes.\n",
+  "published_at": "2026-08-02T23:59:30.5955856+00:00",
+  "notes": "## Performance fix\n\n- Removed Audio Replacer, Mesh Replacer, and Texture Replacer, along with the shop icon override feature. These shared always-on texture-scanning code that ran continuously in the background even with the features disabled, and were the suspected cause of the FPS drops several players reported.\n- Removed the Classic Scoreboard and Nigel Geometry Skin prototypes.\n\n## New: Skins tab\n\n- Added a dedicated \"Skins\" tab in Feature Settings, separate from Misc.\n- Nigel Imported Rifle (Prototype) now lives there.\n\n## New prototypes (opt-in, Skins/Misc tabs)\n\n- Motion Blur (Prototype) — directional camera motion blur with adjustable strength, quality, and center focus.\n- Color Grading / Sharpening (Prototype) — full-resolution sharpening and lightweight color grading for the world camera.\n",
   "assets": {
-    "launcher_win_x64": {
-      "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.0/BnlCommunityFixes.exe",
-      "sha256": "DA50CA28C57C3A2A0B1778FDBA7455DD0764BBEA8B441DD78CF8DA72011C7FA8",
-      "size": 116775227
-    },
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.0/BnlCommunityFixes",
-      "sha256": "89A024986DDDB311B594557FA971013E401F8955FF588A5482316414450289F6",
-      "size": 111880353
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.1/BnlCommunityFixes",
+      "sha256": "2061B2AA7267338CB8AC0DA8922F6F14669E5CEB64E35D869EBD6AF38859F068",
+      "size": 123309217
+    },
+    "launcher_win_x64": {
+      "file_name": "BnlCommunityFixes.exe",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.1/BnlCommunityFixes.exe",
+      "sha256": "774E63228EA3D263164AB49514EE4A970B631532E2DEE5795F4B8270E92FC6F2",
+      "size": 128207163
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.0/BnlCommunityFixes.exe",
-      "sha256": "DA50CA28C57C3A2A0B1778FDBA7455DD0764BBEA8B441DD78CF8DA72011C7FA8",
-      "size": 116775227
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.1/BnlCommunityFixes.exe",
+      "sha256": "774E63228EA3D263164AB49514EE4A970B631532E2DEE5795F4B8270E92FC6F2",
+      "size": 128207163
     }
   }
 }
