@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>2.8.2</Version>
+    <Version>2.8.3</Version>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Avalonia</RootNamespace>
     <ApplicationIcon>launcher-icon.ico</ApplicationIcon>

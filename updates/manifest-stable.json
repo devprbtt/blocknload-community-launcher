@@ -1,27 +1,27 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.8.2",
+  "version": "2.8.3",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-08-05T01:03:15.3985117Z",
-  "notes": "## New hero skins\n\n- Added a hero-organized Skins interface with collapsible sections and separate skin and weapon-model tabs for all 15 heroes.\n- Added the Ninja Turtle texture skin for O.P. Juan Shinobi, covering the third-person character, first-person arms, and katana.\n- Added Vander Graaf's Blue texture skin for the third-person character and first-person arms.\n- Custom hero textures now apply to local, preview, and remote-player models through event-driven creation hooks without continuous scene scanning.\n- Corrected the launcher hero names for Vander Graaf and Anthony \"Tony\" Turretto.\n\n## Weapon model experiments\n\n- Retained Nigel's working imported no-hammers rifle model as an optional weapon-model replacement.\n- Removed the unsuccessful legacy weapon-model experiments from the release.\n\n## Localization\n\n- Added Simplified Chinese text for the new hero skin controls and descriptions.\n",
+  "published_at": "2026-08-05T01:15:15.1808807Z",
+  "notes": "## Updater hotfix\n\n- Fixed launcher updates silently closing without installing when the existing launcher came from a multi-file deployment.\n- The updater now runs from the newly downloaded self-contained launcher, so it no longer depends on files beside the old executable.\n- Prevents the same update notification from reappearing after an apparently completed installation.\n",
   "assets": {
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.2/BnlCommunityFixes",
-      "sha256": "0E447EC2C5D9811D72FCAF68A544E7938589F19C9389D7D1E489BBD4C0F703AB",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.3/BnlCommunityFixes",
+      "sha256": "E3AC295CE9162B4537563DFC22AE5FDD3797EB4763B5CE0A1E17330401ADD638",
       "size": 127549601
     },
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.2/BnlCommunityFixes.exe",
-      "sha256": "5C802F7171BB194831F4BDA4B34543248CA5160C6672688C07A18BE79904F49E",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.3/BnlCommunityFixes.exe",
+      "sha256": "BA959200A3D68A41449C7C0B51E6783845CACC452B711E21C9737D6403E2F659",
       "size": 132446523
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.2/BnlCommunityFixes.exe",
-      "sha256": "5C802F7171BB194831F4BDA4B34543248CA5160C6672688C07A18BE79904F49E",
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.3/BnlCommunityFixes.exe",
+      "sha256": "BA959200A3D68A41449C7C0B51E6783845CACC452B711E21C9737D6403E2F659",
       "size": 132446523
     }
   }

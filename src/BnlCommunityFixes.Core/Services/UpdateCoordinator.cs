@@ -114,7 +114,12 @@ public sealed class UpdateCoordinator
     private void LaunchUpdater(UpdateManifest manifest)
     {
         _logger.Info("Launching launcher update helper.");
-        File.Copy(_paths.LauncherPath, _paths.LauncherUpdateHelperPath, true);
+        // Always use the newly downloaded self-contained launcher as the
+        // helper. The installed launcher may be a small apphost from a
+        // multi-file deployment; copying that executable alone would leave
+        // its managed/runtime dependencies behind and make the helper exit
+        // before it can install the update.
+        File.Copy(_paths.LauncherTempPath, _paths.LauncherUpdateHelperPath, true);
         EnsureExecutable(_paths.LauncherUpdateHelperPath);
 
         var startInfo = new ProcessStartInfo
