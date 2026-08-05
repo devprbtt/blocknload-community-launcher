@@ -212,6 +212,18 @@ public sealed class FeatureSettingsService
     public void SaveNigelSniperVisualSettings(NigelSniperVisualSettings settings) =>
         Save("experimental-nigel-sniper-visual-config.json", settings);
 
+    public NinjaTurtleSkinSettings LoadNinjaTurtleSkinSettings() =>
+        Load("experimental-ninja-turtle-skin-config.json", new NinjaTurtleSkinSettings());
+
+    public void SaveNinjaTurtleSkinSettings(NinjaTurtleSkinSettings settings) =>
+        Save("experimental-ninja-turtle-skin-config.json", settings);
+
+    public VanderBlueSkinSettings LoadVanderBlueSkinSettings() =>
+        Load("experimental-vander-blue-skin-config.json", new VanderBlueSkinSettings());
+
+    public void SaveVanderBlueSkinSettings(VanderBlueSkinSettings settings) =>
+        Save("experimental-vander-blue-skin-config.json", settings);
+
     public HideImpactVfxSettings LoadHideImpactVfxSettings()
     {
         var launcherConfigPath = Path.Combine(paths.PatchingDir, "experimental-hide-impact-vfx-config.json");

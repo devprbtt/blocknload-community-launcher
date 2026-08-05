@@ -289,12 +289,61 @@
             <!-- Skins -->
             <TabItem Header="Skins">
                 <ScrollViewer>
-                    <StackPanel Margin="8" Spacing="6">
+                    <StackPanel Margin="8" Spacing="5">
+                        <TextBlock Text="Cosmetic replacements are organized by hero. Expand a hero, then choose Skins or Weapon Models." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="0 0 0 4" />
 
-                        <TextBlock Text="Nigel Imported Rifle (Prototype)" FontWeight="SemiBold" Margin="0 8 0 0" />
-                        <CheckBox Content="Enabled" IsChecked="{Binding NigelSniperVisualEnabled}" />
-                        <TextBlock Text="Replaces Nigel's base rifle mesh with the imported no-hammers model. Hands, player skeleton, and default animations remain unchanged. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+                        <Expander Header="Abe Lincoln"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Astarella"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Cogwheel"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Dream Genie"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="'Doc' Eliza Doolally"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Kira-Chan"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Kreepy the Clown"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
 
+                        <Expander Header="Nigel Purdey-Longshot">
+                            <TabControl Margin="12 4 0 6">
+                                <TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem>
+                                <TabItem Header="Weapon Models">
+                                    <StackPanel Margin="8" Spacing="4">
+                                        <TextBlock Text="Imported No-Hammers Rifle" FontWeight="SemiBold" />
+                                        <CheckBox Content="Enabled" IsChecked="{Binding NigelSniperVisualEnabled}" />
+                                        <TextBlock Text="Replaces Nigel's base rifle mesh with the imported no-hammers model. Hands, player skeleton, and default animations remain unchanged. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+                                    </StackPanel>
+                                </TabItem>
+                            </TabControl>
+                        </Expander>
+
+                        <Expander Header="Vander Graaf" IsExpanded="True">
+                            <TabControl Margin="12 4 0 6">
+                                <TabItem Header="Skins">
+                                    <StackPanel Margin="8" Spacing="4">
+                                        <TextBlock Text="Blue" FontWeight="SemiBold" />
+                                        <CheckBox Content="Enabled" IsChecked="{Binding VanderBlueSkinEnabled}" />
+                                        <TextBlock Text="Replaces Vander's default third-person body and first-person arms with the Blue texture set. Geometry, animations, weapons, and hitboxes remain unchanged. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem>
+                            </TabControl>
+                        </Expander>
+
+                        <Expander Header="O.P. Juan Shinobi" IsExpanded="True">
+                            <TabControl Margin="12 4 0 6">
+                                <TabItem Header="Skins">
+                                    <StackPanel Margin="8" Spacing="4">
+                                        <TextBlock Text="Turtle" FontWeight="SemiBold" />
+                                        <CheckBox Content="Enabled" IsChecked="{Binding NinjaTurtleSkinEnabled}" />
+                                        <TextBlock Text="Replaces Ninja's default third-person body, first-person arms, and katana textures with the Turtle texture set. Geometry, animations, and hitboxes remain unchanged. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem>
+                            </TabControl>
+                        </Expander>
+
+                        <Expander Header="Roly Poly Fat Fat"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Sarge Stone"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Sweet Science"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Trondson"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Anthony 'Tony' Turretto"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

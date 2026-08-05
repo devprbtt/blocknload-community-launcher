@@ -85,6 +85,14 @@ public sealed class ExperimentalAssemblyBuildService
         {
             DeployNigelWeaponBundle(installInfo, logger);
         }
+        if (enabledFeatureKeys.Contains("ninja-turtle-skin", StringComparer.Ordinal))
+        {
+            DeployNinjaTurtleSkinBundle(installInfo, logger);
+        }
+        if (enabledFeatureKeys.Contains("vander-blue-skin", StringComparer.Ordinal))
+        {
+            DeployVanderBlueSkinBundle(installInfo, logger);
+        }
         return true;
     }
 
@@ -132,6 +140,38 @@ public sealed class ExperimentalAssemblyBuildService
             File.Copy(sourcePath, destinationPath, overwrite: true);
             logger.Info($"Deployed Nigel weapon bundle to '{destinationPath}'.");
         }
+    }
+
+    private void DeployNinjaTurtleSkinBundle(
+        GameInstallInfo installInfo, Logger logger)
+    {
+        const string fileName = "ninja-turtle-skin-windows.bundle";
+        var sourcePath = Path.Combine(paths.PatchingDir, fileName);
+        if (!File.Exists(sourcePath))
+            throw new InvalidOperationException(
+                $"Ninja Turtle skin bundle was not found: {sourcePath}");
+        var destinationDirectory = Path.Combine(
+            installInfo.GameDataDirectoryPath, "CommunityFixes");
+        Directory.CreateDirectory(destinationDirectory);
+        var destinationPath = Path.Combine(destinationDirectory, fileName);
+        File.Copy(sourcePath, destinationPath, overwrite: true);
+        logger.Info($"Deployed Ninja Turtle skin bundle to '{destinationPath}'.");
+    }
+
+    private void DeployVanderBlueSkinBundle(
+        GameInstallInfo installInfo, Logger logger)
+    {
+        const string fileName = "vander-blue-skin-windows.bundle";
+        var sourcePath = Path.Combine(paths.PatchingDir, fileName);
+        if (!File.Exists(sourcePath))
+            throw new InvalidOperationException(
+                $"Vander Blue skin bundle was not found: {sourcePath}");
+        var destinationDirectory = Path.Combine(
+            installInfo.GameDataDirectoryPath, "CommunityFixes");
+        Directory.CreateDirectory(destinationDirectory);
+        var destinationPath = Path.Combine(destinationDirectory, fileName);
+        File.Copy(sourcePath, destinationPath, overwrite: true);
+        logger.Info($"Deployed Vander Blue skin bundle to '{destinationPath}'.");
     }
 
     private void CompileHelperAssembly(GameInstallInfo installInfo, Logger logger)

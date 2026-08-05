@@ -21,6 +21,8 @@ public static class ExperimentalFeaturePatcherCatalog
         new MotionBlurFeaturePatcher(),
         new VisualEnhancementsFeaturePatcher(),
         new NigelSniperVisualFeaturePatcher(),
+        new NinjaTurtleSkinFeaturePatcher(),
+        new VanderBlueSkinFeaturePatcher(),
         new ShieldTimerFeaturePatcher(),
         new UnitGuiScaleFeaturePatcher(),
         new WsiScaleFeaturePatcher(),

@@ -1,28 +1,28 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.8.1",
+  "version": "2.8.2",
   "minimum_supported_version": "2.5.0",
-  "published_at": "2026-08-02T23:59:30.5955856+00:00",
-  "notes": "## Performance fix\n\n- Removed Audio Replacer, Mesh Replacer, and Texture Replacer, along with the shop icon override feature. These shared always-on texture-scanning code that ran continuously in the background even with the features disabled, and were the suspected cause of the FPS drops several players reported.\n- Removed the Classic Scoreboard and Nigel Geometry Skin prototypes.\n\n## New: Skins tab\n\n- Added a dedicated \"Skins\" tab in Feature Settings, separate from Misc.\n- Nigel Imported Rifle (Prototype) now lives there.\n\n## New prototypes (opt-in, Skins/Misc tabs)\n\n- Motion Blur (Prototype) — directional camera motion blur with adjustable strength, quality, and center focus.\n- Color Grading / Sharpening (Prototype) — full-resolution sharpening and lightweight color grading for the world camera.\n",
+  "published_at": "2026-08-05T01:03:15.3985117Z",
+  "notes": "## New hero skins\n\n- Added a hero-organized Skins interface with collapsible sections and separate skin and weapon-model tabs for all 15 heroes.\n- Added the Ninja Turtle texture skin for O.P. Juan Shinobi, covering the third-person character, first-person arms, and katana.\n- Added Vander Graaf's Blue texture skin for the third-person character and first-person arms.\n- Custom hero textures now apply to local, preview, and remote-player models through event-driven creation hooks without continuous scene scanning.\n- Corrected the launcher hero names for Vander Graaf and Anthony \"Tony\" Turretto.\n\n## Weapon model experiments\n\n- Retained Nigel's working imported no-hammers rifle model as an optional weapon-model replacement.\n- Removed the unsuccessful legacy weapon-model experiments from the release.\n\n## Localization\n\n- Added Simplified Chinese text for the new hero skin controls and descriptions.\n",
   "assets": {
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.1/BnlCommunityFixes",
-      "sha256": "2061B2AA7267338CB8AC0DA8922F6F14669E5CEB64E35D869EBD6AF38859F068",
-      "size": 123309217
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.2/BnlCommunityFixes",
+      "sha256": "0E447EC2C5D9811D72FCAF68A544E7938589F19C9389D7D1E489BBD4C0F703AB",
+      "size": 127549601
     },
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.1/BnlCommunityFixes.exe",
-      "sha256": "774E63228EA3D263164AB49514EE4A970B631532E2DEE5795F4B8270E92FC6F2",
-      "size": 128207163
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.2/BnlCommunityFixes.exe",
+      "sha256": "5C802F7171BB194831F4BDA4B34543248CA5160C6672688C07A18BE79904F49E",
+      "size": 132446523
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.1/BnlCommunityFixes.exe",
-      "sha256": "774E63228EA3D263164AB49514EE4A970B631532E2DEE5795F4B8270E92FC6F2",
-      "size": 128207163
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.8.2/BnlCommunityFixes.exe",
+      "sha256": "5C802F7171BB194831F4BDA4B34543248CA5160C6672688C07A18BE79904F49E",
+      "size": 132446523
     }
   }
 }

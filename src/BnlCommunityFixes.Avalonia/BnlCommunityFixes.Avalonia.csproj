@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>2.8.1</Version>
+    <Version>2.8.2</Version>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Avalonia</RootNamespace>
     <ApplicationIcon>launcher-icon.ico</ApplicationIcon>
@@ -53,6 +53,10 @@
     <EmbeddedResource Include="..\..\assets\patching\VisualEnhancementsRuntime.cs" LogicalName="Patching.VisualEnhancementsRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\visual-enhancements-windows.bundle" LogicalName="Patching.visual-enhancements-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\NigelSniperVisualRuntime.cs" LogicalName="Patching.NigelSniperVisualRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\NinjaTurtleSkinRuntime.cs" LogicalName="Patching.NinjaTurtleSkinRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\ninja-turtle-skin-windows.bundle" LogicalName="Patching.ninja-turtle-skin-windows.bundle" />
+    <EmbeddedResource Include="..\..\assets\patching\VanderBlueSkinRuntime.cs" LogicalName="Patching.VanderBlueSkinRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\vander-blue-skin-windows.bundle" LogicalName="Patching.vander-blue-skin-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\nigel-weapon-windows.bundle" LogicalName="Patching.nigel-weapon-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\nigel-replacement-model-windows.bundle" LogicalName="Patching.nigel-replacement-model-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\PerformanceOptRuntime.cs" LogicalName="Patching.PerformanceOptRuntime.cs" />
@@ -77,6 +81,8 @@
     <EmbeddedResource Include="..\..\assets\patching\experimental-motion-blur-config.json" LogicalName="Patching.experimental-motion-blur-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-visual-enhancements-config.json" LogicalName="Patching.experimental-visual-enhancements-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-nigel-sniper-visual-config.json" LogicalName="Patching.experimental-nigel-sniper-visual-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-ninja-turtle-skin-config.json" LogicalName="Patching.experimental-ninja-turtle-skin-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-vander-blue-skin-config.json" LogicalName="Patching.experimental-vander-blue-skin-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-hide-impact-vfx-config.json" LogicalName="Patching.experimental-hide-impact-vfx-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-performance-opt-config.json" LogicalName="Patching.experimental-performance-opt-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-time-assault-config.json" LogicalName="Patching.experimental-time-assault-config.json" />
