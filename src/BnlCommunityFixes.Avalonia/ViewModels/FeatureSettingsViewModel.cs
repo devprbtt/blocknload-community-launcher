@@ -102,6 +102,8 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _nigelSniperVisualEnabled;
     [ObservableProperty] private bool _ninjaTurtleSkinEnabled;
     [ObservableProperty] private bool _vanderBlueSkinEnabled;
+    [ObservableProperty] private bool _hinduYetiSkinEnabled;
+    [ObservableProperty] private bool _darklordSweetScienceSkinEnabled;
     [ObservableProperty] private bool _hideImpactVfxEnabled;
     [ObservableProperty] private bool _hideImpactVfx;
     [ObservableProperty] private bool _hideLavaWaterPlane;
@@ -220,6 +222,10 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             _svc.LoadNinjaTurtleSkinSettings().Enabled;
         VanderBlueSkinEnabled =
             _svc.LoadVanderBlueSkinSettings().Enabled;
+        HinduYetiSkinEnabled =
+            _svc.LoadHinduYetiSkinSettings().Enabled;
+        DarklordSweetScienceSkinEnabled =
+            _svc.LoadDarklordSweetScienceSkinSettings().Enabled;
         var vfx = _svc.LoadHideImpactVfxSettings();
         HideImpactVfxEnabled = vfx.Enabled; HideImpactVfx = vfx.HideImpactVfx;
         HideLavaWaterPlane = vfx.HideLavaWaterPlane; HideFallingBlocks = vfx.HideFallingBlocks;
@@ -325,6 +331,16 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
                 new VanderBlueSkinSettings
                 {
                     Enabled = VanderBlueSkinEnabled
+                });
+            _svc.SaveHinduYetiSkinSettings(
+                new HinduYetiSkinSettings
+                {
+                    Enabled = HinduYetiSkinEnabled
+                });
+            _svc.SaveDarklordSweetScienceSkinSettings(
+                new DarklordSweetScienceSkinSettings
+                {
+                    Enabled = DarklordSweetScienceSkinEnabled
                 });
             _svc.SaveHideImpactVfxSettings(new HideImpactVfxSettings
             {

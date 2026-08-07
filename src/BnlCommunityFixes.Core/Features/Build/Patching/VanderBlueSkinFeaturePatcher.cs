@@ -3,15 +3,30 @@ using Mono.Cecil.Cil;
 
 namespace BnlCommunityFixes.Core.Features.Build.Patching;
 
-public sealed class VanderBlueSkinFeaturePatcher : IExperimentalFeaturePatcher
+public class VanderBlueSkinFeaturePatcher : IExperimentalFeaturePatcher
 {
-    public string FeatureKey => "vander-blue-skin";
+    private readonly string featureKey;
+    private readonly string runtimeTypeName;
+
+    public VanderBlueSkinFeaturePatcher()
+        : this("vander-blue-skin", "VanderBlueSkinRuntime")
+    {
+    }
+
+    protected VanderBlueSkinFeaturePatcher(
+        string featureKey, string runtimeTypeName)
+    {
+        this.featureKey = featureKey;
+        this.runtimeTypeName = runtimeTypeName;
+    }
+
+    public string FeatureKey => featureKey;
 
     public void Apply(ExperimentalPatchContext context)
     {
         var runtimeType = context.HelperModule.Types.FirstOrDefault(
-            static type => type.FullName == "BnlCommunityFixes.VanderBlueSkinRuntime")
-            ?? throw new InvalidOperationException("VanderBlueSkinRuntime not found.");
+            type => type.FullName == "BnlCommunityFixes." + runtimeTypeName)
+            ?? throw new InvalidOperationException(runtimeTypeName + " not found.");
         var apply = runtimeType.Methods.FirstOrDefault(static method =>
             method.Name == "Apply" && method.Parameters.Count == 1)
             ?? throw new InvalidOperationException("VanderBlueSkinRuntime.Apply not found.");

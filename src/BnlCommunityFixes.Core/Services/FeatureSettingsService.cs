@@ -224,6 +224,20 @@ public sealed class FeatureSettingsService
     public void SaveVanderBlueSkinSettings(VanderBlueSkinSettings settings) =>
         Save("experimental-vander-blue-skin-config.json", settings);
 
+    public HinduYetiSkinSettings LoadHinduYetiSkinSettings() =>
+        Load("experimental-hindu-yeti-skin-config.json", new HinduYetiSkinSettings());
+
+    public void SaveHinduYetiSkinSettings(HinduYetiSkinSettings settings) =>
+        Save("experimental-hindu-yeti-skin-config.json", settings);
+
+    public DarklordSweetScienceSkinSettings LoadDarklordSweetScienceSkinSettings() =>
+        Load("experimental-darklord-sweet-science-skin-config.json",
+            new DarklordSweetScienceSkinSettings());
+
+    public void SaveDarklordSweetScienceSkinSettings(
+        DarklordSweetScienceSkinSettings settings) =>
+        Save("experimental-darklord-sweet-science-skin-config.json", settings);
+
     public HideImpactVfxSettings LoadHideImpactVfxSettings()
     {
         var launcherConfigPath = Path.Combine(paths.PatchingDir, "experimental-hide-impact-vfx-config.json");

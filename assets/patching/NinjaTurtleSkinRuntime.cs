@@ -120,18 +120,17 @@ namespace BnlCommunityFixes
             int instanceSuffix = normalized.IndexOf(" (instance)");
             if (instanceSuffix >= 0)
                 normalized = normalized.Substring(0, instanceSuffix);
-            // The default Ninja S1 body and FPS prefab use the historical
-            // "american" material keys even though the matching exported
-            // Turtle replacements are named "regular".
-            if (normalized == "ninja_american")
+            // Only Ninja S2 should receive the Turtle skin. S2 uses the
+            // "regular" source keys. S1's historical "american" keys must
+            // remain untouched.
+            if (normalized == "ninja_regular")
                 return 0;
-            if (normalized == "ninja_arms_american")
+            if (normalized == "ninja_arms_regular")
                 return 1;
-            for (int i = 0; i < TextureNames.Length; i++)
-            {
-                if (normalized == TextureNames[i])
-                    return i;
-            }
+            if (normalized == "unit_katana")
+                return 2;
+            if (normalized == "player_katana")
+                return 3;
             return -1;
         }
 

@@ -93,6 +93,15 @@ public sealed class ExperimentalAssemblyBuildService
         {
             DeployVanderBlueSkinBundle(installInfo, logger);
         }
+        if (enabledFeatureKeys.Contains("hindu-yeti-skin", StringComparer.Ordinal))
+        {
+            DeployHinduYetiSkinBundle(installInfo, logger);
+        }
+        if (enabledFeatureKeys.Contains(
+                "darklord-sweet-science-skin", StringComparer.Ordinal))
+        {
+            DeployDarklordSweetScienceSkinBundle(installInfo, logger);
+        }
         return true;
     }
 
@@ -172,6 +181,39 @@ public sealed class ExperimentalAssemblyBuildService
         var destinationPath = Path.Combine(destinationDirectory, fileName);
         File.Copy(sourcePath, destinationPath, overwrite: true);
         logger.Info($"Deployed Vander Blue skin bundle to '{destinationPath}'.");
+    }
+
+    private void DeployHinduYetiSkinBundle(
+        GameInstallInfo installInfo, Logger logger)
+    {
+        const string fileName = "hindu-yeti-skin-windows.bundle";
+        var sourcePath = Path.Combine(paths.PatchingDir, fileName);
+        if (!File.Exists(sourcePath))
+            throw new InvalidOperationException(
+                $"Hindu Yeti skin bundle was not found: {sourcePath}");
+        var destinationDirectory = Path.Combine(
+            installInfo.GameDataDirectoryPath, "CommunityFixes");
+        Directory.CreateDirectory(destinationDirectory);
+        var destinationPath = Path.Combine(destinationDirectory, fileName);
+        File.Copy(sourcePath, destinationPath, overwrite: true);
+        logger.Info($"Deployed Hindu Yeti skin bundle to '{destinationPath}'.");
+    }
+
+    private void DeployDarklordSweetScienceSkinBundle(
+        GameInstallInfo installInfo, Logger logger)
+    {
+        const string fileName =
+            "darklord-sweet-science-skin-windows.bundle";
+        var sourcePath = Path.Combine(paths.PatchingDir, fileName);
+        if (!File.Exists(sourcePath))
+            throw new InvalidOperationException(
+                $"Darklord SS skin bundle was not found: {sourcePath}");
+        var destinationDirectory = Path.Combine(
+            installInfo.GameDataDirectoryPath, "CommunityFixes");
+        Directory.CreateDirectory(destinationDirectory);
+        var destinationPath = Path.Combine(destinationDirectory, fileName);
+        File.Copy(sourcePath, destinationPath, overwrite: true);
+        logger.Info($"Deployed Darklord SS skin bundle to '{destinationPath}'.");
     }
 
     private void CompileHelperAssembly(GameInstallInfo installInfo, Logger logger)

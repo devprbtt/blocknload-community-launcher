@@ -96,6 +96,21 @@ public sealed class HelperSourceGeneratorService
             AppendStaticFile(sb, patchingDir, "VanderBlueSkinRuntime.cs");
         }
 
+        var hinduYetiSkin = ReadJson(
+            patchingDir, "experimental-hindu-yeti-skin-config.json");
+        if (GetBool(hinduYetiSkin, "enabled", false))
+        {
+            AppendStaticFile(sb, patchingDir, "HinduYetiSkinRuntime.cs");
+        }
+
+        var darklordSweetScience = ReadJson(
+            patchingDir, "experimental-darklord-sweet-science-skin-config.json");
+        if (GetBool(darklordSweetScience, "enabled", false))
+        {
+            AppendStaticFile(sb, patchingDir,
+                "DarklordSweetScienceSkinRuntime.cs");
+        }
+
         // Bot mode runs in the embedded bnlReloaded server, not in the client helper.
 
         var outputPath = Path.Combine(patchingDir, "BnlCommunityFixes.generated.cs");

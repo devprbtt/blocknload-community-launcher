@@ -292,7 +292,18 @@
                     <StackPanel Margin="8" Spacing="5">
                         <TextBlock Text="Cosmetic replacements are organized by hero. Expand a hero, then choose Skins or Weapon Models." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="0 0 0 4" />
 
-                        <Expander Header="Abe Lincoln"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Yeti" IsExpanded="True">
+                            <TabControl Margin="12 4 0 6">
+                                <TabItem Header="Skins">
+                                    <StackPanel Margin="8" Spacing="4">
+                                        <TextBlock Text="Hindu Yeti" FontWeight="SemiBold" />
+                                        <CheckBox Content="Enabled" IsChecked="{Binding HinduYetiSkinEnabled}" />
+                                        <TextBlock Text="Replaces Yeti's S1 body, first-person arms, snow weapons, and ice effects with the Hindu Yeti texture set. Other Yeti skins, geometry, animations, and hitboxes remain unchanged. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem>
+                            </TabControl>
+                        </Expander>
                         <Expander Header="Astarella"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
                         <Expander Header="Cogwheel"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
                         <Expander Header="Dream Genie"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
@@ -341,7 +352,18 @@
 
                         <Expander Header="Roly Poly Fat Fat"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
                         <Expander Header="Sarge Stone"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
-                        <Expander Header="Sweet Science"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
+                        <Expander Header="Sweet Science" IsExpanded="True">
+                            <TabControl Margin="12 4 0 6">
+                                <TabItem Header="Skins">
+                                    <StackPanel Margin="8" Spacing="4">
+                                        <TextBlock Text="Darklord SS" FontWeight="SemiBold" />
+                                        <CheckBox Content="Enabled" IsChecked="{Binding DarklordSweetScienceSkinEnabled}" />
+                                        <TextBlock Text="Replaces the Devil SS body and first-person arms, including Blitz and Graviton states, with the Darklord SS texture set. Other Sweet Science skins, geometry, animations, and hitboxes remain unchanged. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="20 0 0 4" />
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem>
+                            </TabControl>
+                        </Expander>
                         <Expander Header="Trondson"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
                         <Expander Header="Anthony 'Tony' Turretto"><TabControl Margin="12 4 0 6"><TabItem Header="Skins"><TextBlock Text="No custom skins available yet." Margin="8" Foreground="Gray" /></TabItem><TabItem Header="Weapon Models"><TextBlock Text="No custom weapon models available yet." Margin="8" Foreground="Gray" /></TabItem></TabControl></Expander>
                     </StackPanel>

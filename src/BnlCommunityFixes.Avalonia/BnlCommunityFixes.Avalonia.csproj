@@ -57,6 +57,10 @@
     <EmbeddedResource Include="..\..\assets\patching\ninja-turtle-skin-windows.bundle" LogicalName="Patching.ninja-turtle-skin-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\VanderBlueSkinRuntime.cs" LogicalName="Patching.VanderBlueSkinRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\vander-blue-skin-windows.bundle" LogicalName="Patching.vander-blue-skin-windows.bundle" />
+    <EmbeddedResource Include="..\..\assets\patching\HinduYetiSkinRuntime.cs" LogicalName="Patching.HinduYetiSkinRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\hindu-yeti-skin-windows.bundle" LogicalName="Patching.hindu-yeti-skin-windows.bundle" />
+    <EmbeddedResource Include="..\..\assets\patching\DarklordSweetScienceSkinRuntime.cs" LogicalName="Patching.DarklordSweetScienceSkinRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\darklord-sweet-science-skin-windows.bundle" LogicalName="Patching.darklord-sweet-science-skin-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\nigel-weapon-windows.bundle" LogicalName="Patching.nigel-weapon-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\nigel-replacement-model-windows.bundle" LogicalName="Patching.nigel-replacement-model-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\PerformanceOptRuntime.cs" LogicalName="Patching.PerformanceOptRuntime.cs" />
@@ -83,6 +87,8 @@
     <EmbeddedResource Include="..\..\assets\patching\experimental-nigel-sniper-visual-config.json" LogicalName="Patching.experimental-nigel-sniper-visual-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-ninja-turtle-skin-config.json" LogicalName="Patching.experimental-ninja-turtle-skin-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-vander-blue-skin-config.json" LogicalName="Patching.experimental-vander-blue-skin-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-hindu-yeti-skin-config.json" LogicalName="Patching.experimental-hindu-yeti-skin-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-darklord-sweet-science-skin-config.json" LogicalName="Patching.experimental-darklord-sweet-science-skin-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-hide-impact-vfx-config.json" LogicalName="Patching.experimental-hide-impact-vfx-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-performance-opt-config.json" LogicalName="Patching.experimental-performance-opt-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-time-assault-config.json" LogicalName="Patching.experimental-time-assault-config.json" />

@@ -14,6 +14,8 @@ public static partial class FeatureConfigCatalog
         new("nigel-sniper-visual", "Nigel Imported Rifle (Prototype)", "experimental-nigel-sniper-visual-config.json", IncludeInConfigTransfer: true),
         new("ninja-turtle-skin", "Ninja Turtle Skin", "experimental-ninja-turtle-skin-config.json", IncludeInConfigTransfer: true),
         new("vander-blue-skin", "Vander Blue Skin", "experimental-vander-blue-skin-config.json", IncludeInConfigTransfer: true),
+        new("hindu-yeti-skin", "Hindu Yeti Skin", "experimental-hindu-yeti-skin-config.json", IncludeInConfigTransfer: true),
+        new("darklord-sweet-science-skin", "Darklord SS Skin", "experimental-darklord-sweet-science-skin-config.json", IncludeInConfigTransfer: true),
         new("hide-impact-vfx", "Hide Impact VFX", "experimental-hide-impact-vfx-config.json", IncludeInConfigTransfer: true),
         new("map-render", "Map Render", "experimental-map-render-config.json", IncludeInConfigTransfer: true),
         new("performance-opt", "Device Healthbar Opt", "experimental-performance-opt-config.json", IncludeInConfigTransfer: true),

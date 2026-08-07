@@ -23,6 +23,8 @@ public static class ExperimentalFeaturePatcherCatalog
         new NigelSniperVisualFeaturePatcher(),
         new NinjaTurtleSkinFeaturePatcher(),
         new VanderBlueSkinFeaturePatcher(),
+        new HinduYetiSkinFeaturePatcher(),
+        new DarklordSweetScienceSkinFeaturePatcher(),
         new ShieldTimerFeaturePatcher(),
         new UnitGuiScaleFeaturePatcher(),
         new WsiScaleFeaturePatcher(),
