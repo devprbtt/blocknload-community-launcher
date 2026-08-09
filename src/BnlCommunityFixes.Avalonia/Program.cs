@@ -51,8 +51,6 @@ sealed class Program
             var featureSettingsService = new FeatureSettingsService(paths);
             featureSettingsService.EnsureAutoCasualQueueTestDefaultEnabled();
 
-            new LauncherDebugProfileService(paths, logger).ApplyCurrentLauncherProfile();
-
             var settingsService = new SettingsService(paths);
             settingsService.EnsureDefaultFile();
             var settings = settingsService.Load();

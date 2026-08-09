@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "skip_intro": true,
   "disable_main_menu_frame_cap": true
 }

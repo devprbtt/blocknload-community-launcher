@@ -278,6 +278,43 @@
                         <TextBlock Text="Reduces CPU cost on device-heavy maps. Skips distant device health bars entirely, skips full-HP devices each frame, and short-circuits the healthbar update loop when nothing has changed. Throttles minimap, team-overlay WSI, and gravity trap updates, and fully disables fan animators and front player indicators. Keeps player, base, shield-generator, objective, and other always-relevant health bars unaffected. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled" IsChecked="{Binding PerformanceOptEnabled}" />
 
+                        <TextBlock Text="Performance Telemetry" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Continuously records every rendered frame only while inside a match (the Zone scene). Lobby, loading, and menu frames are excluded. Binary traces are saved under BlockNLoad_Data/bnl-performance-logs. Give each experiment a distinct label. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding PerformanceTelemetryEnabled}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Test label" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding PerformanceTelemetryLabel}" Width="180" />
+                            <TextBlock Text="Warmup" VerticalAlignment="Center" />
+                            <NumericUpDown Value="{Binding PerformanceTelemetryWarmup}" Minimum="0" Maximum="60" Increment="1" Width="140" MinWidth="140" />
+                        </StackPanel>
+
+                        <TextBlock Text="Minimap Performance Opt (Test)" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Reduces continuous minimap CPU and allocation cost by updating camera bounds, layout, and unit reconciliation at a fixed, staggered rate independent of game FPS. Icon animation, the map-render coroutine, and gameplay state are unchanged. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding MinimapPerformanceEnabled}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Update rate" VerticalAlignment="Center" />
+                            <NumericUpDown Value="{Binding MinimapPerformanceHz}" Minimum="10" Maximum="60" Increment="5" Width="140" MinWidth="140" />
+                            <TextBlock Text="Hz" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <TextBlock Text="World-Space Indicator Performance Opt (Test)" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Runs friendly unit scanning and WSI population reconciliation at a fixed rate. Existing overhead indicators continue tracking their targets normally. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding WsiPerformanceEnabled}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Reconciliation rate" VerticalAlignment="Center" />
+                            <NumericUpDown Value="{Binding WsiPerformanceHz}" Minimum="5" Maximum="60" Increment="5" Width="140" MinWidth="140" />
+                            <TextBlock Text="Hz" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <TextBlock Text="In-Game FPS Counter" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Shows a smoothed FPS counter in the top-right corner during matches only. The text refresh is rate-limited to avoid per-frame string allocations. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding FpsCounterEnabled}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Display refresh" VerticalAlignment="Center" />
+                            <NumericUpDown Value="{Binding FpsCounterRefreshHz}" Minimum="1" Maximum="20" Increment="1" Width="140" MinWidth="140" />
+                            <TextBlock Text="Hz" VerticalAlignment="Center" />
+                        </StackPanel>
+
                         <TextBlock Text="Enable Time Assault" FontWeight="SemiBold" Margin="0 8 0 0" />
                         <TextBlock Text="Forces the Time Assault menu entry to stay visible and enabled even when the live server disables it. Uses the game's existing Time Trial UI and `StartTimeTrial()` network path so the mode can be tested if the backend still accepts it. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled" IsChecked="{Binding TimeAssaultEnabled}" />

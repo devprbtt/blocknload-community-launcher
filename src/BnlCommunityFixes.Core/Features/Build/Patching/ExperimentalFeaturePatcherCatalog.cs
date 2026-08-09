@@ -40,10 +40,13 @@ public static class ExperimentalFeaturePatcherCatalog
         new DeathCamHealthbarFeaturePatcher(),
         new HideImpactVfxFeaturePatcher(),
         new BuildPreviewFeaturePatcher(),
-        new DebugMenuFeaturePatcher(),
         new MatchReplayRecorderFeaturePatcher(),
         new FovFeaturePatcher(),
         new PerformanceOptPatcher(),
+        new PerformanceTelemetryFeaturePatcher(),
+        new MinimapPerformanceFeaturePatcher(),
+        new WsiPerformanceFeaturePatcher(),
+        new FpsCounterFeaturePatcher(),
         new TimeAssaultFeaturePatcher()
         // Bot mode is implemented by the embedded bnlReloaded server.
     ];

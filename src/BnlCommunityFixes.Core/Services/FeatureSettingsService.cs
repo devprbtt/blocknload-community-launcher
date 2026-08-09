@@ -361,6 +361,14 @@ public sealed class FeatureSettingsService
 
     public PerformanceOptSettings LoadPerformanceOptSettings() => Load("experimental-performance-opt-config.json", new PerformanceOptSettings());
     public void SavePerformanceOptSettings(PerformanceOptSettings settings) => Save("experimental-performance-opt-config.json", settings);
+    public PerformanceTelemetrySettings LoadPerformanceTelemetrySettings() => Load("experimental-performance-telemetry-config.json", new PerformanceTelemetrySettings());
+    public void SavePerformanceTelemetrySettings(PerformanceTelemetrySettings settings) => Save("experimental-performance-telemetry-config.json", settings);
+    public MinimapPerformanceSettings LoadMinimapPerformanceSettings() => Load("experimental-minimap-performance-config.json", new MinimapPerformanceSettings());
+    public void SaveMinimapPerformanceSettings(MinimapPerformanceSettings settings) => Save("experimental-minimap-performance-config.json", settings);
+    public WsiPerformanceSettings LoadWsiPerformanceSettings() => Load("experimental-wsi-performance-config.json", new WsiPerformanceSettings());
+    public void SaveWsiPerformanceSettings(WsiPerformanceSettings settings) => Save("experimental-wsi-performance-config.json", settings);
+    public FpsCounterSettings LoadFpsCounterSettings() => Load("experimental-fps-counter-config.json", new FpsCounterSettings());
+    public void SaveFpsCounterSettings(FpsCounterSettings settings) => Save("experimental-fps-counter-config.json", settings);
 
     public TimeAssaultSettings LoadTimeAssaultSettings() => Load("experimental-time-assault-config.json", new TimeAssaultSettings());
     public void SaveTimeAssaultSettings(TimeAssaultSettings settings) => Save("experimental-time-assault-config.json", settings);

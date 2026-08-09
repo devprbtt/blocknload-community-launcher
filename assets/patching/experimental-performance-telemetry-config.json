@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "label": "autoqueue-scan-fix",
+  "warmup_seconds": 5,
+  "flush_interval_seconds": 5
+}

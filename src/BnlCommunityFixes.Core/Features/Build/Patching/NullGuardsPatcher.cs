@@ -19,6 +19,53 @@ public sealed class NullGuardsPatcher : IExperimentalFeaturePatcher
         PatchTeamFieldOfView(context, opEq);
         PatchGuiFollowUpdate(context, opImplicit);
         PatchUnitGhostHandlerUpdate(context);
+        PatchAnimUnitGearMovement(context);
+    }
+
+    private static void PatchAnimUnitGearMovement(ExperimentalPatchContext context)
+    {
+        var type = context.TargetModule.Types.FirstOrDefault(static t => t.Name == "AnimUnitGearMovement");
+        var play = type?.Methods.FirstOrDefault(static m =>
+            m.Name == "Play" && m.HasBody && m.Parameters.Count == 3);
+        if (type is null || play is null) return;
+
+        var runtime = context.HelperModule.Types.FirstOrDefault(static t =>
+            t.FullName == "BnlCommunityFixes.AnimationGuardRuntime");
+        var safePlay = runtime?.Methods.FirstOrDefault(static m => m.Name == "PlayMovement");
+        if (safePlay is null)
+        {
+            throw new InvalidOperationException("AnimationGuardRuntime.PlayMovement not found in helper assembly.");
+        }
+
+        if (play.Body.Instructions.Any(static i =>
+            i.Operand is MethodReference mr && mr.DeclaringType.Name == "AnimationGuardRuntime")) return;
+
+        var getNodeName = type.Methods.FirstOrDefault(static m =>
+            m.Name == "GetNodeName" && m.Parameters.Count == 2);
+        var getLayer = type.Methods.FirstOrDefault(static m => m.Name == "get_Layer");
+        if (getNodeName is null || getLayer is null) return;
+
+        play.Body.ExceptionHandlers.Clear();
+        play.Body.Variables.Clear();
+        play.Body.Variables.Add(new VariableDefinition(context.TargetModule.TypeSystem.String));
+        play.Body.InitLocals = true;
+        play.Body.Instructions.Clear();
+        var il = play.Body.GetILProcessor();
+
+        // nodeName = this.GetNodeName(state, extraIdleIndex)
+        il.Append(Instruction.Create(OpCodes.Ldarg_0));
+        il.Append(Instruction.Create(OpCodes.Ldarg_1));
+        il.Append(Instruction.Create(OpCodes.Ldarg_3));
+        il.Append(Instruction.Create(OpCodes.Call, context.TargetModule.ImportReference(getNodeName)));
+        il.Append(Instruction.Create(OpCodes.Stloc_0));
+
+        // AnimationGuardRuntime.PlayMovement(this.Layer, nodeName, speed)
+        il.Append(Instruction.Create(OpCodes.Ldarg_0));
+        il.Append(Instruction.Create(OpCodes.Call, context.TargetModule.ImportReference(getLayer)));
+        il.Append(Instruction.Create(OpCodes.Ldloc_0));
+        il.Append(Instruction.Create(OpCodes.Ldarg_2));
+        il.Append(Instruction.Create(OpCodes.Call, context.TargetModule.ImportReference(safePlay)));
+        il.Append(Instruction.Create(OpCodes.Ret));
     }
 
     private static void PatchTeamFieldOfView(ExperimentalPatchContext context, MethodReference? opEq)

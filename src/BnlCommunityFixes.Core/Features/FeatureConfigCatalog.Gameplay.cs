@@ -19,6 +19,10 @@ public static partial class FeatureConfigCatalog
         new("hide-impact-vfx", "Hide Impact VFX", "experimental-hide-impact-vfx-config.json", IncludeInConfigTransfer: true),
         new("map-render", "Map Render", "experimental-map-render-config.json", IncludeInConfigTransfer: true),
         new("performance-opt", "Device Healthbar Opt", "experimental-performance-opt-config.json", IncludeInConfigTransfer: true),
+        new("performance-telemetry", "Performance Telemetry", "experimental-performance-telemetry-config.json", IncludeInConfigTransfer: true),
+        new("minimap-performance", "Minimap Performance Opt", "experimental-minimap-performance-config.json", IncludeInConfigTransfer: true),
+        new("wsi-performance", "WSI Performance Opt", "experimental-wsi-performance-config.json", IncludeInConfigTransfer: true),
+        new("fps-counter", "In-Game FPS Counter", "experimental-fps-counter-config.json", IncludeInConfigTransfer: true),
         new("time-assault", "Enable Time Assault", "experimental-time-assault-config.json", IncludeInConfigTransfer: true),
         new("ability-cast", "Ability Cast", "experimental-ability-cast-config.json"),
         // Bot mode launches the embedded bnlReloaded server; no client bot patch is involved.

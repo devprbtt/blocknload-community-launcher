@@ -98,9 +98,11 @@ public sealed class UpdateInstaller
                 return;
             }
 
-            var installedVersion = FileVersionInfo.GetVersionInfo(installedTarget).FileVersion;
-            var externalVersion = FileVersionInfo.GetVersionInfo(externalTarget).FileVersion;
-            if (!VersionService.IsRemoteNewer(externalVersion ?? "0.0.0", installedVersion ?? "0.0.0"))
+            // This process has just installed the downloaded, hash-verified
+            // update. Copy that exact binary back to the launcher the user
+            // originally opened. Do not depend on PE version metadata here:
+            // Linux single-file ELF launchers do not expose it reliably.
+            if (FilesAreEqual(installedTarget, externalTarget))
             {
                 return;
             }
@@ -210,6 +212,21 @@ public sealed class UpdateInstaller
                 Thread.Sleep(500);
             }
         }
+    }
+
+    private static bool FilesAreEqual(string leftPath, string rightPath)
+    {
+        var left = new FileInfo(leftPath);
+        var right = new FileInfo(rightPath);
+        if (!left.Exists || !right.Exists || left.Length != right.Length)
+        {
+            return false;
+        }
+
+        return string.Equals(
+            HashService.ComputeSha1(leftPath),
+            HashService.ComputeSha1(rightPath),
+            StringComparison.OrdinalIgnoreCase);
     }
 
     private static void EnsureExecutable(string path)

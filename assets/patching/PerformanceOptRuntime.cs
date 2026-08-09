@@ -10,9 +10,6 @@ namespace BnlCommunityFixes
         private static readonly System.Collections.Generic.HashSet<GuiHealthBarMaker> ActiveHealthbarMakersSet = new System.Collections.Generic.HashSet<GuiHealthBarMaker>();
         // Reusable output list for GetActiveHealthbarMakers — avoids allocation every frame
         private static readonly System.Collections.Generic.List<GuiHealthBarMaker> FilteredHealthbarMakers = new System.Collections.Generic.List<GuiHealthBarMaker>();
-        private static int registerLogCount;
-        private static int activeStateLogCount;
-        private static int activeListReadLogCount;
         private static bool activeListDirty = true;
         private static bool healthChangedThisFrame = false;
         private static bool healthEventSubscribed = false;
@@ -89,12 +86,6 @@ namespace BnlCommunityFixes
 
         public static System.Collections.Generic.List<GuiHealthBarMaker> GetActiveHealthbarMakers(System.Collections.Generic.List<GuiHealthBarMaker> makers)
         {
-            if (activeListReadLogCount < 20)
-            {
-                activeListReadLogCount++;
-                Debug.Log("[BNL PerfOpt] GetActiveHealthbarMakers source=" + (makers != null ? makers.Count : -1) + " active=" + ActiveHealthbarMakers.Count);
-            }
-
             activeListDirty = false;
             healthChangedThisFrame = false;
 
@@ -151,15 +142,6 @@ namespace BnlCommunityFixes
             if (existing == null)
             {
                 existing = maker.gameObject.AddComponent<GuiHealthbarMakerController>();
-            }
-
-            if (registerLogCount < 40)
-            {
-                registerLogCount++;
-                Unit unit = maker.Unit;
-                string unitId = unit != null && unit.UnitCard != null ? unit.UnitCard.Id : "<null>";
-                string playerId = unit != null && unit.PlayerId != null ? unit.PlayerId.Value.ToString() : "device";
-                Debug.Log("[BNL PerfOpt] RegisterHealthbarMaker unitId=" + unitId + " owner=" + playerId);
             }
 
             existing.Initialize(maker);
@@ -339,12 +321,6 @@ namespace BnlCommunityFixes
                     {
                         ActiveHealthbarMakers.Add(maker);
                         activeListDirty = true;
-                        if (activeStateLogCount < 60)
-                        {
-                            activeStateLogCount++;
-                            string unitId = unit != null && unit.UnitCard != null ? unit.UnitCard.Id : "<null>";
-                            Debug.Log("[BNL PerfOpt] Active+ unitId=" + unitId + " activeCount=" + ActiveHealthbarMakers.Count);
-                        }
                     }
 
                     isActive = true;
@@ -355,12 +331,6 @@ namespace BnlCommunityFixes
                 {
                     ActiveHealthbarMakers.Remove(maker);
                     activeListDirty = true;
-                    if (activeStateLogCount < 60)
-                    {
-                        activeStateLogCount++;
-                        string unitId = unit != null && unit.UnitCard != null ? unit.UnitCard.Id : "<null>";
-                        Debug.Log("[BNL PerfOpt] Active- unitId=" + unitId + " activeCount=" + ActiveHealthbarMakers.Count);
-                    }
                 }
 
                 isActive = false;

@@ -123,6 +123,15 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _segmentedHealthbarEnabled;
     [ObservableProperty] private bool _fontOverrideEnabled;
     [ObservableProperty] private bool _performanceOptEnabled;
+    [ObservableProperty] private bool _performanceTelemetryEnabled;
+    [ObservableProperty] private string _performanceTelemetryLabel = "baseline";
+    [ObservableProperty] private double _performanceTelemetryWarmup = 5.0;
+    [ObservableProperty] private bool _minimapPerformanceEnabled;
+    [ObservableProperty] private int _minimapPerformanceHz = 30;
+    [ObservableProperty] private bool _wsiPerformanceEnabled;
+    [ObservableProperty] private int _wsiPerformanceHz = 15;
+    [ObservableProperty] private bool _fpsCounterEnabled = true;
+    [ObservableProperty] private int _fpsCounterRefreshHz = 4;
     [ObservableProperty] private bool _timeAssaultEnabled;
 
     // ── Bot / Offline Practice Mode ───────────────────────────────────────────
@@ -247,6 +256,19 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         SegmentedHealthbarEnabled = _svc.LoadSegmentedHealthbarSettings().Enabled;
         FontOverrideEnabled = _svc.LoadFontOverrideSettings().Enabled;
         PerformanceOptEnabled = _svc.LoadPerformanceOptSettings().Enabled;
+        var telemetry = _svc.LoadPerformanceTelemetrySettings();
+        PerformanceTelemetryEnabled = telemetry.Enabled;
+        PerformanceTelemetryLabel = telemetry.Label;
+        PerformanceTelemetryWarmup = telemetry.WarmupSeconds;
+        var minimapPerformance = _svc.LoadMinimapPerformanceSettings();
+        MinimapPerformanceEnabled = minimapPerformance.Enabled;
+        MinimapPerformanceHz = minimapPerformance.UpdateHz;
+        var wsiPerformance = _svc.LoadWsiPerformanceSettings();
+        WsiPerformanceEnabled = wsiPerformance.Enabled;
+        WsiPerformanceHz = wsiPerformance.UpdateHz;
+        var fpsCounter = _svc.LoadFpsCounterSettings();
+        FpsCounterEnabled = fpsCounter.Enabled;
+        FpsCounterRefreshHz = fpsCounter.RefreshHz;
         TimeAssaultEnabled = _svc.LoadTimeAssaultSettings().Enabled;
 
         var bm = _svc.LoadBotModeSettings();
@@ -360,6 +382,28 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
             ApplySegmentedHealthbarTextures(SegmentedHealthbarEnabled);
             _svc.SaveFontOverrideSettings(new FontOverrideSettings { Enabled = FontOverrideEnabled });
             _svc.SavePerformanceOptSettings(new PerformanceOptSettings { Enabled = PerformanceOptEnabled });
+            _svc.SavePerformanceTelemetrySettings(new PerformanceTelemetrySettings
+            {
+                Enabled = PerformanceTelemetryEnabled,
+                Label = PerformanceTelemetryLabel,
+                WarmupSeconds = PerformanceTelemetryWarmup,
+                FlushIntervalSeconds = 5.0
+            });
+            _svc.SaveMinimapPerformanceSettings(new MinimapPerformanceSettings
+            {
+                Enabled = MinimapPerformanceEnabled,
+                UpdateHz = MinimapPerformanceHz
+            });
+            _svc.SaveWsiPerformanceSettings(new WsiPerformanceSettings
+            {
+                Enabled = WsiPerformanceEnabled,
+                UpdateHz = WsiPerformanceHz
+            });
+            _svc.SaveFpsCounterSettings(new FpsCounterSettings
+            {
+                Enabled = FpsCounterEnabled,
+                RefreshHz = FpsCounterRefreshHz
+            });
             _svc.SaveTimeAssaultSettings(new TimeAssaultSettings { Enabled = TimeAssaultEnabled });
             _svc.SaveBotModeSettings(new BotModeSettings
             {

@@ -22,6 +22,7 @@ public sealed class HelperSourceGeneratorService
 
         foreach (var staticFile in new[]
         {
+            "AnimationGuardRuntime.cs",
             "MatchReplayRecorderRuntime.cs",
             "ReplayPlayerRuntime.cs",
             "RuntimeMenu.cs"
@@ -80,6 +81,41 @@ public sealed class HelperSourceGeneratorService
         if (GetBool(nigelSniperVisual, "enabled", false))
         {
             AppendStaticFile(sb, patchingDir, "NigelSniperVisualRuntime.cs");
+        }
+
+        var performanceTelemetry = ReadJson(patchingDir, "experimental-performance-telemetry-config.json");
+        if (GetBool(performanceTelemetry, "enabled", false))
+        {
+            sb.AppendLine("namespace BnlCommunityFixes { public static class PerformanceTelemetryGeneratedConfig {");
+            sb.AppendLine("public const string Label = \"" + GetString(performanceTelemetry, "label", "test").Replace("\\", "\\\\").Replace("\"", "\\\"") + "\";");
+            sb.AppendLine("public const float WarmupSeconds = " + GetFloat(performanceTelemetry, "warmup_seconds", 5f) + ";");
+            sb.AppendLine("public const float FlushIntervalSeconds = " + GetFloat(performanceTelemetry, "flush_interval_seconds", 5f) + ";");
+            sb.AppendLine("} }");
+            AppendStaticFile(sb, patchingDir, "PerformanceTelemetryRuntime.cs");
+        }
+
+        var minimapPerformance = ReadJson(patchingDir, "experimental-minimap-performance-config.json");
+        if (GetBool(minimapPerformance, "enabled", false))
+        {
+            var updateHz = Math.Clamp(GetInt(minimapPerformance, "update_hz", 30), 10, 60);
+            sb.AppendLine("namespace BnlCommunityFixes { public static class MinimapPerformanceGeneratedConfig { public const float UpdateInterval = 1f / " + updateHz + "f; } }");
+            AppendStaticFile(sb, patchingDir, "MinimapPerformanceRuntime.cs");
+        }
+
+        var wsiPerformance = ReadJson(patchingDir, "experimental-wsi-performance-config.json");
+        if (GetBool(wsiPerformance, "enabled", false))
+        {
+            var updateHz = Math.Clamp(GetInt(wsiPerformance, "update_hz", 15), 5, 60);
+            sb.AppendLine("namespace BnlCommunityFixes { public static class WsiPerformanceGeneratedConfig { public const float UpdateInterval = 1f / " + updateHz + "f; } }");
+            AppendStaticFile(sb, patchingDir, "WsiPerformanceRuntime.cs");
+        }
+
+        var fpsCounter = ReadJson(patchingDir, "experimental-fps-counter-config.json");
+        if (GetBool(fpsCounter, "enabled", true))
+        {
+            var refreshHz = Math.Clamp(GetInt(fpsCounter, "refresh_hz", 4), 1, 20);
+            sb.AppendLine("namespace BnlCommunityFixes { public static class FpsCounterGeneratedConfig { public const float RefreshInterval = 1f / " + refreshHz + "f; } }");
+            AppendStaticFile(sb, patchingDir, "FpsCounterRuntime.cs");
         }
 
         var ninjaTurtleSkin = ReadJson(

@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <Version>2.8.3</Version>
+    <Version>2.8.4</Version>
     <AssemblyName>BnlCommunityFixes</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Avalonia</RootNamespace>
     <ApplicationIcon>launcher-icon.ico</ApplicationIcon>
@@ -64,6 +64,11 @@
     <EmbeddedResource Include="..\..\assets\patching\nigel-weapon-windows.bundle" LogicalName="Patching.nigel-weapon-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\nigel-replacement-model-windows.bundle" LogicalName="Patching.nigel-replacement-model-windows.bundle" />
     <EmbeddedResource Include="..\..\assets\patching\PerformanceOptRuntime.cs" LogicalName="Patching.PerformanceOptRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\AnimationGuardRuntime.cs" LogicalName="Patching.AnimationGuardRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\PerformanceTelemetryRuntime.cs" LogicalName="Patching.PerformanceTelemetryRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\MinimapPerformanceRuntime.cs" LogicalName="Patching.MinimapPerformanceRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\WsiPerformanceRuntime.cs" LogicalName="Patching.WsiPerformanceRuntime.cs" />
+    <EmbeddedResource Include="..\..\assets\patching\FpsCounterRuntime.cs" LogicalName="Patching.FpsCounterRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\TimeAssaultRuntime.cs" LogicalName="Patching.TimeAssaultRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-debug-menu-config.json" LogicalName="Patching.experimental-debug-menu-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-match-replay-recorder-config.json" LogicalName="Patching.experimental-match-replay-recorder-config.json" />
@@ -91,6 +96,10 @@
     <EmbeddedResource Include="..\..\assets\patching\experimental-darklord-sweet-science-skin-config.json" LogicalName="Patching.experimental-darklord-sweet-science-skin-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-hide-impact-vfx-config.json" LogicalName="Patching.experimental-hide-impact-vfx-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-performance-opt-config.json" LogicalName="Patching.experimental-performance-opt-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-performance-telemetry-config.json" LogicalName="Patching.experimental-performance-telemetry-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-minimap-performance-config.json" LogicalName="Patching.experimental-minimap-performance-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-wsi-performance-config.json" LogicalName="Patching.experimental-wsi-performance-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-fps-counter-config.json" LogicalName="Patching.experimental-fps-counter-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-time-assault-config.json" LogicalName="Patching.experimental-time-assault-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\BotModeRuntime.cs" LogicalName="Patching.BotModeRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-bot-mode-config.json" LogicalName="Patching.experimental-bot-mode-config.json" />

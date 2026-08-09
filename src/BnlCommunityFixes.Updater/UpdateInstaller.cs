@@ -95,14 +95,13 @@ public sealed class UpdateInstaller
                 return;
             }
 
-            var installedVersion = ExeVersionReader.GetVersion(installedTarget);
-            var externalVersion = ExeVersionReader.GetVersion(externalTarget);
-            if (!VersionService.IsRemoteNewer(externalVersion ?? "0.0.0", installedVersion ?? "0.0.0"))
+            if (FilesAreEqual(installedTarget, externalTarget))
             {
                 return;
             }
 
             CopyWithRetry(installedTarget, externalTarget);
+            EnsureExecutable(externalTarget);
             logger.Info($"Updated external launcher copy at {externalTarget}.");
         }
         catch (Exception exception)
@@ -202,5 +201,20 @@ public sealed class UpdateInstaller
                 Thread.Sleep(500);
             }
         }
+    }
+
+    private static bool FilesAreEqual(string leftPath, string rightPath)
+    {
+        var left = new FileInfo(leftPath);
+        var right = new FileInfo(rightPath);
+        if (!left.Exists || !right.Exists || left.Length != right.Length)
+        {
+            return false;
+        }
+
+        return string.Equals(
+            HashService.ComputeSha1(leftPath),
+            HashService.ComputeSha1(rightPath),
+            StringComparison.OrdinalIgnoreCase);
     }
 }

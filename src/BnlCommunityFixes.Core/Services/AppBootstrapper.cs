@@ -83,7 +83,10 @@ public sealed class AppBootstrapper
             var sourceVersion = ExeVersionReader.GetVersion(sourcePath);
             var installedParsedVersion = VersionService.Parse(installedVersion);
             var sourceParsedVersion = VersionService.Parse(sourceVersion);
-            if (sourceParsedVersion < installedParsedVersion ||
+            // The canonical installed launcher is the copy that just completed
+            // bootstrap/update. Refresh older download/Desktop copies from it.
+            // Only preserve the source when it is demonstrably newer.
+            if (sourceParsedVersion > installedParsedVersion ||
                 (sourceParsedVersion == installedParsedVersion && FilesAreEqual(sourcePath, installedPath)))
             {
                 return;

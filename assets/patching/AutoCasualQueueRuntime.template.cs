@@ -12,6 +12,8 @@ namespace BnlCommunityFixes
         private bool lastLoggedInQueueableActivity;
         private float nextQueueAttemptTime;
         private float timeAssaultLaunchRecoveryUntil;
+        private float nextTimeAssaultMenuProbeTime;
+        private bool cachedTimeAssaultMenuVisible;
         private UnityEngine.GUIStyle overlayBoxStyle;
         private UnityEngine.GUIStyle overlayLabelStyle;
         private const float QueueRetrySeconds = 2f;
@@ -230,14 +232,34 @@ namespace BnlCommunityFixes
 
         private bool IsOnTimeAssaultMenu()
         {
+            // UiMenuTimeTrial cannot be active in gameplay. Avoid Unity's global
+            // object lookup entirely in Zone; it was previously executed once per
+            // rendered frame and caused a large, persistent CPU cost after entering
+            // a match through Main Menu.
+            if (UnityEngine.Application.loadedLevelName == "Zone")
+            {
+                cachedTimeAssaultMenuVisible = false;
+                nextTimeAssaultMenuProbeTime = 0f;
+                return false;
+            }
+
+            // Frontend menu state does not need render-frame precision. Cache the
+            // result so the fallback global lookup runs at most four times a second.
+            float now = UnityEngine.Time.realtimeSinceStartup;
+            if (now < nextTimeAssaultMenuProbeTime)
+                return cachedTimeAssaultMenuVisible;
+            nextTimeAssaultMenuProbeTime = now + 0.25f;
+
             try
             {
                 UnityEngine.Object menuObject = UnityEngine.Object.FindObjectOfType(typeof(UiMenuTimeTrial));
                 UiMenuTimeTrial menu = menuObject as UiMenuTimeTrial;
-                return menu != null && menu.gameObject != null && menu.gameObject.activeInHierarchy;
+                cachedTimeAssaultMenuVisible = menu != null && menu.gameObject != null && menu.gameObject.activeInHierarchy;
+                return cachedTimeAssaultMenuVisible;
             }
             catch
             {
+                cachedTimeAssaultMenuVisible = false;
                 return false;
             }
         }

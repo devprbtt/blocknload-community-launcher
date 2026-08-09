@@ -2,7 +2,8 @@ param(
     [string]$VersionFrom = "2.0.0",
     [string]$VersionTo = "2.0.1",
     [string]$RuntimeIdentifier = "win-x64",
-    [string]$TestRoot = ""
+    [string]$TestRoot = "",
+    [switch]$FromMultiFile
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,7 +36,18 @@ $PublishArgs = @(
 
 $LauncherFileName = if ($RuntimeIdentifier -like "win-*") { "BnlCommunityFixes.exe" } else { "BnlCommunityFixes" }
 
-dotnet publish $LauncherProject @PublishArgs -o $FromLauncherDir -p:Version=$VersionFrom -p:AssemblyVersion=$VersionFrom -p:FileVersion=$VersionFrom | Out-Null
+if ($FromMultiFile) {
+    $FromPublishArgs = @(
+        "-c", "Release",
+        "-r", $RuntimeIdentifier,
+        "--self-contained", "true",
+        "-p:PublishSingleFile=false"
+    )
+    dotnet publish $LauncherProject @FromPublishArgs -o $FromLauncherDir -p:Version=$VersionFrom -p:AssemblyVersion=$VersionFrom -p:FileVersion=$VersionFrom | Out-Null
+}
+else {
+    dotnet publish $LauncherProject @PublishArgs -o $FromLauncherDir -p:Version=$VersionFrom -p:AssemblyVersion=$VersionFrom -p:FileVersion=$VersionFrom | Out-Null
+}
 dotnet publish $LauncherProject @PublishArgs -o $ToLauncherDir -p:Version=$VersionTo -p:AssemblyVersion=$VersionTo -p:FileVersion=$VersionTo | Out-Null
 
 $ToLauncherExe = Join-Path $ToLauncherDir $LauncherFileName
@@ -45,7 +57,17 @@ $AppDir = Join-Path $InstallRoot "app"
 $DataDir = Join-Path $InstallRoot "data"
 New-Item -ItemType Directory -Force -Path $AppDir, $DataDir | Out-Null
 
-Copy-Item -LiteralPath (Join-Path $FromLauncherDir $LauncherFileName) -Destination (Join-Path $AppDir $LauncherFileName) -Force
+if ($FromMultiFile) {
+    Copy-Item -Path (Join-Path $FromLauncherDir "*") -Destination $AppDir -Recurse -Force
+}
+else {
+    Copy-Item -LiteralPath (Join-Path $FromLauncherDir $LauncherFileName) -Destination (Join-Path $AppDir $LauncherFileName) -Force
+}
+
+# Track the launcher copy the user originally opened. A successful update
+# must refresh this copy as well as the canonical installed executable.
+$ExternalLauncherPath = Join-Path $FromLauncherDir $LauncherFileName
+Set-Content -LiteralPath (Join-Path $DataDir "bootstrap-source.txt") -Value $ExternalLauncherPath -Encoding UTF8
 
 $Settings = @"
 {
@@ -72,6 +94,11 @@ $ExpectedLauncherHash = (Get-FileHash -LiteralPath $ToLauncherExe -Algorithm SHA
 
 if ($InstalledLauncherHash -ne $ExpectedLauncherHash) {
     throw "Smoke test failed: installed launcher hash does not match target version."
+}
+
+$ExternalLauncherHash = (Get-FileHash -LiteralPath $ExternalLauncherPath -Algorithm SHA256).Hash
+if ($ExternalLauncherHash -ne $ExpectedLauncherHash) {
+    throw "Smoke test failed: original launcher copy was not refreshed to the target version."
 }
 
 if (-not (Test-Path $LogLauncher)) {
