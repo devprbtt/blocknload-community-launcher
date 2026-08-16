@@ -319,6 +319,7 @@
                         <TextBlock Text="Forces the Time Assault menu entry to stay visible and enabled even when the live server disables it. Uses the game's existing Time Trial UI and `StartTimeTrial()` network path so the mode can be tested if the backend still accepts it. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled" IsChecked="{Binding TimeAssaultEnabled}" />
 
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

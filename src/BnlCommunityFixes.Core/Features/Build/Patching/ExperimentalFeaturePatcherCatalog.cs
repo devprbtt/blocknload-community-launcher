@@ -9,7 +9,8 @@ public static class ExperimentalFeaturePatcherCatalog
         new FontUiFeaturePatcher(),
         new SkipIntroFeaturePatcher(),
         new DisableFrameCapFeaturePatcher(),
-        new MinimapAlignmentPatcher()
+        new MinimapAlignmentPatcher(),
+        new EnemyBlockbusterFeedFeaturePatcher()
     ];
 
     /// <summary>Patchers selected by feature key.</summary>
