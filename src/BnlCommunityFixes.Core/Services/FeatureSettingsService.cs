@@ -369,6 +369,8 @@ public sealed class FeatureSettingsService
     public void SaveWsiPerformanceSettings(WsiPerformanceSettings settings) => Save("experimental-wsi-performance-config.json", settings);
     public FpsCounterSettings LoadFpsCounterSettings() => Load("experimental-fps-counter-config.json", new FpsCounterSettings());
     public void SaveFpsCounterSettings(FpsCounterSettings settings) => Save("experimental-fps-counter-config.json", settings);
+    public FpsUnlimiterSettings LoadFpsUnlimiterSettings() => Load("experimental-fps-unlimiter-config.json", new FpsUnlimiterSettings());
+    public void SaveFpsUnlimiterSettings(FpsUnlimiterSettings settings) => Save("experimental-fps-unlimiter-config.json", settings);
 
     public TimeAssaultSettings LoadTimeAssaultSettings() => Load("experimental-time-assault-config.json", new TimeAssaultSettings());
     public void SaveTimeAssaultSettings(TimeAssaultSettings settings) => Save("experimental-time-assault-config.json", settings);

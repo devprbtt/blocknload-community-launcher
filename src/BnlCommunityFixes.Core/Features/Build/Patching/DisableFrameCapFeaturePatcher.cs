@@ -3,16 +3,13 @@ using Mono.Cecil.Cil;
 
 namespace BnlCommunityFixes.Core.Features.Build.Patching;
 
-/// <summary>Removes 60fps cap on main menu / lobby — driven by debug-menu config's disable_main_menu_frame_cap field.</summary>
+/// <summary>Removes the 60 FPS cap from the main menu and lobby.</summary>
 public sealed class DisableFrameCapFeaturePatcher : IExperimentalFeaturePatcher
 {
-    public string FeatureKey => "__disable-frame-cap";
+    public string FeatureKey => "fps-unlimiter";
 
     public void Apply(ExperimentalPatchContext context)
     {
-        var config = PatcherConfigReader.Read(context.PatchingDir, "experimental-debug-menu-config.json");
-        if (!PatcherConfigReader.GetBool(config, "disable_main_menu_frame_cap")) return;
-
         var sceneManagerType = context.TargetModule.Types.FirstOrDefault(static t => t.Name == "SceneManager")
             ?? throw new InvalidOperationException("SceneManager type not found.");
 

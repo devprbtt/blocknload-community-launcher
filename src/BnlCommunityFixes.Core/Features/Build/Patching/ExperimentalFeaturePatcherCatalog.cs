@@ -8,7 +8,6 @@ public static class ExperimentalFeaturePatcherCatalog
         new NullGuardsPatcher(),
         new FontUiFeaturePatcher(),
         new SkipIntroFeaturePatcher(),
-        new DisableFrameCapFeaturePatcher(),
         new MinimapAlignmentPatcher(),
         new EnemyBlockbusterFeedFeaturePatcher()
     ];
@@ -49,6 +48,7 @@ public static class ExperimentalFeaturePatcherCatalog
         new MinimapPerformanceFeaturePatcher(),
         new WsiPerformanceFeaturePatcher(),
         new FpsCounterFeaturePatcher(),
+        new DisableFrameCapFeaturePatcher(),
         new TimeAssaultFeaturePatcher()
         // Bot mode is implemented by the embedded bnlReloaded server.
     ];

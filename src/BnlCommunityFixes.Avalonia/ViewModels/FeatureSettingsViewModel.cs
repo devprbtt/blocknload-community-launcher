@@ -132,6 +132,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
     [ObservableProperty] private int _wsiPerformanceHz = 15;
     [ObservableProperty] private bool _fpsCounterEnabled = true;
     [ObservableProperty] private int _fpsCounterRefreshHz = 4;
+    [ObservableProperty] private bool _fpsUnlimiterEnabled;
     [ObservableProperty] private bool _timeAssaultEnabled;
 
     // ── Bot / Offline Practice Mode ───────────────────────────────────────────
@@ -269,6 +270,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
         var fpsCounter = _svc.LoadFpsCounterSettings();
         FpsCounterEnabled = fpsCounter.Enabled;
         FpsCounterRefreshHz = fpsCounter.RefreshHz;
+        FpsUnlimiterEnabled = _svc.LoadFpsUnlimiterSettings().Enabled;
         TimeAssaultEnabled = _svc.LoadTimeAssaultSettings().Enabled;
 
         var bm = _svc.LoadBotModeSettings();
@@ -404,6 +406,7 @@ public sealed partial class FeatureSettingsViewModel : ViewModelBase
                 Enabled = FpsCounterEnabled,
                 RefreshHz = FpsCounterRefreshHz
             });
+            _svc.SaveFpsUnlimiterSettings(new FpsUnlimiterSettings { Enabled = FpsUnlimiterEnabled });
             _svc.SaveTimeAssaultSettings(new TimeAssaultSettings { Enabled = TimeAssaultEnabled });
             _svc.SaveBotModeSettings(new BotModeSettings
             {
