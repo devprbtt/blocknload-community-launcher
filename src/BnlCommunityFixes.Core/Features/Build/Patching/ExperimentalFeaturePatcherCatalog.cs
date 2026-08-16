@@ -8,7 +8,8 @@ public static class ExperimentalFeaturePatcherCatalog
         new NullGuardsPatcher(),
         new FontUiFeaturePatcher(),
         new SkipIntroFeaturePatcher(),
-        new DisableFrameCapFeaturePatcher()
+        new DisableFrameCapFeaturePatcher(),
+        new MinimapAlignmentPatcher()
     ];
 
     /// <summary>Patchers selected by feature key.</summary>
