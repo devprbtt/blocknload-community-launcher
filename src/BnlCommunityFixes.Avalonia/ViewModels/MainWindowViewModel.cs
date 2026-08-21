@@ -455,7 +455,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             // pass its exact host and port directly to the upgraded client.
             _launcherConfig.SelectedServer = item.Key;
             _launcherConfigService.SaveSelection(_installInfo, _launcherConfig, item.Key);
-            _reloadedClientLauncherService.Launch(item.Server);
+            _reloadedClientLauncherService.Launch(item.Server, _installInfo);
             ReloadedStatusText = $"Running on {item.Server.Host}:{item.Server.Port}.";
         }
         catch (Exception ex)
