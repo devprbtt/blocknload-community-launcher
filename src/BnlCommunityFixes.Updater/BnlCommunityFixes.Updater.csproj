@@ -9,7 +9,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>2.9.1</Version>
+    <Version>2.9.2</Version>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BnlUpdater</AssemblyName>
     <RootNamespace>BnlCommunityFixes.Updater</RootNamespace>

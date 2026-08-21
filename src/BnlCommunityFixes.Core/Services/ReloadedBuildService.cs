@@ -23,7 +23,7 @@ public sealed class ReloadedBuildService
     public async Task<bool> EnsureInstalledAsync(
         JsonElement? manifestElement,
         string accessToken,
-        IProgress<string>? progress = null,
+        IProgress<ReloadedBuildProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         var build = ParseManifest(manifestElement);
@@ -37,10 +37,9 @@ public sealed class ReloadedBuildService
         Directory.CreateDirectory(downloads);
         var archivePath = Path.Combine(downloads, build.Name);
         var partialPath = archivePath + ".partial";
-        progress?.Report($"Downloading BNL Reloaded {build.Version}...");
-        await DownloadAsync(partialPath, build, accessToken, cancellationToken);
+        await DownloadAsync(partialPath, build, accessToken, progress, cancellationToken);
 
-        progress?.Report("Verifying BNL Reloaded download...");
+        progress?.Report(new ReloadedBuildProgress("Verifying BNL Reloaded download...", null));
         string hash;
         await using (var hashStream = File.OpenRead(partialPath))
         {
@@ -53,8 +52,11 @@ public sealed class ReloadedBuildService
         }
         File.Move(partialPath, archivePath, true);
 
-        progress?.Report("Installing BNL Reloaded...");
-        InstallArchive(archivePath, build, statePath);
+        progress?.Report(new ReloadedBuildProgress("Preparing BNL Reloaded installation...", null));
+        await Task.Run(
+            () => InstallArchive(archivePath, build, statePath, progress),
+            cancellationToken);
+        progress?.Report(new ReloadedBuildProgress("BNL Reloaded installation complete.", 100));
         logger.Info($"Installed BNL Reloaded {build.Version} ({build.Sha256}).");
         return true;
     }
@@ -63,6 +65,7 @@ public sealed class ReloadedBuildService
         string partialPath,
         ReloadedBuildManifest build,
         string accessToken,
+        IProgress<ReloadedBuildProgress>? progress,
         CancellationToken cancellationToken)
     {
         var existing = File.Exists(partialPath) ? new FileInfo(partialPath).Length : 0;
@@ -73,6 +76,7 @@ public sealed class ReloadedBuildService
         }
         if (existing == build.Size)
         {
+            progress?.Report(CreateDownloadProgress(build.Version, existing, build.Size));
             return;
         }
 
@@ -95,14 +99,37 @@ public sealed class ReloadedBuildService
         await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
         await using var destination = new FileStream(
             partialPath, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, true);
-        await source.CopyToAsync(destination, 1024 * 1024, cancellationToken);
-        if (existing + destination.Length != build.Size && destination.Length != build.Size)
+        var buffer = new byte[1024 * 1024];
+        var lastReportedPercent = -1;
+        progress?.Report(CreateDownloadProgress(build.Version, destination.Length, build.Size));
+        while (true)
+        {
+            var read = await source.ReadAsync(buffer, cancellationToken);
+            if (read == 0)
+            {
+                break;
+            }
+
+            await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+            var percent = (int)(destination.Length * 100L / build.Size);
+            if (percent != lastReportedPercent)
+            {
+                lastReportedPercent = percent;
+                progress?.Report(CreateDownloadProgress(build.Version, destination.Length, build.Size));
+            }
+        }
+        if (destination.Length != build.Size)
         {
             throw new InvalidDataException("The BNL Reloaded download size did not match its manifest.");
         }
+        progress?.Report(CreateDownloadProgress(build.Version, destination.Length, build.Size));
     }
 
-    private void InstallArchive(string archivePath, ReloadedBuildManifest build, string statePath)
+    private void InstallArchive(
+        string archivePath,
+        ReloadedBuildManifest build,
+        string statePath,
+        IProgress<ReloadedBuildProgress>? progress)
     {
         var staging = Path.Combine(paths.ReloadedDir, "staging-" + Guid.NewGuid().ToString("N"));
         var previous = Path.Combine(paths.ReloadedDir, "previous");
@@ -110,6 +137,9 @@ public sealed class ReloadedBuildService
         try
         {
             using var archive = ZipFile.OpenRead(archivePath);
+            var totalBytes = archive.Entries.Sum(static entry => entry.Length);
+            long extractedBytes = 0;
+            var lastReportedPercent = -1;
             var stagingRoot = Path.GetFullPath(staging) + Path.DirectorySeparatorChar;
             foreach (var entry in archive.Entries)
             {
@@ -125,6 +155,13 @@ public sealed class ReloadedBuildService
                 }
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 entry.ExtractToFile(destination, true);
+                extractedBytes += entry.Length;
+                var percent = totalBytes == 0 ? 100 : (int)(extractedBytes * 100L / totalBytes);
+                if (percent != lastReportedPercent)
+                {
+                    lastReportedPercent = percent;
+                    progress?.Report(new ReloadedBuildProgress($"Installing BNL Reloaded... {percent}%", percent));
+                }
             }
             if (!File.Exists(Path.Combine(staging, "Windows", "BlockNLoad.exe")))
             {
@@ -138,7 +175,11 @@ public sealed class ReloadedBuildService
                 Path.Combine(staging, ".bnl-reloaded-build.json"),
                 JsonSerializer.Serialize(new { version = build.Version, sha256 = build.Sha256 }));
 
-            if (Directory.Exists(previous)) { Directory.Delete(previous, true); }
+            if (Directory.Exists(previous))
+            {
+                progress?.Report(new ReloadedBuildProgress("Finalizing BNL Reloaded installation...", null));
+                Directory.Delete(previous, true);
+            }
             if (Directory.Exists(paths.ReloadedCurrentDir))
             {
                 Directory.Move(paths.ReloadedCurrentDir, previous);
@@ -158,6 +199,16 @@ public sealed class ReloadedBuildService
         {
             if (Directory.Exists(staging)) { Directory.Delete(staging, true); }
         }
+    }
+
+    private static ReloadedBuildProgress CreateDownloadProgress(string version, long completed, long total)
+    {
+        var percentage = total == 0 ? 100d : completed * 100d / total;
+        var completedMiB = completed / (1024d * 1024d);
+        var totalMiB = total / (1024d * 1024d);
+        return new ReloadedBuildProgress(
+            $"Downloading BNL Reloaded {version}... {percentage:0.0}% ({completedMiB:0} / {totalMiB:0} MiB)",
+            percentage);
     }
 
     private static bool InstalledBuildMatches(string statePath, ReloadedBuildManifest build)
@@ -191,3 +242,5 @@ public sealed class ReloadedBuildService
 
     private sealed record ReloadedBuildManifest(string Version, string Name, long Size, string Sha256);
 }
+
+public sealed record ReloadedBuildProgress(string Message, double? Percentage);
