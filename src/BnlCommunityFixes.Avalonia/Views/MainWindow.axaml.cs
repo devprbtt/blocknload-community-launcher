@@ -25,6 +25,7 @@ public partial class MainWindow : Window
         base.OnOpened(e);
 
         Vm.ErrorOccurred += ShowError;
+        Vm.InfoOccurred += ShowInfo;
 
         if (Vm.ConsumePendingUpdateNotice())
         {
@@ -37,6 +38,7 @@ public partial class MainWindow : Window
         // Refresh the community server list from GitHub in the background so the
         // window opens instantly on the cached list and updates when it arrives.
         Dispatcher.UIThread.Post(() => _ = Vm.RefreshServerListAsync(), DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() => _ = Vm.RefreshReloadedBetaAsync(), DispatcherPriority.Background);
 
         if (_updateCoordinator is not null)
         {
@@ -88,6 +90,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         Vm.ErrorOccurred -= ShowError;
+        Vm.InfoOccurred -= ShowInfo;
         base.OnClosed(e);
     }
 

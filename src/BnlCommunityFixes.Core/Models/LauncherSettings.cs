@@ -30,4 +30,10 @@ public sealed class LauncherSettings
 
     [JsonPropertyName("noSteamMode")]
     public bool NoSteamMode { get; set; }
+
+    [JsonPropertyName("reloadedBetaEnabled")]
+    public bool ReloadedBetaEnabled { get; set; }
+
+    [JsonPropertyName("reloadedAccessToken")]
+    public string ReloadedAccessToken { get; set; } = "";
 }

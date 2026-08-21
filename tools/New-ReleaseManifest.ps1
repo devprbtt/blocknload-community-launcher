@@ -50,7 +50,11 @@ $UpdaterResolved = $null
 $UpdaterFileName = $null
 
 if (-not [string]::IsNullOrWhiteSpace($LauncherExeByRidJson)) {
-    $launcherByRid = $LauncherExeByRidJson | ConvertFrom-Json -AsHashtable
+    $launcherByRid = @{}
+    $launcherObject = $LauncherExeByRidJson | ConvertFrom-Json
+    foreach ($property in $launcherObject.PSObject.Properties) {
+        $launcherByRid[$property.Name] = [string]$property.Value
+    }
     foreach ($rid in $launcherByRid.Keys) {
         $resolved = (Resolve-Path $launcherByRid[$rid]).Path
         $fileName = [IO.Path]::GetFileName($resolved)

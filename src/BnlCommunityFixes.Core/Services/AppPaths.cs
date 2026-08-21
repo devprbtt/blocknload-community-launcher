@@ -14,6 +14,9 @@ public sealed class AppPaths
     public string UpdatesDir { get; }
     public string LogsDir { get; }
     public string BackupDir { get; }
+    public string ReloadedDir { get; }
+    public string ReloadedCurrentDir => Path.Combine(ReloadedDir, "current");
+    public string ReloadedExecutablePath => Path.Combine(ReloadedCurrentDir, "BlockNLoad.exe");
 
     public string LauncherPath => Path.Combine(AppDir, "BnlCommunityFixes" + executableExtension);
     public string UpdaterPath => Path.Combine(AppDir, "BnlUpdater" + executableExtension);
@@ -38,6 +41,7 @@ public sealed class AppPaths
         UpdatesDir = Path.Combine(InstallRoot, "updates");
         LogsDir = Path.Combine(InstallRoot, "logs");
         BackupDir = Path.Combine(AppDir, "backup");
+        ReloadedDir = Path.Combine(InstallRoot, "reloaded");
     }
 
     public void EnsureDirectories()
@@ -47,6 +51,7 @@ public sealed class AppPaths
         Directory.CreateDirectory(UpdatesDir);
         Directory.CreateDirectory(LogsDir);
         Directory.CreateDirectory(BackupDir);
+        Directory.CreateDirectory(ReloadedDir);
     }
 
     private static string ResolveInstallRoot()

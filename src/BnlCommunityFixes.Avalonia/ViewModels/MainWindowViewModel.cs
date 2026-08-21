@@ -20,12 +20,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     internal readonly SettingsService _settingsService;
     internal readonly LauncherSettingsProfileService _settingsProfileService;
     private readonly ServerListService? _serverListService;
+    private readonly ReloadedBetaService? _reloadedBetaService;
+    private readonly ReloadedClientLauncherService? _reloadedClientLauncherService;
+    private readonly ReloadedBuildService? _reloadedBuildService;
     private readonly string _launcherVersion;
 
     private LauncherConfig? _launcherConfig;
     private bool _syncingReplayRecorder;
     private bool _syncingProfileCombo;
     private string _serverListStatus = "cached/bundled list";
+    private bool _syncingReloadedEnabled;
+    private bool _reloadedBuildAvailable;
 
     // ── Observable properties ────────────────────────────────────────────────
 
@@ -46,6 +51,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _recordCasual;
     [ObservableProperty] private bool _recordRanked;
     [ObservableProperty] private bool _recordSubOptionsEnabled;
+    [ObservableProperty] private bool _reloadedAuthorized;
+    [ObservableProperty] private bool _reloadedEnabled;
+    [ObservableProperty] private bool _reloadedConnectEnabled = true;
+    [ObservableProperty] private bool _reloadedLaunchEnabled;
+    [ObservableProperty] private string _reloadedStatusText = "Closed beta access has not been checked.";
 
     // ── Factory ──────────────────────────────────────────────────────────────
 
@@ -87,6 +97,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _settingsService = new SettingsService(paths);
         _settingsProfileService = new LauncherSettingsProfileService(paths);
         _serverListService = new ServerListService(httpClient, logger);
+        _reloadedBetaService = new ReloadedBetaService(httpClient);
+        _reloadedClientLauncherService = new ReloadedClientLauncherService(paths, logger);
+        _reloadedBuildService = new ReloadedBuildService(paths, httpClient, logger);
 
         Title = $"Block N Load Community Fixes V2 - {_launcherVersion}";
 
@@ -118,6 +131,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SelectedServer = Servers[0];
         LaunchEnabled = true;
         ReplayControlsEnabled = true;
+        ReloadedConnectEnabled = true;
+        ReloadedStatusText = "Sign in with Steam to check closed-beta eligibility.";
     }
 
     // ── Pending notice (shown by View after window opens) ────────────────────
@@ -287,6 +302,227 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             _logger.Exception(ex, "Launch failed");
             OnError("Launch failed", ex.Message);
         }
+    }
+
+    public async Task RefreshReloadedBetaAsync()
+    {
+        if (_reloadedBetaService is null)
+        {
+            return;
+        }
+        if (!OperatingSystem.IsWindows())
+        {
+            SetReloadedAuthorization(false);
+            ReloadedConnectEnabled = false;
+            ReloadedStatusText = "BNL Reloaded closed beta currently requires Windows x64.";
+            return;
+        }
+
+        try
+        {
+            var serviceStatus = await _reloadedBetaService.GetStatusAsync();
+            _reloadedBuildAvailable = serviceStatus.BuildAvailable;
+
+            if (string.IsNullOrWhiteSpace(_settings.ReloadedAccessToken))
+            {
+                SetReloadedAuthorization(false);
+                ReloadedStatusText = "Sign in with Steam to check closed-beta eligibility.";
+                return;
+            }
+
+            var session = await _reloadedBetaService.ValidateSessionAsync(_settings.ReloadedAccessToken);
+            if (!session.Authorized)
+            {
+                _settings.ReloadedAccessToken = "";
+                _settings.ReloadedBetaEnabled = false;
+                _settingsService.Save(_settings);
+                SetReloadedAuthorization(false);
+                ReloadedStatusText = "Closed-beta access is no longer authorized.";
+                return;
+            }
+
+            _reloadedBuildAvailable = ManifestAvailable(session.Manifest);
+            SetReloadedAuthorization(true);
+            SetReloadedEnabled(_settings.ReloadedBetaEnabled);
+            UpdateReloadedStatus();
+        }
+        catch (Exception ex)
+        {
+            ReloadedConnectEnabled = true;
+            ReloadedStatusText = "Closed-beta service is currently unavailable.";
+            _logger.Warning($"BNL Reloaded status check failed: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task ConnectReloadedBetaAsync()
+    {
+        if (!OperatingSystem.IsWindows() || _reloadedBetaService is null || !ReloadedConnectEnabled)
+        {
+            return;
+        }
+
+        ReloadedConnectEnabled = false;
+        ReloadedStatusText = "Starting secure Steam sign-in...";
+
+        try
+        {
+            var authorization = await _reloadedBetaService.StartAuthorizationAsync();
+            PlatformShell.OpenPath(authorization.VerificationUri);
+            ReloadedStatusText = "Finish signing in through Steam in your browser...";
+
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(authorization.ExpiresIn);
+            var interval = TimeSpan.FromSeconds(Math.Clamp(authorization.PollInterval, 1, 10));
+            while (DateTimeOffset.UtcNow < deadline)
+            {
+                await Task.Delay(interval);
+                var poll = await _reloadedBetaService.PollAuthorizationAsync(
+                    authorization.RequestId,
+                    authorization.PollToken);
+
+                if (string.Equals(poll.Status, "pending", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(poll.Status, "authorized", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(poll.Status, "authorized_no_build", StringComparison.OrdinalIgnoreCase))
+                {
+                    SetReloadedAuthorization(false);
+                    ReloadedStatusText = "This Steam account is not approved for the closed beta.";
+                    OnInfo("BNL Reloaded Closed Beta", ReloadedStatusText);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(poll.AccessToken))
+                {
+                    throw new InvalidDataException("The authorization response did not include a device token.");
+                }
+
+                _settings.ReloadedAccessToken = poll.AccessToken;
+                _settings.ReloadedBetaEnabled = false;
+                _settingsService.Save(_settings);
+                _reloadedBuildAvailable = ManifestAvailable(poll.Manifest);
+                SetReloadedAuthorization(true);
+                SetReloadedEnabled(false);
+                UpdateReloadedStatus();
+                OnInfo(
+                    "BNL Reloaded Closed Beta",
+                    "Your Steam account is approved. BNL Reloaded remains disabled by default. " +
+                    "Enable it here when you want the launcher to use the upgraded client.");
+                return;
+            }
+
+            ReloadedConnectEnabled = true;
+            ReloadedStatusText = "Steam sign-in expired. Try again.";
+        }
+        catch (Exception ex)
+        {
+            ReloadedConnectEnabled = true;
+            ReloadedStatusText = "Steam eligibility check failed.";
+            _logger.Exception(ex, "BNL Reloaded authorization failed");
+            OnError("BNL Reloaded sign-in failed", ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task LaunchReloadedAsync()
+    {
+        if (!ReloadedLaunchEnabled || _reloadedClientLauncherService is null ||
+            _reloadedBuildService is null || _reloadedBetaService is null ||
+            _launcherConfig is null || SelectedServer is not { } item)
+        {
+            return;
+        }
+
+        try
+        {
+            ReloadedLaunchEnabled = false;
+            var session = await _reloadedBetaService.ValidateSessionAsync(_settings.ReloadedAccessToken);
+            if (!session.Authorized)
+            {
+                _settings.ReloadedAccessToken = "";
+                _settings.ReloadedBetaEnabled = false;
+                _settingsService.Save(_settings);
+                SetReloadedAuthorization(false);
+                throw new UnauthorizedAccessException("Closed-beta access expired or was revoked.");
+            }
+            var progress = new Progress<string>(message => ReloadedStatusText = message);
+            await _reloadedBuildService.EnsureInstalledAsync(
+                session.Manifest, _settings.ReloadedAccessToken, progress);
+
+            // Persist the same selection used by the vanilla launch path, then
+            // pass its exact host and port directly to the upgraded client.
+            _launcherConfig.SelectedServer = item.Key;
+            _launcherConfigService.SaveSelection(_installInfo, _launcherConfig, item.Key);
+            _reloadedClientLauncherService.Launch(item.Server);
+            ReloadedStatusText = $"Running on {item.Server.Host}:{item.Server.Port}.";
+        }
+        catch (Exception ex)
+        {
+            _logger.Exception(ex, "BNL Reloaded launch failed");
+            OnError("BNL Reloaded launch failed", ex.Message);
+        }
+        finally
+        {
+            ReloadedLaunchEnabled = ReloadedAuthorized && ReloadedEnabled && _reloadedBuildAvailable;
+        }
+    }
+
+    partial void OnReloadedEnabledChanged(bool value)
+    {
+        if (_syncingReloadedEnabled || _settings is null)
+        {
+            return;
+        }
+
+        if (value && !ReloadedAuthorized)
+        {
+            SetReloadedEnabled(false);
+            return;
+        }
+
+        _settings.ReloadedBetaEnabled = value;
+        _settingsService.Save(_settings);
+        ReloadedLaunchEnabled = value && ReloadedAuthorized && _reloadedBuildAvailable;
+        UpdateReloadedStatus();
+    }
+
+    private void SetReloadedAuthorization(bool authorized)
+    {
+        ReloadedAuthorized = authorized;
+        ReloadedConnectEnabled = !authorized;
+        if (!authorized)
+        {
+            SetReloadedEnabled(false);
+        }
+        ReloadedLaunchEnabled = authorized && ReloadedEnabled && _reloadedBuildAvailable;
+    }
+
+    private void SetReloadedEnabled(bool enabled)
+    {
+        _syncingReloadedEnabled = true;
+        ReloadedEnabled = enabled;
+        _syncingReloadedEnabled = false;
+        ReloadedLaunchEnabled = enabled && ReloadedAuthorized && _reloadedBuildAvailable;
+    }
+
+    private void UpdateReloadedStatus()
+    {
+        ReloadedStatusText = !ReloadedAuthorized
+            ? "Sign in with Steam to check closed-beta eligibility."
+            : !_reloadedBuildAvailable
+                ? "Approved. No BNL Reloaded build has been published yet."
+                : ReloadedEnabled
+                    ? "Approved and enabled. The upgraded client is ready."
+                    : "Approved. Enable BNL Reloaded to use the upgraded client.";
+    }
+
+    private static bool ManifestAvailable(JsonElement? manifest)
+    {
+        return manifest is { ValueKind: JsonValueKind.Object } value &&
+            value.TryGetProperty("available", out var available) &&
+            available.ValueKind == JsonValueKind.True;
     }
 
     public void StopManagedServices() => _launchCoordinator.StopManagedServices();
@@ -485,7 +721,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     // ── Error notification (raised to View) ───────────────────────────────────
 
     public event Action<string, string>? ErrorOccurred;
+    public event Action<string, string>? InfoOccurred;
     private void OnError(string title, string message) => ErrorOccurred?.Invoke(title, message);
+    private void OnInfo(string title, string message) => InfoOccurred?.Invoke(title, message);
 
     // ── Nested types ──────────────────────────────────────────────────────────
 
