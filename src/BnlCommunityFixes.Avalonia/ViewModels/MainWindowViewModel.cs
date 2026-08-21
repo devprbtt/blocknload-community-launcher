@@ -56,6 +56,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _reloadedConnectEnabled = true;
     [ObservableProperty] private bool _reloadedLaunchEnabled;
     [ObservableProperty] private string _reloadedStatusText = "Closed beta access has not been checked.";
+    [ObservableProperty] private bool _reloadedProgressVisible;
+    [ObservableProperty] private bool _reloadedProgressIndeterminate;
+    [ObservableProperty] private double _reloadedProgressValue;
 
     // ── Factory ──────────────────────────────────────────────────────────────
 
@@ -438,6 +441,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         try
         {
             ReloadedLaunchEnabled = false;
+            SetReloadedProgress(new ReloadedBuildProgress("Checking closed-beta access...", null));
             var session = await _reloadedBetaService.ValidateSessionAsync(_settings.ReloadedAccessToken);
             if (!session.Authorized)
             {
@@ -447,9 +451,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 SetReloadedAuthorization(false);
                 throw new UnauthorizedAccessException("Closed-beta access expired or was revoked.");
             }
-            var progress = new Progress<string>(message => ReloadedStatusText = message);
+            var progress = new Progress<ReloadedBuildProgress>(SetReloadedProgress);
             await _reloadedBuildService.EnsureInstalledAsync(
                 session.Manifest, _settings.ReloadedAccessToken, progress);
+            // Progress<T> dispatches callbacks asynchronously to the UI context.
+            // Drain the final installation update before replacing it with the
+            // authoritative running state below.
+            await Task.Yield();
 
             // Persist the same selection used by the vanilla launch path, then
             // pass its exact host and port directly to the upgraded client.
@@ -457,9 +465,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             _launcherConfigService.SaveSelection(_installInfo, _launcherConfig, item.Key);
             _reloadedClientLauncherService.Launch(item.Server, _installInfo);
             ReloadedStatusText = $"Running on {item.Server.Host}:{item.Server.Port}.";
+            ReloadedProgressVisible = false;
         }
         catch (Exception ex)
         {
+            ReloadedProgressVisible = false;
+            ReloadedStatusText = $"BNL Reloaded launch failed: {ex.Message}";
             _logger.Exception(ex, "BNL Reloaded launch failed");
             OnError("BNL Reloaded launch failed", ex.Message);
         }
@@ -467,6 +478,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             ReloadedLaunchEnabled = ReloadedAuthorized && ReloadedEnabled && _reloadedBuildAvailable;
         }
+    }
+
+    private void SetReloadedProgress(ReloadedBuildProgress progress)
+    {
+        ReloadedStatusText = progress.Message;
+        ReloadedProgressVisible = true;
+        ReloadedProgressIndeterminate = !progress.Percentage.HasValue;
+        ReloadedProgressValue = progress.Percentage ?? 0;
     }
 
     partial void OnReloadedEnabledChanged(bool value)
