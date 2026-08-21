@@ -16,7 +16,7 @@ public sealed class AppPaths
     public string BackupDir { get; }
     public string ReloadedDir { get; }
     public string ReloadedCurrentDir => Path.Combine(ReloadedDir, "current");
-    public string ReloadedExecutablePath => Path.Combine(ReloadedCurrentDir, "BlockNLoad.exe");
+    public string ReloadedExecutablePath => Path.Combine(ReloadedCurrentDir, "Windows", "BlockNLoad.exe");
 
     public string LauncherPath => Path.Combine(AppDir, "BnlCommunityFixes" + executableExtension);
     public string UpdaterPath => Path.Combine(AppDir, "BnlUpdater" + executableExtension);

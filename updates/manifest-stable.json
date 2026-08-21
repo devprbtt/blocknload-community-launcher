@@ -1,34 +1,34 @@
 {
   "product": "BnlCommunityFixes",
   "channel": "stable",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "minimum_supported_version": "2.8.5",
-  "published_at": "2026-08-21T17:18:20.3518371+00:00",
-  "notes": "# Block N Load Community Fixes V2 — 2.9.0\n\n## BNL Reloaded closed beta\n\n- Added secure Steam sign-in for invited closed-beta accounts.\n- Added an opt-in BNL Reloaded mode that remains disabled by default.\n- Added resumable, SHA-256-verified beta downloads and automatic update checks before launch.\n- Launches the upgraded client without community mods and connects it to the exact host and port selected in the launcher server list.\n- The closed beta currently supports Windows x64.\n\n## Existing game\n\n- The normal Block N Load launch and community-mod workflow are unchanged when BNL Reloaded is disabled.\n",
+  "published_at": "2026-08-21T18:02:07.9231433+00:00",
+  "notes": "# BNL Community Fixes 2.9.1\n\nClosed-beta hotfix for the BNL Reloaded runtime package.\n\n- Installs the upgraded Windows client and its AssetBundles as one atomic version.\n- Rejects incomplete beta archives before replacing a working installation.\n- Supplies BNL Reloaded with the detected vanilla game's Wwise sound-bank path.\n- Preserves the exact host and port selected in the community launcher.\n",
   "assets": {
     "launcher_win_x64": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.9.0/BnlCommunityFixes.exe",
-      "sha256": "6B0E4F4482397F202C1C099EED60EA53A8708254F584BF75797544D3D63C80B0",
-      "size": 143747387
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.9.1/BnlCommunityFixes.exe",
+      "sha256": "73DBB272CC8152CFEC1209C88AEA61087ED11BA05ECF5BB8A3D61D6449B6B58F",
+      "size": 143751483
     },
     "launcher_linux_x64": {
       "file_name": "BnlCommunityFixes",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.9.0/BnlCommunityFixes",
-      "sha256": "498258F92D90F0023A27ADF4FB7AC08D707F5F2B872686C4003E419489CB0F81",
-      "size": 138853025
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.9.1/BnlCommunityFixes",
+      "sha256": "87D66C4186767F21018D8E31A19223E57BF3FF66D9F2F44FE14F364A6659AF12",
+      "size": 138853537
     },
     "launcher_exe": {
       "file_name": "BnlCommunityFixes.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.9.0/BnlCommunityFixes.exe",
-      "sha256": "6B0E4F4482397F202C1C099EED60EA53A8708254F584BF75797544D3D63C80B0",
-      "size": 143747387
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.9.1/BnlCommunityFixes.exe",
+      "sha256": "73DBB272CC8152CFEC1209C88AEA61087ED11BA05ECF5BB8A3D61D6449B6B58F",
+      "size": 143751483
     },
     "updater_exe": {
       "file_name": "BnlUpdater.exe",
-      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.9.0/BnlUpdater.exe",
-      "sha256": "27584A3B2A9911482B9653272821A12A380D15A905E483244384E2324E18C891",
-      "size": 84424787
+      "url": "https://github.com/devprbtt/blocknload-community-launcher/releases/download/v2.9.1/BnlUpdater.exe",
+      "sha256": "ACC8B3EDC787A270801BD1E0F267FF21209B9FAF5F4754E1A6DEB03D5C2A86F0",
+      "size": 84425299
     }
   }
 }

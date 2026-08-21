@@ -126,9 +126,13 @@ public sealed class ReloadedBuildService
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 entry.ExtractToFile(destination, true);
             }
-            if (!File.Exists(Path.Combine(staging, "BlockNLoad.exe")))
+            if (!File.Exists(Path.Combine(staging, "Windows", "BlockNLoad.exe")))
             {
-                throw new InvalidDataException("The BNL Reloaded archive does not contain BlockNLoad.exe.");
+                throw new InvalidDataException("The BNL Reloaded archive does not contain Windows/BlockNLoad.exe.");
+            }
+            if (!File.Exists(Path.Combine(staging, "assetbundles", "assetbundles")))
+            {
+                throw new InvalidDataException("The BNL Reloaded archive does not contain the AssetBundle manifest.");
             }
             File.WriteAllText(
                 Path.Combine(staging, ".bnl-reloaded-build.json"),

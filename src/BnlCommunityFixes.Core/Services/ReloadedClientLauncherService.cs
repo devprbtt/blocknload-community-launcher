@@ -15,9 +15,10 @@ public sealed class ReloadedClientLauncherService
         this.logger = logger;
     }
 
-    public Process Launch(LauncherServer server)
+    public Process Launch(LauncherServer server, GameInstallInfo installInfo)
     {
         ArgumentNullException.ThrowIfNull(server);
+        ArgumentNullException.ThrowIfNull(installInfo);
         if (string.IsNullOrWhiteSpace(server.Host))
         {
             throw new InvalidOperationException("The selected server has no host.");
@@ -33,12 +34,29 @@ public sealed class ReloadedClientLauncherService
                 paths.ReloadedExecutablePath);
         }
 
-        var startInfo = CreateStartInfo(paths.ReloadedExecutablePath, paths.LogsDir, server);
+        var soundBankRoot = Path.Combine(installInfo.GameRoot, "Audio", "GeneratedSoundBanks");
+        if (!File.Exists(Path.Combine(soundBankRoot, "Windows", "Init.bnk")))
+        {
+            throw new DirectoryNotFoundException(
+                $"The vanilla Block N Load sound banks were not found: {soundBankRoot}");
+        }
+
+        var startInfo = CreateStartInfo(
+            paths.ReloadedExecutablePath,
+            paths.LogsDir,
+            server,
+            soundBankRoot,
+            installInfo.SteamPath);
         logger.Info($"Starting BNL Reloaded against selected server {server.Host}:{server.Port} (no community patches applied).");
         return Process.Start(startInfo) ?? throw new InvalidOperationException("BNL Reloaded did not start.");
     }
 
-    internal static ProcessStartInfo CreateStartInfo(string executablePath, string logsDir, LauncherServer server)
+    internal static ProcessStartInfo CreateStartInfo(
+        string executablePath,
+        string logsDir,
+        LauncherServer server,
+        string soundBankRoot,
+        string steamPath)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -47,6 +65,14 @@ public sealed class ReloadedClientLauncherService
                 ?? throw new InvalidOperationException("BNL Reloaded executable has no parent directory."),
             UseShellExecute = false,
         };
+        startInfo.Environment["BNL_WWISE_BANK_ROOT"] = soundBankRoot;
+        if (!string.IsNullOrWhiteSpace(steamPath) && Directory.Exists(steamPath))
+        {
+            var currentPath = startInfo.Environment.TryGetValue("PATH", out var value) ? value : null;
+            startInfo.Environment["PATH"] = string.IsNullOrWhiteSpace(currentPath)
+                ? steamPath
+                : steamPath + Path.PathSeparator + currentPath;
+        }
         startInfo.ArgumentList.Add("-force-d3d11");
         startInfo.ArgumentList.Add("-bnl-local-server");
         startInfo.ArgumentList.Add("-bnl-server-host");
