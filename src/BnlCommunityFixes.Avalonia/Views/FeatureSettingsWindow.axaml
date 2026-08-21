@@ -315,9 +315,14 @@
                             <TextBlock Text="Hz" VerticalAlignment="Center" />
                         </StackPanel>
 
+                        <TextBlock Text="Disable FPS Limit in Menu" FontWeight="SemiBold" Margin="0 8 0 0" />
+                        <TextBlock Text="Removes the stock 60 FPS limit from the main menu and lobby. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                        <CheckBox Content="Enabled" IsChecked="{Binding FpsUnlimiterEnabled}" />
+
                         <TextBlock Text="Enable Time Assault" FontWeight="SemiBold" Margin="0 8 0 0" />
                         <TextBlock Text="Forces the Time Assault menu entry to stay visible and enabled even when the live server disables it. Uses the game's existing Time Trial UI and `StartTimeTrial()` network path so the mode can be tested if the backend still accepts it. Requires rebuild." TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         <CheckBox Content="Enabled" IsChecked="{Binding TimeAssaultEnabled}" />
+
 
                     </StackPanel>
                 </ScrollViewer>

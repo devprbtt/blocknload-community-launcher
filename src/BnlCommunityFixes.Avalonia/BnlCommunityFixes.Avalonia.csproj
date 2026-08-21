@@ -100,6 +100,7 @@
     <EmbeddedResource Include="..\..\assets\patching\experimental-minimap-performance-config.json" LogicalName="Patching.experimental-minimap-performance-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-wsi-performance-config.json" LogicalName="Patching.experimental-wsi-performance-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-fps-counter-config.json" LogicalName="Patching.experimental-fps-counter-config.json" />
+    <EmbeddedResource Include="..\..\assets\patching\experimental-fps-unlimiter-config.json" LogicalName="Patching.experimental-fps-unlimiter-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-time-assault-config.json" LogicalName="Patching.experimental-time-assault-config.json" />
     <EmbeddedResource Include="..\..\assets\patching\BotModeRuntime.cs" LogicalName="Patching.BotModeRuntime.cs" />
     <EmbeddedResource Include="..\..\assets\patching\experimental-bot-mode-config.json" LogicalName="Patching.experimental-bot-mode-config.json" />
