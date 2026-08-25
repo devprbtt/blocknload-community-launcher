@@ -27,16 +27,20 @@ public sealed class ReloadedBuildService
         CancellationToken cancellationToken = default)
     {
         var build = ParseManifest(manifestElement);
-        var statePath = Path.Combine(paths.ReloadedCurrentDir, ".bnl-reloaded-build.json");
-        if (File.Exists(paths.ReloadedExecutablePath) && InstalledBuildMatches(statePath, build))
-        {
-            return false;
-        }
-
         var downloads = Path.Combine(paths.ReloadedDir, "downloads");
         Directory.CreateDirectory(downloads);
         var archivePath = Path.Combine(downloads, build.Name);
         var partialPath = archivePath + ".partial";
+        var statePath = Path.Combine(paths.ReloadedCurrentDir, ".bnl-reloaded-build.json");
+        var installedBuildMatches =
+            File.Exists(paths.ReloadedExecutablePath) && InstalledBuildMatches(statePath, build);
+
+        CleanupDownloads(downloads, installedBuildMatches ? null : partialPath);
+        if (installedBuildMatches)
+        {
+            return false;
+        }
+
         await DownloadAsync(partialPath, build, accessToken, progress, cancellationToken);
 
         progress?.Report(new ReloadedBuildProgress("Verifying BNL Reloaded download...", null));
@@ -56,6 +60,7 @@ public sealed class ReloadedBuildService
         await Task.Run(
             () => InstallArchive(archivePath, build, statePath, progress),
             cancellationToken);
+        CleanupDownloads(downloads, null);
         progress?.Report(new ReloadedBuildProgress("BNL Reloaded installation complete.", 100));
         logger.Info($"Installed BNL Reloaded {build.Version} ({build.Sha256}).");
         return true;
@@ -198,6 +203,45 @@ public sealed class ReloadedBuildService
         finally
         {
             if (Directory.Exists(staging)) { Directory.Delete(staging, true); }
+        }
+    }
+
+    internal void CleanupDownloads(string downloads, string? keepPartialPath)
+    {
+        if (!Directory.Exists(downloads))
+        {
+            return;
+        }
+
+        var normalizedKeepPath = string.IsNullOrWhiteSpace(keepPartialPath)
+            ? null
+            : Path.GetFullPath(keepPartialPath);
+        foreach (var path in Directory.EnumerateFiles(downloads, "*", SearchOption.TopDirectoryOnly))
+        {
+            var isCompletedArchive = path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+            var isPartialArchive = path.EndsWith(".zip.partial", StringComparison.OrdinalIgnoreCase);
+            if (!isCompletedArchive && !isPartialArchive)
+            {
+                continue;
+            }
+
+            var normalizedPath = Path.GetFullPath(path);
+            if (normalizedKeepPath is not null &&
+                normalizedPath.Equals(normalizedKeepPath, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            try
+            {
+                var size = new FileInfo(path).Length;
+                File.Delete(path);
+                logger.Info($"Removed obsolete BNL Reloaded download '{Path.GetFileName(path)}' ({size} bytes).");
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                logger.Warning($"Could not remove obsolete BNL Reloaded download '{path}': {exception.Message}");
+            }
         }
     }
 

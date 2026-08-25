@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BnlCommunityFixes.Avalonia"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BnlCommunityFixes.ReplayAnalyzer", "src\BnlCommunityFixes.ReplayAnalyzer\BnlCommunityFixes.ReplayAnalyzer.csproj", "{A578E658-6CCC-47D9-98F2-8D9E8587E891}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BnlCommunityFixes.Core.Tests", "tests\BnlCommunityFixes.Core.Tests\BnlCommunityFixes.Core.Tests.csproj", "{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,18 @@ Global
 		{A578E658-6CCC-47D9-98F2-8D9E8587E891}.Release|x64.Build.0 = Release|Any CPU
 		{A578E658-6CCC-47D9-98F2-8D9E8587E891}.Release|x86.ActiveCfg = Release|Any CPU
 		{A578E658-6CCC-47D9-98F2-8D9E8587E891}.Release|x86.Build.0 = Release|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Debug|x64.Build.0 = Debug|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Debug|x86.Build.0 = Debug|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Release|x64.ActiveCfg = Release|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Release|x64.Build.0 = Release|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Release|x86.ActiveCfg = Release|Any CPU
+		{B3E3E49D-6143-4D4A-9F86-A6D97E65208A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
