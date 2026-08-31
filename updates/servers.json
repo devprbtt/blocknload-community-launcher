@@ -2,20 +2,20 @@
 "version": 1,
 "servers": {
   "danny-master": {
-    "name": "Block N Load Community Server - EU",
-    "host": "178.105.241.136",
+    "name": "Community Server - Europe",
+    "host": "blocknload.cc",
+    "port": 28100,
+    "patch": "default"
+  },
+  "china-master": {
+    "name": "Community Server - China",
+    "host": "36.150.231.173",
     "port": 28100,
     "patch": "default"
   },
   "nascar-master": {
     "name": "Nascarman's Master Server",
     "host": "5.161.46.214",
-    "port": 28100,
-    "patch": "default"
-  },
-  "china-master": {
-    "name": "Block N Load Community Server - China",
-    "host": "36.150.231.173",
     "port": 28100,
     "patch": "default"
   },
